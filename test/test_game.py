@@ -1,9 +1,8 @@
 import sys
-import os
 sys.path.append(r'/home/naodong/giteethesiskit/ANLearning/lab_notebook') 
 
-from scml_negotiation.scml_game import MyDRLNegotiationGame
 import numpy as np
+from scml_game import MyDRLNegotiationGame, DRLNegotiationGame
 
 def test_my_drl_negotiation_game():
     name = "test_my_drl_negotiation_game"
@@ -26,3 +25,40 @@ def test_my_drl_negotiation_game():
     
     # pdb
     # import pdb;pdb.set_trace()
+
+def test_drl_negotiation_game():
+    from negmas import Mechanism, MechanismState
+    # issues: None, competitors: None
+    name = "test_drl_negotiation_game"
+    game = DRLNegotiationGame(
+        name=name
+    )
+
+    # test attributes and function in session
+    # create session and add competitors, in negotiations game means adding the negotiators into session mechanism
+    game.init_game()
+    assert isinstance(game.session, Mechanism)
+    assert len(game.session.negotiators) == len(game.competitors)
+
+    # run game
+    # result = game.run()
+    # assert isinstance(result, MechanismState)
+
+    # run game step by step
+    # inspect the action and reward history
+    from gym.spaces import Discrete
+    action_space = Discrete(5)
+    action_history = []
+    reward_history = []
+    for _ in range(game.n_steps):
+        result = game.step(action=action_space.sample())
+        action_history.append(game.competitors[0].action)
+        reward_history.append(result)
+        if not game.get_life():
+            break
+    assert result is not None, "get the reward go one step forward!"
+
+
+if __name__ == '__main__':
+    test_my_drl_negotiation_game()
+    test_drl_negotiation_game()

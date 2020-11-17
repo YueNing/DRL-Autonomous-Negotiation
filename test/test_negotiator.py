@@ -15,7 +15,7 @@ def test_drl_negotiator():
         Issue(values=100, name="delivery_time"), 
         Issue(values=100, name="unit_price")
     ]
-
+    # buyer
     weights = (0, -0.5, -0.8)
 
     # set the utility function with MyUtilityFunction
@@ -24,16 +24,25 @@ def test_drl_negotiator():
     )
     ufun = MyUtilityFunction(
         weights=weights,
-        ami=mechanism.ami
     )
     
-    drl_negotiator = DRLNegotiator(
+    drl_negotiator = MyDRLNegotiator(
         name=name,
         ufun=ufun
     )
     
     mechanism.add(
         drl_negotiator
+    )
+
+    drl_negotiator_two = MyDRLNegotiator(
+        name=name+"_two"
+    )
+
+    mechanism.add(
+        drl_negotiator_two, ufun=MyUtilityFunction(
+            weights=(0, -0.2, -0.6)
+        )
     )
     assert drl_negotiator.name == name
     assert drl_negotiator.ufun == ufun
@@ -82,7 +91,32 @@ def test_drl_negotiator():
     respond = drl_negotiator.respond(mechanism.state, offer[0])
     assert respond == drl_negotiator.action
 
+def test_opponent_negotiator():
+    from mynegotiator import MyOpponentNegotiator
+    from negmas import Issue, SAOMechanism
+    from myutilityfunction import MyUtilityFunction
 
+    name = "test_opponent_negotiator"
+    # seller
+    weights = (0, 0.25, 1)
+    issues = [
+        Issue(values=10, name="quantity"),
+        Issue(values=100, name="delivery_time"),
+        Issue(values=100, name="unit_price")
+    ]
+    mechanism = SAOMechanism(
+        issues=issues, n_steps=100
+    )
+    ufun = MyUtilityFunction(
+        weights=weights,
+        ami=mechanism.ami
+    )
+    opponent_negotiator = MyOpponentNegotiator(
+        name=name,
+        ufun=ufun
+    )
+    mechanism.add(opponent_negotiator)
 
 if __name__ == "__main__":
     test_drl_negotiator()
+    test_opponent_negotiator()

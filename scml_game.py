@@ -11,8 +11,9 @@ from negmas import (
                         ResponseType
                     )
 from typing import Optional, Union, Dict, List
-from scml_negotiation.myagent import MyComponentsBasedAgent
-from scml_negotiation.mynegotiator import MyDRLNegotiator, MyOpponentNegotiator, DRLNegotiator
+from myagent import MyComponentsBasedAgent
+from mynegotiator import MyDRLNegotiator, MyOpponentNegotiator, DRLNegotiator
+from myutilityfunction import  MyUtilityFunction
 from scml.scml2020.agents import DecentralizingAgent, BuyCheapSellExpensiveAgent
 from scml.scml2020 import anac2020_std, anac2020_collusion
 
@@ -76,12 +77,16 @@ class Game(ABC):
         return f'The name of Game is {self.name}'
     
     def add_competitors(self, competitors: Optional[List[Agent]]):
-        for _ in competitors:
-            self.add_competitor(_)
-    
+        if self.game_type == "Negotiation" or self.game_type == "DRLNegotiation":
+            for _ in competitors:
+                if _.has_ufun:
+                    self.add_competitor(_)
+                else:
+                    raise ValueError("Please set the utility function!")
+
     @abstractmethod
     def add_competitor(self, competitor: Union[MyDRLNegotiator, MyOpponentNegotiator]):
-        raise NotImplementedError(" ")
+        raise  NotImplementedError("")
 
     def init_game(self):
         # check the inputed game type valid or not
@@ -89,7 +94,8 @@ class Game(ABC):
         
         # create a session, negotiation mechanism or scml anac
         self.create_session()
-        
+        self.add_competitors(competitors=self.competitors)
+
         # init all argumente
         self._step = 0
 
@@ -158,8 +164,8 @@ class Game(ABC):
     def set_session_data(self, data: Optional[Dict] = None):
         self._session_data = data if data is not None else {}
 
-    def run(self):
-        self._session.run()
+    def run(self) -> MechanismState:
+        return self._session.run()
     
     def step(self, action: "gym.spaces.Discrete.sample()" = None) -> Optional[MechanismState]:
         '''
@@ -169,15 +175,15 @@ class Game(ABC):
         
         self.check()
 
-        return self.step_forward(action=action)
+        return self.step_forward(action=action, competitor=self.competitors[0])
 
     @abstractmethod       
-    def step_forward(self, action=None):
+    def step_forward(self, action=None, competitor: Optional[DRLNegotiator] = None):
         raise NotImplementedError(" ")
 
     def create_session(self)-> Union[Mechanism, anac2020_std, anac2020_collusion]:
 
-        self.check()
+        # self.check()
         if self.game_type == 'Negotiation' or self.game_type == 'DRLNegotiation':
             if self.session_data is None:
                 self.set_session_data(data={})
@@ -264,7 +270,7 @@ class NegotiationGame(DRLGameMixIn, Game):
 
 
     def add_competitor(self, competitor: Union[MyDRLNegotiator, MyOpponentNegotiator]):
-        self.session.add(competitor, ufun=competitor.get_ufun())
+        self.session.add(competitor)
 
     def step_forward(self, action=None, competitor: Optional[DRLNegotiator] = None):
         
@@ -275,8 +281,6 @@ class NegotiationGame(DRLGameMixIn, Game):
             return state
         
         if self.game_type == 'DRLNegotiation':
-            
-            self.action = action
 
             # competitors go forward one step
             # session/simulator/environment go one step
@@ -288,7 +292,6 @@ class NegotiationGame(DRLGameMixIn, Game):
 
             # reward
             reward = 0
-            
             if competitor.time <= competitor.maximum_time:
 
                 if competitor.action == ResponseType.ACCEPT_OFFER:
@@ -297,27 +300,27 @@ class NegotiationGame(DRLGameMixIn, Game):
                         reward += EXTRA_REWARD
                     else:
                         reward = 0
-                
+
                 elif competitor.action == ResponseType.REJECT_OFFER:
                     # when competitor reject the offer
                     if competitor.proposal_offer:
                         # proposal a meaningful offer
                         # calculate the reward
                         reward = competitor.get_ufun(competitor.proposal_offer)
-                        
+
                         competitor.set_proposal_offer(offer=None)
                     else:
                         # reject the offer, but not proposal a meanful offer
                         reward = -1
-                
+
                 elif competitor.action == ResponseType.END_NEGOTIATION or \
                     competitor.action == ResponseType.NO_RESPONSE:
-                    
+
                     reward = -1
-            
+
             else:
                 reward = 0
-            
+
             return reward
                     
 
@@ -325,11 +328,12 @@ class NegotiationGame(DRLGameMixIn, Game):
         """
         set the action of competitors
         """
-        for _ in self.competitors:
-            if _.id == competitor.id:
-                competitor.set_current_action(action=action)
-            else:
-                _.set_current_action(action=None)
+        # for _ in self.competitors:
+        #     if _.id == competitor.id:
+        # just set the current action when t
+        competitor.set_current_action(action=action)
+            # else:
+            #     _.set_current_action(action=None)
 
     def get_life(self):
         return self.session.running
@@ -351,8 +355,10 @@ class DRLNegotiationGame(NegotiationGame):
         competitors: Optional[List[Negotiator]] = None
     ):
         if competitors is None:
-            #TODO: initial competitors that will join into the dlr negotiation game
-            competitors = []
+            competitors = [
+                MyDRLNegotiator(name="c1", is_seller=False),
+                MyOpponentNegotiator(name="c2")
+            ]
         
         # Default issues used for negotiation game
         if not issues:

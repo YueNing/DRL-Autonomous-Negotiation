@@ -29,7 +29,7 @@ from negmas import (
     
 import random
 from typing import List, Optional, Type, Sequence
-from scml_negotiation.myutilityfunction import MyUtilityFunction
+from myutilityfunction import MyUtilityFunction
 
 # def my_utility_function(offer, time, rp, ip, t_end):
 #     '''
@@ -65,7 +65,7 @@ class CommonMixIn:
     
     @property
     def get_ufun(self):
-        return self._ufun
+        return self.ufun
     
     @property
     def time(self):
@@ -135,7 +135,7 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         """
         return self._utility_function
     
-    def get_obs(self) -> "outcome":
+    def get_obs(self) -> "outcome+time":
         '''
         Observation as,
         [opponent_Offer, Time] = [issue(quantity), issue(time), issue(unit price), time]
@@ -159,7 +159,10 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
     @property
     def get_opponent_offer(self):
         return self._opponent_offer
-    
+
+    def set_opponent_offer(self, offer):
+        self._opponent_offer = offer
+
     @property
     def proposal_offer(self):
         return self._proposal_offer
@@ -167,54 +170,58 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
     def set_proposal_offer(self, offer: "Outcome" = None):
         self._proposal_offer = offer
         
-    def respond(self, state: MechanismState, offer: "Outcome") -> "ResponseType":
-        """
-        Remark:
-            Use the action trained by drl model if it existes!
-            Otherwise always reject the offer from opponent!
-        """
-        if self.action is None:
-            if self.env is not None:
-                return ResponseType(self.env.action_space.sample())
-            
-            return ResponseType.REJECT_OFFER
-        
-        if isinstance(self.action, ResponseType):
-            return self.action
-        
-        return ResponseType.REJECT_OFFER
-
-    # def propose(self, state: MechanismState) -> Optional["Outcome"]:
-    #     '''
-    #     when the counter has be called, to generate a new offer,
-    #
+    # def respond(self, state: MechanismState, offer: "Outcome") -> "ResponseType":
+    #     """
     #     Remark:
+    #         Use the action trained by drl model if it existes!
+    #         Otherwise always reject the offer from opponent!
+    #     """
+    #     if self.action is None:
+    #         if self.env is not None:
+    #             return ResponseType(self.env.action_space.sample())
     #
-    #         Method0: implemented here
-    #         heuristic method, design it by ourself.
+    #         return ResponseType.REJECT_OFFER
     #
-    #         Method1:
-    #         From a machine learning perspective, deriving this proposal corresponds to a
-    #         regression problem.
+    #     if isinstance(self.action, ResponseType):
+    #         return self.action
     #
-    #         Method2 method:
-    #         Or in reinforcement learning perspective, deriving this proposal corresponds to a
-    #         continuous space problem.
-    #         In other words: Work for negotiation, as the decision to accept or reject an offer is discrete,
-    #         whereas bidding is on continuous space
-    #
-    #     '''
-    #     assert self.action == ResponseType.REJECT_OFFER, "somethings error, action is not REJECT_OFFER, but go into function propose!"
-    #
-    #     # method0
-    #     # get utility of all outcomes, proposal a new offer which utilitf is less biger that current  offer gived by the opponent
-    #     # get it from ufun/_utility_function
-    #
-    #     #method1
-    #     #need many data
-    #
-    #     #method2
-    #     #a2c algorithm, need to design a a2c model contains two network(acceptance network, offer/bidding network)
+    #     return ResponseType.REJECT_OFFER
+
+    def propose(self, state: MechanismState) -> Optional["Outcome"]:
+        '''
+        when the counter has be called, to generate a new offer,
+
+        Remark:
+
+            Method0: implemented here
+            heuristic method, design it by ourself.
+
+            Method1:
+            From a machine learning perspective, deriving this proposal corresponds to a
+            regression problem.
+
+            Method2 method:
+            Or in reinforcement learning perspective, deriving this proposal corresponds to a
+            continuous space problem.
+            In other words: Work for negotiation, as the decision to accept or reject an offer is discrete,
+            whereas bidding is on continuous space
+
+        '''
+        # assert self.action == ResponseType.REJECT_OFFER, "somethings error, action is not REJECT_OFFER, but go into function propose!"
+
+        offer = super().propose(state=state)
+
+        self.set_proposal_offer(offer)
+
+        # method0
+        # get utility of all outcomes, proposal a new offer which utilitf is less biger that current  offer gived by the opponent
+        # get it from ufun/_utility_function
+
+        #method1
+        #need many data
+
+        #method2
+        #a2c algorithm, need to design a a2c model contains two network(acceptance network, offer/bidding network)
 
 
 
@@ -253,34 +260,40 @@ class MyDRLNegotiator(DRLNegotiator):
         return self._weights
     
         
-    def propose(self):
-        pass
+    # def propose(self):
+    #     pass
 
-    def response(self):
-        pass
+    def respond(self, state: MechanismState, offer: "Outcome") -> "ResponseType":
+        """
+        Remark:
+            Use the action trained by drl model if it existes!
+            Otherwise always reject the offer from opponent!
+        """
+        self.set_opponent_offer(offer)
+        if self.action is None:
+            if self.env is not None:
+                return ResponseType(self.env.action_space.sample())
+
+            return ResponseType.REJECT_OFFER
+
+        if isinstance(self.action, ResponseType):
+            return self.action
+
+        return ResponseType.REJECT_OFFER
 
 
-class MyOpponentNegotiator(DRLNegotiator, AspirationNegotiator):
+class MyOpponentNegotiator(DRLNegotiator):
 
     def __init__(
         self,
         name: str = 'my_opponent_negotiator', 
         ufun: Optional[UtilityFunction] = MappingUtilityFunction(lambda x: random.random() * x[0]),
     ):
-        super().__init__(name=name)
-        
-        # Must set it
-        self._ufun = ufun
-    
-    def get_obs(self):
-        pass
+        if ufun is None:
+            # seller
+            ufun = MyUtilityFunction(weights=(0, 0.25, 1))
 
-    def get_current_action(self):
-        pass
-    
-    def set_current_action(self, action=None):
-        pass
-
+        super().__init__(name=name, ufun=ufun)
 
 #
 # class MyNegotiator(SAONegotiator):
