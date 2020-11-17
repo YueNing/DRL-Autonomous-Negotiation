@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(r'/home/nauen/ANLearning/lab_notebook') 
+sys.path.append(r'/home/nauen/PycharmProjects/tn_source_code')
 
 from scml_negotiation.train import train_negotiation
 from scml_negotiation.scml_env import MyNegotiationEnv, NEnv

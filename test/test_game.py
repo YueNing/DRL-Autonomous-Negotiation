@@ -1,5 +1,5 @@
 import sys
-sys.path.append(r'/home/naodong/giteethesiskit/ANLearning/lab_notebook') 
+sys.path.append(r'/home/nauen/PycharmProjects/tn_source_code')
 
 import numpy as np
 from scml_game import MyDRLNegotiationGame, DRLNegotiationGame

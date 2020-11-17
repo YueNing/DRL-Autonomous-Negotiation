@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(r'/home/nauen/ANLearning/lab_notebook') 
+sys.path.append(r'/home/nauen/PycharmProjects/tn_source_code')
 
 def test_my_utility_function():
     from myutilityfunction import MyUtilityFunction
