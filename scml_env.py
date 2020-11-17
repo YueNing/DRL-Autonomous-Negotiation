@@ -184,7 +184,7 @@ class NEnv(RLEnvMixIn, BaseEnv, gym.Env, ABC):
         obs = self._get_obs()
 
         # meet the condition: done = True
-        if self.n_step >= getattr(self.game.ami.state, 'n_steps') \
+        if self.n_step >= getattr(self.game.ami, 'n_steps') \
             or self.time >= float(getattr(self.game.ami.state, 'relative_time')):
             done = True
         
@@ -212,8 +212,14 @@ class NEnv(RLEnvMixIn, BaseEnv, gym.Env, ABC):
         initial observation obtains negotiators' intial observation and others information 
         relates to the definition of observation space. 
         """
+        # env reset
+        self.n_step = 0
+        self.time = 0
+
+        # game reset
         self.game.init_game()
-        
+
+        # get initial observation
         init_obs = self._get_obs()
 
         return init_obs
@@ -264,6 +270,11 @@ class NegotiationEnv(NEnv):
     
 
     def get_obs(self):
+        """
+        Condition 1: For negotiator perspective,
+        Returns:
+            obs
+        """
         obs = self.game.get_observation()
         return obs
 
@@ -319,9 +330,6 @@ class DRLNegotiationEnv(NegotiationEnv):
         if action_space is None:
             action_space = 3
             self.set_action_space(action_space=action_space)
-
-    def get_obs(self):
-        pass
 
 
 

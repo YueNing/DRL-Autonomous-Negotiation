@@ -1,10 +1,10 @@
 import sys
 import os
-sys.path.append(r'/home/nauen/ANLearning/lab_notebook') 
+sys.path.append(r'/home/nauen/PycharmProjects/tn_source_code')
 
-from scml_negotiation.scml_env import NEnv, NegotiationEnv, DRLNegotiationEnv, MyNegotiationEnv
-from scml_negotiation.scml_game import MyDRLNegotiationGame, DRLNegotiationGame, NegotiationGame
-from scml_negotiation.mynegotiator import MyDRLNegotiator, MyOpponentNegotiato
+from scml_env import NEnv, NegotiationEnv, DRLNegotiationEnv, MyNegotiationEnv
+from scml_game import MyDRLNegotiationGame, DRLNegotiationGame, NegotiationGame
+from mynegotiator import MyDRLNegotiator, MyOpponentNegotiator
 # from ANLearning.lab_notebook.scml_negotiation.scml_game import Game
 
 def test_negotiation_env():
@@ -41,16 +41,29 @@ def test_negotiation_env():
     # assert type(n_env.get_obs()) == list
     # import pdb;pdb.set_trace()
 
-def test_dlr_negotiation_env():
+def test_drl_negotiation_env():
     """
     Test DLRNegotiationEnv, based on the settings comes from scml Negotiation
     """
-    name = "TestDLRNEnv"
-    dlr_n_env = DRLNegotiationEnv(
+    name = "test_drl_negotiation_env"
+    drl_n_env = DRLNegotiationEnv(
         name=name,
     )
     # import pdb;pdb.set_trace()
-    assert dlr_n_env.__str__() == f'The name of Env is {name}'
+    assert drl_n_env.__str__() == f'The name of Env is {name}'
+
+    # mainly test the step function inherit from gym.env
+    init_obs = drl_n_env.reset()
+    assert init_obs == [[None, 0.0] for _ in drl_n_env.game.competitors]
+
+    for _ in range(100):
+        action = drl_n_env.action_space.sample()
+        obs, reward, done, info = drl_n_env.step(action=action)
+        if done:
+            break
+
+
+
 
 def test_my_negotiation_env():
     name = "TestMyNEnv"
@@ -72,5 +85,5 @@ def test_my_negotiation_env():
 
 
 if __name__ == "__main__":
-    # test_dlr_negotiation_env() 
+    test_drl_negotiation_env()
     test_my_negotiation_env()

@@ -119,6 +119,7 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         # Must set it
         self._action: ResponseType = None
         self._proposal_offer = None
+        self._current_offer = None
         
 
     def reset(self, env=None):
@@ -126,6 +127,7 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
             self.set_env(env=env)
         self._action = None
         self._proposal_offer = None
+        self._current_offer_offer = None
 
     @property
     def ufun(self):
@@ -140,7 +142,7 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         Observation as,
         [opponent_Offer, Time] = [issue(quantity), issue(time), issue(unit price), time]
         '''
-        return self.get_opponent_offer + [self.time]
+        return [self.get_current_offer] + [self.time]
 
     @property
     def action(self):
@@ -157,11 +159,11 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         return self._action
 
     @property
-    def get_opponent_offer(self):
-        return self._opponent_offer
+    def get_current_offer(self):
+        return self._current_offer
 
-    def set_opponent_offer(self, offer):
-        self._opponent_offer = offer
+    def set_current_offer(self, offer):
+        self._current_offer = offer
 
     @property
     def proposal_offer(self):
@@ -169,24 +171,10 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
     
     def set_proposal_offer(self, offer: "Outcome" = None):
         self._proposal_offer = offer
-        
-    # def respond(self, state: MechanismState, offer: "Outcome") -> "ResponseType":
-    #     """
-    #     Remark:
-    #         Use the action trained by drl model if it existes!
-    #         Otherwise always reject the offer from opponent!
-    #     """
-    #     if self.action is None:
-    #         if self.env is not None:
-    #             return ResponseType(self.env.action_space.sample())
-    #
-    #         return ResponseType.REJECT_OFFER
-    #
-    #     if isinstance(self.action, ResponseType):
-    #         return self.action
-    #
-    #     return ResponseType.REJECT_OFFER
-
+    
+    def respond(self, state: MechanismState, offer: "Outcome") -> "ResponseType":
+        return super(DRLNegotiator, self).respond(state=state, offer=offer)
+    
     def propose(self, state: MechanismState) -> Optional["Outcome"]:
         '''
         when the counter has be called, to generate a new offer,
@@ -212,6 +200,8 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         offer = super().propose(state=state)
 
         self.set_proposal_offer(offer)
+
+        return offer
 
         # method0
         # get utility of all outcomes, proposal a new offer which utilitf is less biger that current  offer gived by the opponent
@@ -269,7 +259,7 @@ class MyDRLNegotiator(DRLNegotiator):
             Use the action trained by drl model if it existes!
             Otherwise always reject the offer from opponent!
         """
-        self.set_opponent_offer(offer)
+        self.set_current_offer(offer)
         if self.action is None:
             if self.env is not None:
                 return ResponseType(self.env.action_space.sample())
@@ -286,15 +276,21 @@ class MyOpponentNegotiator(DRLNegotiator):
 
     def __init__(
         self,
-        name: str = 'my_opponent_negotiator', 
+        name: str = 'my_opponent_negotiator',
+        is_seller: bool = True,
         ufun: Optional[UtilityFunction] = MappingUtilityFunction(lambda x: random.random() * x[0]),
     ):
         if ufun is None:
-            # seller
-            ufun = MyUtilityFunction(weights=(0, 0.25, 1))
+            if is_seller:
+                ufun = MyUtilityFunction(weights=(0, 0.25, 1))
+            else:
+                ufun = MyUtilityFunction(weights=(0, -0.5, -0.8))
 
         super().__init__(name=name, ufun=ufun)
-
+    
+    def respond(self, state: MechanismState, offer: "Outcome") -> "ResponseType":
+        self.set_current_offer(offer=offer)
+        super(MyOpponentNegotiator, self).respond(state=state, offer=offer)
 #
 # class MyNegotiator(SAONegotiator):
 #     r"""

@@ -54,6 +54,7 @@ def test_drl_negotiation_game():
         result = game.step(action=action_space.sample())
         action_history.append(game.competitors[0].action)
         reward_history.append(result)
+        obs = game.get_observation()
         if not game.get_life():
             break
     assert result is not None, "get the reward go one step forward!"

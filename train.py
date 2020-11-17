@@ -1,4 +1,4 @@
-from scml_negotiation.scml_env import DRLNegotiationEnv, NEnv
+from scml_env import DRLNegotiationEnv, NEnv
 
 MODEL_NEGOTIATION = [
     "DQN",

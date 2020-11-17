@@ -91,7 +91,11 @@ class Game(ABC):
     def init_game(self):
         # check the inputed game type valid or not
         self.check()
-        
+
+        # reset the competitors
+        for _ in self.competitors:
+            _.reset()
+
         # create a session, negotiation mechanism or scml anac
         self.create_session()
         self.add_competitors(competitors=self.competitors)
@@ -236,6 +240,8 @@ class DRLGameMixIn:
         for _ in self.competitors:
             obs.append(_.get_obs())
 
+        return obs
+
 
 
 ####################################################################################################
@@ -259,6 +265,13 @@ class NegotiationGame(DRLGameMixIn, Game):
         # Default ANegma Issue
         if issues is None:
             issues = [Issue((300, 550))]
+
+        # Default competitors
+        if competitors is None:
+            competitors = [
+                MyDRLNegotiator(is_seller=False),
+                MyOpponentNegotiator(is_seller=True)
+            ]
 
         super().__init__(
             name=name,
