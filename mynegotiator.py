@@ -138,8 +138,20 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         '''
         Observation as,
         [opponent_Offer, Time] = [issue(quantity), issue(time), issue(unit price), time]
+
+        TODO:
+        Questions: how about initial observation when the current_offer is None
+
+        Method1: random sample a outcome from issues,
+        Method2: set all issues to default value, for example 0
+        others?
         '''
-        return [self.get_current_offer] + [self.time]
+        if self.get_current_offer is None:
+            return self.reserved_obs()
+        return [i for i in self.get_current_offer] + [self.time]
+
+    def reserved_obs(self):
+        return [0, 0, 0] + [self.time]
 
     @property
     def action(self):

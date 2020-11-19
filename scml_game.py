@@ -233,6 +233,13 @@ class Game(ABC):
 class DRLGameMixIn:
 
     def get_observation(self):
+        """
+        Returns:
+            obs: relates to the design of observation space
+            1. [offer of my negotiator, time], obs[0]
+            2. [offer of all negotiators, time], obs
+            3. ?
+        """
         obs = []
 
         assert self.competitors is not None, "The competitors is None!, please firstly let the competitors join into the game!"
@@ -240,7 +247,7 @@ class DRLGameMixIn:
         for _ in self.competitors:
             obs.append(_.get_obs())
 
-        return obs
+        return obs[0]
 
 
 

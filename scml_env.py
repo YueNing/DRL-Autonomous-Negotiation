@@ -273,7 +273,7 @@ class NegotiationEnv(NEnv):
         """
         Condition 1: For negotiator perspective,
         Returns:
-            obs
+            obs, [quantity, ]
         """
         obs = self.game.get_observation()
         return obs

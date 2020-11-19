@@ -63,7 +63,7 @@ def train_negotiation(plot=True, model="DQN", env=None, monitor=True):
             env, best_model_save_path=LOGDIR, log_path=LOGDIR, eval_freq=EVAL_FREQ, n_eval_episodes=EVAL_EPISODES
         )
 
-        model.learn(total_timesteps=NUM_TIMESTEPS, callback=eval_callback)
+        model.learn(total_timesteps=NUM_TIMESTEPS)
         model.save(os.path.join(LOGDIR, "final_model"))
         
         env.close()
@@ -71,6 +71,7 @@ def train_negotiation(plot=True, model="DQN", env=None, monitor=True):
     
     if model == "PPO1":
         from stable_baselines.ppo1 import PPO1
+        # TODO:
 
     if plot:
         import matplotlib.pyplot as plt
