@@ -17,6 +17,39 @@ from negmas.generics import (
 import random
 from typing import List, Optional, Type, Sequence
 
+class ANegmaUtilityFunction(UtilityFunction):
+    """
+        Idea comes from ANegma, single issue
+    """
+    def __init__(
+            self,
+            name = None,
+            delta: Optional[float] = 0.6,
+            rp=None,
+            ip=None,
+            max_t=None,
+            factor="relative_time",
+            ami= None
+    ):
+        super(ANegmaUtilityFunction, self).__init__(
+            name=name,
+            ami=ami
+        )
+        self.delta = delta
+        self.rp = rp
+        self.ip = ip
+        self.max_t = max_t
+        self.factor = factor
+
+    def eval(self, offer: "Outcome") -> UtilityValue:
+        if self.ami:
+            return ((float(self.rp) - float(offer[0])) / (float(self.rp) - float(self.ip))) * \
+                    (float(getattr(self.ami.state, self.factor)) / float(self.max_t)) ** self.delta
+        return
+
+    def xml(self, issues: List[Issue]) -> str:
+        pass
+    
 class MyUtilityFunction(UtilityFunction):
     r""" Model My utility function, linear utility function with discount factor based on relative time
     
