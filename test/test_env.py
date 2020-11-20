@@ -42,14 +42,6 @@ def test_negotiation_env():
     else:
         assert n_env.game.__dict__["_name"] == game.__dict__["_name"]
 
-    init_obs = n_env.reset()
-    
-    for _ in range(100):
-        action = n_env.action_space.sample()
-        obs, reward, done, info=n_env.step(action=action)
-        if done:
-            break
-
     print("Finish test of the Acceptance strategy!")
     # test offer strategy
 
