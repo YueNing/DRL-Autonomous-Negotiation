@@ -1,12 +1,11 @@
 import sys
 import os
 sys.path.append(r'/home/nauen/PycharmProjects/tn_source_code')
-from negmas import AgentMechanismInterface, SAOMechanism, Issue, AspirationNegotiator, MappingUtilityFunction
-import random # for generating random ufuns
 
 def test_my_utility_function():
     from myutilityfunction import MyUtilityFunction
-
+    from negmas import AgentMechanismInterface, SAOMechanism, Issue
+    
     issues = [
         Issue(values=10, name="quantity"), 
         Issue(values=100, name="delivery_time"), 
@@ -49,41 +48,5 @@ def test_my_utility_function():
     # assert ufun((1, 0, 1))
     # import pdb;pdb.set_trace()
 
-def test_anegma_utility_function():
-    from myutilityfunction import ANegmaUtilityFunction
-    from mynegotiator import DRLNegotiator
-    from negmas import Issue
-
-    issues = [Issue((300, 550))]
-
-    ip = Issue.sample(issues=issues, n_outcomes=1, astype=tuple)[0][0]
-    rp = Issue.sample(issues=issues, n_outcomes=1, astype=tuple)[0][0]
-    max_t = 0.8
-    delta = 0.6
-
-    mechanism = SAOMechanism(
-        issues=issues, n_steps=100
-    )
-    ami = mechanism.ami
-
-    anegma_utility_function = ANegmaUtilityFunction(
-        delta=0.6,
-        rp=rp,
-        ip=ip,
-        max_t=max_t,
-        ami=ami
-    )
-    negotiators = [AspirationNegotiator(name=f'a{_}') for _ in range(5)]
-    for negotiator in negotiators:
-        mechanism.add(negotiator, ufun=MappingUtilityFunction(lambda x: random.random() * x[0]))
-
-    for _ in range(10):
-        offers = Issue.sample(issues=issues, n_outcomes=1, astype=tuple)
-        mechanism.step()
-        ufun = anegma_utility_function(offers[0])
-        assert ufun == ((float(rp) - float(offers[0][0])) / (float(rp) - float(ip))) * (float(getattr(ami.state, anegma_utility_function.factor)) / float(max_t)) ** delta
-        print(ufun)
-
 if __name__ == '__main__':
     test_my_utility_function()
-    test_anegma_utility_function()
