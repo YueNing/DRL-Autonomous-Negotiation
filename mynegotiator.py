@@ -111,7 +111,8 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
             name = name,
             ufun=ufun
         )
-        self.set_env(env=env)
+        if env is not None:
+            self.set_env(env=env)
 
         # Must set it
         self._action: ResponseType = None
@@ -239,6 +240,7 @@ class MyDRLNegotiator(DRLNegotiator):
         is_seller: bool = True,
         ufun: Optional[UtilityFunction] = None,
         weights: Optional[List[List]] = [(0, 0.25, 1), (0, -0.5, -0.8)],
+        env = None
     ):
         
         if ufun is None:
@@ -252,6 +254,7 @@ class MyDRLNegotiator(DRLNegotiator):
         super().__init__(
             name=name,
             ufun=ufun,
+            env=env
         )
 
     @property
@@ -288,6 +291,7 @@ class MyOpponentNegotiator(DRLNegotiator):
         name: str = 'my_opponent_negotiator',
         is_seller: bool = True,
         ufun: Optional[UtilityFunction] = MappingUtilityFunction(lambda x: random.random() * x[0]),
+        env = None
     ):
         if ufun is None:
             if is_seller:
@@ -295,7 +299,7 @@ class MyOpponentNegotiator(DRLNegotiator):
             else:
                 ufun = MyUtilityFunction(weights=(0, -0.5, -0.8))
 
-        super().__init__(name=name, ufun=ufun)
+        super().__init__(name=name, ufun=ufun, env=env)
     
     def respond(self, state: MechanismState, offer: "Outcome") -> "ResponseType":
         self.set_current_offer(offer=offer)

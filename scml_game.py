@@ -16,6 +16,7 @@ from mynegotiator import MyDRLNegotiator, MyOpponentNegotiator, DRLNegotiator
 from myutilityfunction import  MyUtilityFunction
 from scml.scml2020.agents import DecentralizingAgent, BuyCheapSellExpensiveAgent
 from scml.scml2020 import anac2020_std, anac2020_collusion
+from dataclasses import dataclass, field, fields
 
 # extra reward for agreement when negotiator get a agreement
 EXTRA_REWARD = 0.1
@@ -31,6 +32,10 @@ __all__ = [
     "MyDRLSCMLGame",
 
 ]
+
+@dataclass
+class AgentGameInterface():
+    pass
 
 ####################################################################################################
 # For Game
@@ -59,6 +64,7 @@ class Game(ABC):
         issues: List[Issue] = None,
         n_steps: int = 10, 
         competitors: Optional[List[Negotiator]] = None,
+        env = None,
         reset: bool = True,
     ):
         self._name = name
@@ -68,14 +74,35 @@ class Game(ABC):
         self._issues = issues
         self._n_steps = n_steps
         self._competitors = competitors
-        
+        self._env = env
+
+        # # TODO: set the agent game interface
+        # self.agi = AgentGameInterface(
+        # )
+        # self.agi._env = self
+
         if reset:
             self.reset()
     
 
     def __str__(self):
         return f'The name of Game is {self.name}'
-    
+
+    # def add(self):
+    #     pass
+    @property
+    def env(self):
+        return self._env
+
+    @env.setter
+    def env(self, env):
+        self._env = env
+
+    def set_env(self, env):
+        self._env = env
+        for _ in self.competitors:
+            _.set_env(env=self.env)
+
     def add_competitors(self, competitors: Optional[List[Agent]]):
         if self.game_type == "Negotiation" or self.game_type == "DRLNegotiation":
             for _ in competitors:
@@ -268,6 +295,7 @@ class NegotiationGame(DRLGameMixIn, Game):
         issues: Optional[List[Issue]] = None, 
         n_steps: int = 10, 
         competitors: Optional[List[Negotiator]] = None,
+        env = None
     ):
         # Default ANegma Issue
         if issues is None:
@@ -286,11 +314,13 @@ class NegotiationGame(DRLGameMixIn, Game):
             issues=issues,
             n_steps=n_steps,
             competitors=competitors,
+            env = env
         )
 
 
     def add_competitor(self, competitor: Union[MyDRLNegotiator, MyOpponentNegotiator]):
         self.session.add(competitor)
+        competitor.set_env(env=self.env)
 
     def step_forward(self, action=None, competitor: Optional[DRLNegotiator] = None):
         
@@ -372,12 +402,13 @@ class DRLNegotiationGame(NegotiationGame):
         game_type: str = "DRLNegotiation",
         issues: Optional[List[Issue]] = None,
         n_steps: int = 100,
-        competitors: Optional[List[Negotiator]] = None
+        competitors: Optional[List[Negotiator]] = None,
+        env = None
     ):
         if competitors is None:
             competitors = [
-                MyDRLNegotiator(name="c1", is_seller=False),
-                MyOpponentNegotiator(name="c2")
+                MyDRLNegotiator(name="c1", is_seller=False, env=env),
+                MyOpponentNegotiator(name="c2", env=env)
             ]
         
         # Default issues used for negotiation game
@@ -394,7 +425,8 @@ class DRLNegotiationGame(NegotiationGame):
             game_type = game_type,
             issues = issues,
             n_steps = n_steps,
-            competitors = competitors, 
+            competitors = competitors,
+            env = env
         )
 
 
@@ -404,9 +436,11 @@ class MyDRLNegotiationGame(DRLNegotiationGame):
     def __init__(
         self,
         name: str = "test_my_drl_negotiation_game",
+        env = None
     ):
         super().__init__(
             name=name,
+            env=env
         )
 
 ####################################################################################################
@@ -426,6 +460,7 @@ class SCMLGame(Game):
         max_n_worlds_per_config = None,
         n_runs_per_world = 1,
         competitors: List[Agent] = [MyComponentsBasedAgent, DecentralizingAgent, BuyCheapSellExpensiveAgent],
+        env = None,
         *args,
         **kwargs
     ):

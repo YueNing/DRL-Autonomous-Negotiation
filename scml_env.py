@@ -1,8 +1,10 @@
 import gym
-from gym.utils import seeding
+import numpy as np
 
+from gym.utils import seeding
+from gym.spaces import Discrete, Box
 from abc import ABC, abstractmethod, abstractproperty
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Tuple
 from scml_game import (Game,
                                     DRLSCMLGame, 
                                     SCMLGame, 
@@ -95,28 +97,39 @@ class RLEnvMixIn:
     '''
     Some mixin function of reinforcement learning
     '''
-    def set_observation_space(self, observation_space: Optional[List] = None):
+    def set_observation_space(self, observation_space: Union[List, Tuple, Box] = None):
         '''
         Check the inputed observation space valid or invalid
         '''
-        from gym.spaces import Box
-        import numpy as np 
 
-        self._observation_space = Box(
-                low=np.array(observation_space[0]),
-                high=np.array(observation_space[1]),
-                dtype=np.int
-            )
+        if type(observation_space) == Box:
+            self._observation_space = observation_space
+        elif type(observation_space) == list or type(observation_space) == tuple:
+            self._observation_space = Box(
+                    low=np.array(observation_space[0]),
+                    high=np.array(observation_space[1]),
+                    dtype=np.int
+                )
 
         return self._observation_space
-    
-    def set_action_space(self, action_space: Optional[int] = None):
+
+    def set_action_space(self, action_space: Union[int, gym.spaces.Box, gym.spaces.Discrete, List, Tuple] = None):
         '''
         As Same as the function set_observation_space
         '''
-        from gym.spaces import Discrete
 
-        self._action_space = Discrete(action_space)
+        if type(action_space) == int:
+            self._action_space = Discrete(action_space)
+        if type(action_space) == Discrete or type(action_space) == Box:
+            self._action_space = action_space
+
+        if type(action_space) == List or type(action_space) == Tuple:
+            self._action_space = Box(
+                low=action_space[0],
+                high=action_space[1],
+                dtype=np.int
+            )
+
         return self._action_space
     
     @property
@@ -129,6 +142,29 @@ class RLEnvMixIn:
         """Return the observation space"""
         return self._observation_space
 
+    @staticmethod
+    def check(observation_space, action_space, game_type="DRLNegotiation", strategy="ac_s"):
+        """
+
+        Args:
+            observation_space: observation space
+            action_space: action space
+            game_type: DRLNegotiation, DRLSCML
+            strategy: if game_type is DRLNegotiation, strategy is ac_s,
+
+        Returns:
+            bool
+        """
+        if game_type == "DRLNegotiation":
+            assert isinstance(observation_space, gym.spaces.Space), "Error Observation Space!"
+
+            if strategy == "ac_s":
+                assert isinstance(action_space, gym.spaces.Discrete), "Error Action Space!"
+            if strategy == "of_s":
+                assert isinstance(action_space, gym.spaces.Box), "Error Action Space, must be gym.spaces.B"
+
+        return True
+
 class DRLEnvMixIn:
     '''
     TODO: Some Mixin function of deep reinforcement learning
@@ -137,18 +173,27 @@ class DRLEnvMixIn:
         pass
 
 class NEnv(RLEnvMixIn, BaseEnv, gym.Env, ABC):
-    '''
+    """
         All of the deep reinforcement learning environment class inherit from this class
-        Abstract method
-            observation_space: set the attribut, _observation_space
-        
-    '''
+
+        Abstract method:
+
+            get_obs, how to design the observation space and based on it to get observatin is important for reinforcement learning
+            render, inherit from gym.Env, different game type will render different information, so set here abstract method here also.
+            close, the same as the method render
+    """
 
     def __init__(
         self,
         name: str = None,
         game: Optional[Game] = None,
     ):
+        """
+
+        Args:
+            name: the name of environment
+            game: negotiation game or scml game
+        """
         super(NEnv, self).__init__(
             name=name,
             game=game,
@@ -157,7 +202,14 @@ class NEnv(RLEnvMixIn, BaseEnv, gym.Env, ABC):
     
         self.n_step = None
         self.time = None
-    
+
+    def init(self):
+
+        self.n_step = 0
+        self.time = 0
+
+        print(f"Initial the environment {self.name}, game is {self.game.name}, ")
+
     @property
     def action_space(self):
         return self.get_action_space
@@ -213,8 +265,7 @@ class NEnv(RLEnvMixIn, BaseEnv, gym.Env, ABC):
         relates to the definition of observation space. 
         """
         # env reset
-        self.n_step = 0
-        self.time = 0
+        self.init()
 
         # game reset
         self.game.init_game()
@@ -233,22 +284,42 @@ class NEnv(RLEnvMixIn, BaseEnv, gym.Env, ABC):
 
 class NegotiationEnv(NEnv):
     '''
-    RL base class, default settings, ideas comes from ANegma
+    RL base class, default settings, ideas comes from ANegma,
+    can passed through drl method such as, dql, ppo1,
+    but just under the default settings defined in stable_baselines,
     '''
     def __init__(
         self,
         name: str = "NegotiationEnv",
         game: Optional[NegotiationGame] = None,
+        strategy: Union["ac_s", "of_s", "hybrid"] = "ac_s",
         observation_space: Union[List[List[int]], List[List[float]], None] = None,
         action_space: Optional[int] = None,
     ):
+        """
+
+        Args:
+            name: The name of negotiation environment
+            game: the name of negotiation game
+            strategy:
+                ac_s: acceptance strategy, when the learned strategy is acceptance strategy
+                of_s: offer/bidding strategy, when the learned strategy is offer/bidding strategy
+                hybrid: both acceptance and offer/bidding strategy, when both acceptance strategy and offer/bidding are learned,
+                in other words, both discrete action space and continuous action space are existed in the learned strategy.
+            observation_space: observation space used by model
+            action_space: action space used by model
+        """
+        if game is None:
+            game = NegotiationGame(
+                name="negotiation_game",
+                env=self
+            )
+
         super().__init__(
             name=name,
             game=game,
         )
-
-        from gym.spaces import Box, Discrete
-        import numpy as np 
+        self._strategy = strategy
 
         # TODO: set the observation space, for reinforcement learning
         # Default ANEGMA, single issue
@@ -257,17 +328,40 @@ class NegotiationEnv(NEnv):
 
         if observation_space is None:
             observation_space = [[300, 0, 300, 500], [550, 210, 350, 550]]
-        
+
         self.set_observation_space(observation_space=observation_space)
 
         # TODO: set the action space ....
-        # Default 5 actions: REJECT, ACCEPT, END, NO_RESPONSE, WAIT
         if action_space is None:
-            action_space = 5
-        
+            if self.strategy == "ac_s":
+                # Default 5 actions: REJECT, ACCEPT, END, NO_RESPONSE, WAIT
+                action_space = gym.spaces.Discrete(5)
+            elif self.strategy == "of_s":
+                action_space = gym.spaces.Box(
+                    low=self.game.format_issues[0],
+                    high=self.game.format_issues[1],
+                    dtype=np.int
+                )
+            elif self.strategy == "hybrid":
+                action_space = self.hybrid_action_space()
+
         self.set_action_space(action_space=action_space)
         # import pdb;pdb.set_trace()
-    
+
+        self.check(self.observation_space, self.action_space, self.game.game_type, self.strategy)
+
+    def hybrid_action_space(self):
+        raise NotImplementedError("The hybrid action_space is not Implemented in this Class, "
+                                  "please firstly implements method hybrid_action_space!"
+                                  "or set the strategy as ac_s or of_s!")
+
+    @property
+    def strategy(self):
+        return self._strategy
+
+    @strategy.setter
+    def strategy(self, strategy):
+        self._strategy = strategy
 
     def get_obs(self):
         """
@@ -284,18 +378,20 @@ class NegotiationEnv(NEnv):
     def close(self):
         pass
 
-class DRLNegotiationEnv(NegotiationEnv):
+class DRLNegotiationEnv(DRLEnvMixIn, NegotiationEnv):
     '''
-    DRL, common setting based on issues, 
-    
-    Train a negotiator that will based on the settings extracted from scml or defined by user.
-    issues will be defined in a game class, used here to generate the observation space and 
+    DRL, common setting based on issues, deep reinfoment learning,
+    Mainly responsible for hybrid discrete-continuous reinforcement learning
+
+    Train a negotiator that based on the settings extracted from scml or defined by user.
+    issues will be defined in a game class, used here in order to generate the observation space and
     action space that later will be used by train model.
     '''
     def __init__(
         self,
         name:str = 'DRLNegotiationEnv',
         game: Optional[DRLNegotiationGame] = None,
+        strategy: Union["ac_s", "of_s", "hybrid"] = "ac_s",
         observation_space: Union[List[List[int]], List[List[float]], None] = None,
         action_space: Optional[int] = None,
     ):
@@ -305,31 +401,37 @@ class DRLNegotiationEnv(NegotiationEnv):
 
         if game is None:
             game = DRLNegotiationGame(
-                name=name
+                name=name,
+                env=self,
             )
-        
+
+        # no user defined observation space and action space, use the default setting,
+        # get the issues from simulator and combine the current time as the observation space
+        # overwrite the super default observation_space and action space when the inputed observation_space or action_space is None.
+        if observation_space is None:
+            observation_space = [
+                game.format_issues[0] + [0],
+                game.format_issues[1] + [game.n_steps],
+            ]
+
+        if action_space is None:
+            action_space = 3
+
         super().__init__(
             name=name,
             game=game,
+            strategy=strategy,
             observation_space=observation_space,
             action_space=action_space,
         )
 
-
-        # no user defined observation space and action space, use the default setting, 
-        # get the issues from simulator and combine the current time as the observation space
-        # overwrite the super default observation_space and action space when the inputed observation_space or action_space is None.
-        
-        if observation_space is None:
-            observation_space = [
-                                    self.game.format_issues[0] + [0], 
-                                    self.game.format_issues[1] + [self.game.n_steps],
-                                ]
-            self.set_observation_space(observation_space=observation_space)
-        
-        if action_space is None:
-            action_space = 3
-            self.set_action_space(action_space=action_space)
+    def hybrid_action_space(self) -> gym.spaces.Space:
+        """
+        TODO: for hybrid action space
+        Returns:
+            gym.spaces.Space
+        """
+        pass
 
 
 
@@ -345,6 +447,7 @@ class MyNegotiationEnv(DRLNegotiationEnv):
         if game is None:
             game = MyDRLNegotiationGame(
                 name='my_drl_negotiation_game',
+                env=self
             )
 
         super().__init__(

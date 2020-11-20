@@ -9,11 +9,11 @@ from mynegotiator import MyDRLNegotiator, MyOpponentNegotiator
 
 def test_negotiation_env():
     """
-    Test NegotiationEnv, Default ANegma setting
+    Test NegotiationEnv, Default ANegma setting, using method based on reinforcement learning
     """
     from negmas import Issue
 
-    name = "TestNEnv"
+    name = "test_n_env"
     
     # game
     game = NegotiationGame(
@@ -22,14 +22,18 @@ def test_negotiation_env():
         competitors=[MyDRLNegotiator(), MyOpponentNegotiator()]
     )
 
+    # test acceptance strategy
     # env
     n_env = NegotiationEnv(
         name=name,
         game=game,
+        strategy="ac_s",
         observation_space=[[300, 0, 300, 500], [550, 210, 350, 550]],
         action_space=5
     )
-    
+    game.set_env(env=n_env)
+
+
     assert n_env.__str__() == f'The name of Env is {name}'
     
     # import pdb;pdb.set_trace()
@@ -38,8 +42,11 @@ def test_negotiation_env():
     else:
         assert n_env.game.__dict__["_name"] == game.__dict__["_name"]
 
-    # assert type(n_env.get_obs()) == list
-    # import pdb;pdb.set_trace()
+    print("Finish test of the Acceptance strategy!")
+    # test offer strategy
+
+
+    # test hybrid strategy
 
 def test_drl_negotiation_env():
     """
@@ -53,8 +60,9 @@ def test_drl_negotiation_env():
     assert drl_n_env.__str__() == f'The name of Env is {name}'
 
     # mainly test the step function inherit from gym.env
+    # design 1, [offer of my negotiator, time]
     init_obs = drl_n_env.reset()
-    assert init_obs == [[None, 0.0] for _ in drl_n_env.game.competitors]
+    assert init_obs == [0 for _ in drl_n_env.game.format_issues[0]] + [0.0]
 
     for _ in range(100):
         action = drl_n_env.action_space.sample()
@@ -85,5 +93,6 @@ def test_my_negotiation_env():
 
 
 if __name__ == "__main__":
+    test_negotiation_env()
     test_drl_negotiation_env()
     test_my_negotiation_env()
