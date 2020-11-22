@@ -202,6 +202,7 @@ class NEnv(RLEnvMixIn, BaseEnv, gym.Env, ABC):
     
         self.n_step = None
         self.time = None
+        self.init()
 
     def init(self):
 
@@ -236,8 +237,8 @@ class NEnv(RLEnvMixIn, BaseEnv, gym.Env, ABC):
         obs = self._get_obs()
 
         # meet the condition: done = True
-        if self.n_step >= getattr(self.game.ami, 'n_steps') \
-            or self.time >= float(getattr(self.game.ami.state, 'relative_time')):
+        if self.n_step >= self.game.ami.n_steps \
+            or self.time >= self.game.ami.time_limit:
             done = True
         
         if not self.game.get_life():
@@ -258,17 +259,20 @@ class NEnv(RLEnvMixIn, BaseEnv, gym.Env, ABC):
     def close(self):
         raise NotImplementedError('')
 
-    def reset(self):
+    def reset(self) -> object:
         """
         Resets the environment to an initial state and returns an initial observation,
         initial observation obtains negotiators' intial observation and others information 
         relates to the definition of observation space. 
+
+        Returns:
+            object: the initial observation
         """
         # env reset
         self.init()
 
         # game reset
-        self.game.init_game()
+        self.game.reset()
 
         # get initial observation
         init_obs = self._get_obs()

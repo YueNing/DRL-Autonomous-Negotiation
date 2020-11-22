@@ -8,14 +8,16 @@ from negmas import (
                         Outcome,
                         outcome_for,
                         outcome_as_tuple,
+                        MappingUtilityFunction,
                     )
 from negmas.generics import (
     ikeys,
     iget
 )
+from negmas.utilities import UtilityValue
 
 import random
-from typing import List, Optional, Type, Sequence
+from typing import List, Optional, Type, Sequence, Union, Tuple
 
 class ANegmaUtilityFunction(UtilityFunction):
     """
@@ -25,16 +27,32 @@ class ANegmaUtilityFunction(UtilityFunction):
             self,
             name = None,
             delta: Optional[float] = 0.6,
-            rp=None,
+            rp: Union[Tuple, None] = None,
             ip=None,
             max_t=None,
-            factor="relative_time",
+            factor="step",
+            reserved_value: UtilityValue=float("-inf"),
             ami= None
     ):
+        """
+
+        Args:
+            name:
+            delta: the hyper parameter of influence of time for utility
+            rp: reserved proposal
+            ip: intial proposal, set by user when instance utility function or set it by negotiator
+            max_t: the maximum end time for this negotiator
+            factor: default is "relative time" when max_t is also relative time,
+                    absolute time when max_t is also absolute time.
+            reserved_value: when offer is none, return reserved value
+            ami: agent mechanism interface
+        """
         super(ANegmaUtilityFunction, self).__init__(
             name=name,
-            ami=ami
+            ami=ami,
+            reserved_value=reserved_value
         )
+
         self.delta = delta
         self.rp = rp
         self.ip = ip
@@ -43,9 +61,9 @@ class ANegmaUtilityFunction(UtilityFunction):
 
     def eval(self, offer: "Outcome") -> UtilityValue:
         if self.ami:
-            return ((float(self.rp) - float(offer[0])) / (float(self.rp) - float(self.ip))) * \
-                    (float(getattr(self.ami.state, self.factor)) / float(self.max_t)) ** self.delta
-        return
+            return ((float(self.rp[0]) - float(offer[0])) / (float(self.rp[0]) - float(self.ip[0]))) * \
+                    ((getattr(self.ami.state, self.factor)+1.0) / float(self.max_t)) ** self.delta
+        return self.reserved_value
 
     def xml(self, issues: List[Issue]) -> str:
         pass
@@ -87,6 +105,8 @@ class MyUtilityFunction(UtilityFunction):
         reserved_value: UtilityValue = float("-inf"),
         ami: AgentMechanismInterface = None, 
         outcome_type: Optional[Type]= None,
+        ip = None,
+        rp = None,
 
 ) -> None:
         super().__init__(
@@ -95,6 +115,8 @@ class MyUtilityFunction(UtilityFunction):
         self.weights = weights
         self.delta = delta
         self.factor = factor
+        self.ip = ip
+        self.rp = rp
     
     def eval(self, offer: Optional[Outcome]) -> Optional[UtilityValue]:
         '''
@@ -132,3 +154,5 @@ class MyUtilityFunction(UtilityFunction):
 
     def __str__(self):
         return f"w: {self.weights}, delta: {self.delta}, factor: {self.factor}"
+
+MyOpponentUtilityFunction = MappingUtilityFunction(lambda x: random.random() * x[0])

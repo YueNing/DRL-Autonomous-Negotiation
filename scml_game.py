@@ -124,7 +124,7 @@ class Game(ABC):
             _.reset()
 
         # create a session, negotiation mechanism or scml anac
-        self.create_session()
+        self._session = self.create_session()
         self.add_competitors(competitors=self.competitors)
 
         # init all argumente
@@ -236,7 +236,7 @@ class Game(ABC):
         pass
 
     def reset(self):
-        self._session = self.create_session()
+        self.init_game()
     
     def seed(self, np_random=None):
         
@@ -319,8 +319,11 @@ class NegotiationGame(DRLGameMixIn, Game):
 
 
     def add_competitor(self, competitor: Union[MyDRLNegotiator, MyOpponentNegotiator]):
+        competitor.reset(env=self.env)
+
         self.session.add(competitor)
-        competitor.set_env(env=self.env)
+        # competitor.set_env(env=self.env)
+
 
     def step_forward(self, action=None, competitor: Optional[DRLNegotiator] = None):
         
@@ -341,38 +344,56 @@ class NegotiationGame(DRLGameMixIn, Game):
             result = self.session.state
 
             # reward
-            reward = 0
-            if competitor.time <= competitor.maximum_time:
+            if self.env.strategy == "ac_s":
+                # reward design for acceptance strategy
+                reward = 0
+                if competitor.time <= competitor.maximum_time:
 
-                if competitor.action == ResponseType.ACCEPT_OFFER:
-                    if result.agreement:
-                        reward = competitor.get_ufun(result.agreement)
-                        reward += EXTRA_REWARD
-                    else:
-                        reward = 0
+                    if competitor.action == ResponseType.ACCEPT_OFFER:
+                        if result.agreement:
+                            if "_rp" in competitor.__dict__:
+                                if competitor.ufun(result.agreement) >= competitor.ufun(competitor._rp):
+                                    reward = competitor.get_ufun(result.agreement)
+                                    reward += EXTRA_REWARD
+                                else:
+                                    reward = -1
+                            else:
+                                reward = competitor.get_ufun(result.agreement)
+                        else:
+                            reward = 0
 
-                elif competitor.action == ResponseType.REJECT_OFFER:
-                    # when competitor reject the offer
-                    if competitor.proposal_offer:
-                        # proposal a meaningful offer
-                        # calculate the reward
-                        reward = competitor.get_ufun(competitor.proposal_offer)
+                    elif competitor.action == ResponseType.REJECT_OFFER:
+                        # when competitor reject the offer
+                        if competitor.proposal_offer:
+                            # proposal a meaningful offer
+                            # calculate the reward
+                            if "_rp" in competitor.__dict__:
+                                if competitor.ufun(competitor.proposal_offer) >= competitor.ufun(competitor._rp):
+                                    reward = competitor.get_ufun(competitor.proposal_offer)
+                                else:
+                                    reward = -1
+                            else:
+                                reward = competitor.get_ufun(competitor.proposal_offer)
+                            # competitor.set_proposal_offer(offer=None)
+                        else:
+                            # reject the offer, but not proposal a meanful offer
+                            reward = -1
 
-                        competitor.set_proposal_offer(offer=None)
-                    else:
-                        # reject the offer, but not proposal a meanful offer
+                    elif competitor.action == ResponseType.END_NEGOTIATION or \
+                        competitor.action == ResponseType.NO_RESPONSE:
+
                         reward = -1
 
-                elif competitor.action == ResponseType.END_NEGOTIATION or \
-                    competitor.action == ResponseType.NO_RESPONSE:
+                else:
+                    reward = 0
 
-                    reward = -1
-
+                return reward
+            elif self.env.strategy == "of_s":
+                pass
+            elif self.env.strategy == "hybrid":
+                pass
             else:
-                reward = 0
-
-            return reward
-                    
+                raise NotImplementedError(f"Design of reward based on {self.env.strategy} is not Implemented!")
 
     def step_competitors(self, action=None, competitor: Optional[DRLNegotiator] = None):
         """

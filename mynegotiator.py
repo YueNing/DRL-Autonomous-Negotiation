@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod, abstractproperty
 import gym
 
 import numpy as np
-from typing import Optional
+from typing import Optional, Union
 from negmas import Action #  An action that an `Agent` can execute in a `World` through the `Simulator`
 from negmas import (
                         Issue, 
@@ -29,7 +29,7 @@ from negmas import (
     
 import random
 from typing import List, Optional, Type, Sequence
-from myutilityfunction import MyUtilityFunction
+from myutilityfunction import MyUtilityFunction, ANegmaUtilityFunction, MyOpponentUtilityFunction
 
 __all__ = [
     "DRLMixIn",
@@ -104,12 +104,18 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
     def __init__(
         self, 
         name: str = 'drl_negotiator',
-        ufun: Optional[UtilityFunction] = None,
-        env: "NEnv" = None, 
+        ufun: Union[UtilityFunction, MyUtilityFunction, ANegmaUtilityFunction, None] = None,
+        env: "NEnv" = None,
+        # presort = False,
+        # For ANegma, single issue problem
+        init_proposal = True,
+        rp_range = None,
+        ip_range = None,
     ):
         super().__init__(
             name = name,
-            ufun=ufun
+            ufun=ufun,
+            # presort=presort,
         )
         if env is not None:
             self.set_env(env=env)
@@ -118,14 +124,33 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         self._action: ResponseType = None
         self._proposal_offer = None
         self._current_offer = None
-        
+        self.init_proposal = init_proposal
+        if self.init_proposal:
+            self._ip = None
+            self._rp = None
+            self._rp_range = rp_range
+            self._ip_range = ip_range
+        # if "ip" in ufun.__dict__ and ufun.__dict__['ip'] is not None:
+        #     self._ip = self.ufun.ip
 
     def reset(self, env=None):
+        self._dissociate()
         if env:
             self.set_env(env=env)
         self._action = None
         self._proposal_offer = None
         self._current_offer_offer = None
+        if self.init_proposal:
+            self._ip = Issue.sample(issues=[Issue(self._ip_range)], n_outcomes=1, astype=tuple)[0]
+            self._rp = Issue.sample(issues=[Issue(self._rp_range)], n_outcomes=1, astype=tuple)[0]
+
+            if "ip" in self.ufun.__dict__:
+                self.ufun.ip = self._ip
+                self.set_proposal_offer(self._ip)
+
+            if "rp" in self.ufun.__dict__:
+                self.ufun.rp = self._rp
+
 
     @property
     def ufun(self):
@@ -180,10 +205,16 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         return self._proposal_offer
     
     def set_proposal_offer(self, offer: "Outcome" = None):
+        if self.proposal_offer is None and offer is not None and self.ufun.ip is None:
+            self.ufun.ip = offer
+
         self._proposal_offer = offer
     
     def respond(self, state: MechanismState, offer: "Outcome") -> "ResponseType":
-        return super(DRLNegotiator, self).respond(state=state, offer=offer)
+        print(f"current offer of {self.name} is {offer}")
+        action = super(DRLNegotiator, self).respond(state=state, offer=offer)
+        print(f"\033[1;32m response of {self.name} is {action} \033[0m")
+        return action
     
     def propose(self, state: MechanismState) -> Optional["Outcome"]:
         '''
@@ -207,9 +238,15 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         '''
         # assert self.action == ResponseType.REJECT_OFFER, "somethings error, action is not REJECT_OFFER, but go into function propose!"
 
+        if self.init_proposal:
+            self.init_proposal = False
+            print(f"\033[1;35m initial propose of {self.name} is {self.proposal_offer} \033[0m")
+            return self.proposal_offer
+
         offer = super().propose(state=state)
 
         self.set_proposal_offer(offer)
+        print(f"\033[1;35m propose of {self.name} is {offer} \033[0m")
 
         return offer
 
@@ -240,7 +277,11 @@ class MyDRLNegotiator(DRLNegotiator):
         is_seller: bool = True,
         ufun: Optional[UtilityFunction] = None,
         weights: Optional[List[List]] = [(0, 0.25, 1), (0, -0.5, -0.8)],
-        env = None
+        env = None,
+        # for Anegma, single issue,
+        init_proposal:bool = True,
+        rp_range = None,
+        ip_range = None,
     ):
         
         if ufun is None:
@@ -254,7 +295,10 @@ class MyDRLNegotiator(DRLNegotiator):
         super().__init__(
             name=name,
             ufun=ufun,
-            env=env
+            env=env,
+            init_proposal=init_proposal,
+            rp_range=rp_range,
+            ip_range=ip_range
         )
 
     @property
@@ -274,13 +318,16 @@ class MyDRLNegotiator(DRLNegotiator):
         self.set_current_offer(offer)
         if self.action is None:
             if self.env is not None:
-                return ResponseType(self.env.action_space.sample())
-
+                action = ResponseType(self.env.action_space.sample())
+                print(f"\033[1;32m response of {self.name} is {action} \033[0m")
+                return action
+            print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
             return ResponseType.REJECT_OFFER
 
         if isinstance(self.action, ResponseType):
+            print(f"\033[1;32m response of {self.name} is {self.action} \033[0m!")
             return self.action
-
+        print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
         return ResponseType.REJECT_OFFER
 
 
@@ -290,7 +337,7 @@ class MyOpponentNegotiator(DRLNegotiator):
         self,
         name: str = 'my_opponent_negotiator',
         is_seller: bool = True,
-        ufun: Optional[UtilityFunction] = MappingUtilityFunction(lambda x: random.random() * x[0]),
+        ufun: Optional[UtilityFunction] = MyOpponentUtilityFunction,
         env = None
     ):
         if ufun is None:
@@ -299,8 +346,8 @@ class MyOpponentNegotiator(DRLNegotiator):
             else:
                 ufun = MyUtilityFunction(weights=(0, -0.5, -0.8))
 
-        super().__init__(name=name, ufun=ufun, env=env)
+        super().__init__(name=name, ufun=ufun, env=env, init_proposal=False)
     
     def respond(self, state: MechanismState, offer: "Outcome") -> "ResponseType":
         self.set_current_offer(offer=offer)
-        super(MyOpponentNegotiator, self).respond(state=state, offer=offer)
+        return super(MyOpponentNegotiator, self).respond(state=state, offer=offer)
