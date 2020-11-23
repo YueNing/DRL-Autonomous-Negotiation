@@ -347,7 +347,7 @@ class NegotiationGame(DRLGameMixIn, Game):
             if self.env.strategy == "ac_s":
                 # reward design for acceptance strategy
                 reward = 0
-                if competitor.time <= competitor.maximum_time:
+                if competitor.time < competitor.maximum_time:
 
                     if competitor.action == ResponseType.ACCEPT_OFFER:
                         if result.agreement:
@@ -389,11 +389,19 @@ class NegotiationGame(DRLGameMixIn, Game):
 
                 return reward
             elif self.env.strategy == "of_s":
-                pass
+                if competitor.time < competitor.maximum_time:
+                    reward = competitor.ufun(action)
+                    if result.agreement:
+                        reward += EXTRA_REWARD
+                else:
+                    reward = -1
+
+                return reward
+
             elif self.env.strategy == "hybrid":
-                pass
-            else:
                 raise NotImplementedError(f"Design of reward based on {self.env.strategy} is not Implemented!")
+            else:
+                raise ValueError(f"Design of reward based on {self.env.strategy} is error!")
 
     def step_competitors(self, action=None, competitor: Optional[DRLNegotiator] = None):
         """
@@ -428,7 +436,7 @@ class DRLNegotiationGame(NegotiationGame):
     ):
         if competitors is None:
             competitors = [
-                MyDRLNegotiator(name="c1", is_seller=False, env=env),
+                MyDRLNegotiator(name="c1", is_seller=False, env=env, init_proposal=False),
                 MyOpponentNegotiator(name="c2", env=env)
             ]
         

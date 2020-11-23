@@ -123,10 +123,10 @@ class RLEnvMixIn:
         if type(action_space) == Discrete or type(action_space) == Box:
             self._action_space = action_space
 
-        if type(action_space) == List or type(action_space) == Tuple:
+        if type(action_space) == list or type(action_space) == tuple:
             self._action_space = Box(
-                low=action_space[0],
-                high=action_space[1],
+                low=np.array(action_space[0]),
+                high=np.array(action_space[1]),
                 dtype=np.int
             )
 

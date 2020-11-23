@@ -130,7 +130,8 @@ class MyUtilityFunction(UtilityFunction):
 
         if self.ami:
             # the ami is not None, means, can use the factor defined by user!
-            return self.delta**(getattr(self.ami.state, self.factor) - 1) * sum(w * v for w, v in zip(self.weights, offer))
+            # return self.delta**(getattr(self.ami.state, self.factor) - 1) * sum(w * v for w, v in zip(self.weights, offer))
+            return sum(w * v for w, v in zip(self.weights, offer))
         else:
             return sum(w * v for w, v in zip(self.weights, offer))
     

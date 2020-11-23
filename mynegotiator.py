@@ -66,7 +66,8 @@ class CommonMixIn:
     
     @property
     def time(self):
-        return self._ami._mechanism.time
+        # compare this time with the maximum_time, relative time
+        return self._ami._mechanism.relative_time
     
     @property
     def maximum_time(self):
@@ -111,6 +112,8 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         init_proposal = True,
         rp_range = None,
         ip_range = None,
+        # model settings
+        train: bool = True,
     ):
         super().__init__(
             name = name,
@@ -133,6 +136,8 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         # if "ip" in ufun.__dict__ and ufun.__dict__['ip'] is not None:
         #     self._ip = self.ufun.ip
 
+        self.train = train
+
     def reset(self, env=None):
         self._dissociate()
         if env:
@@ -140,6 +145,7 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         self._action = None
         self._proposal_offer = None
         self._current_offer_offer = None
+
         if self.init_proposal:
             self._ip = Issue.sample(issues=[Issue(self._ip_range)], n_outcomes=1, astype=tuple)[0]
             self._rp = Issue.sample(issues=[Issue(self._rp_range)], n_outcomes=1, astype=tuple)[0]
@@ -150,6 +156,8 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
 
             if "rp" in self.ufun.__dict__:
                 self.ufun.rp = self._rp
+
+        self.end_time = 1
 
 
     @property
@@ -188,7 +196,10 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         self._action = ResponseType(action)
 
     def set_current_action(self, action=None):
-        self._action = ResponseType(action)
+        if self.env.strategy == "ac_s":
+            self._action = ResponseType(action)
+        elif self.env.strategy == "of_s":
+            self._action = tuple(action)
 
     def get_current_action(self):
         return self._action
@@ -211,7 +222,7 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         self._proposal_offer = offer
     
     def respond(self, state: MechanismState, offer: "Outcome") -> "ResponseType":
-        print(f"current offer of {self.name} is {offer}")
+        print(f"\ncurrent offer of {self.name} is {offer}")
         action = super(DRLNegotiator, self).respond(state=state, offer=offer)
         print(f"\033[1;32m response of {self.name} is {action} \033[0m")
         return action
@@ -282,7 +293,22 @@ class MyDRLNegotiator(DRLNegotiator):
         init_proposal:bool = True,
         rp_range = None,
         ip_range = None,
+        # train model
+        train: bool = True,
     ):
+        """
+
+        Args:
+            name:
+            is_seller:
+            ufun:
+            weights:
+            env:
+            init_proposal: initial proposal
+            rp_range: if init_proposal is True, must set the rp_range
+            ip_range: if init_proposal is True, must set the ip_range
+            train: train or predict
+        """
         
         if ufun is None:
             if is_seller:
@@ -298,16 +324,31 @@ class MyDRLNegotiator(DRLNegotiator):
             env=env,
             init_proposal=init_proposal,
             rp_range=rp_range,
-            ip_range=ip_range
+            ip_range=ip_range,
+            train=train
         )
 
     @property
     def get_weights(self) -> List:
         return self._weights
-    
         
-    # def propose(self):
-    #     pass
+    def propose(self, state: MechanismState) -> Optional["Outcome"]:
+        if self.train:
+            if "_env" in self.__dict__:
+                if self.env.strategy == "ac_s":
+                    return super().propose(state=state)
+                elif self.env.strategy == "of_s":
+                    if self.action in self.ami.outcomes:
+                        print(f"\033[1;35m propose of {self.name} is {self.action} \033[0m")
+                        return self.action
+                    else:
+                        raise ValueError(f"The propose in {self.env.strategy} action {self.action} is error!")
+                elif self.env.strategy == "hybrid":
+                    raise NotImplementedError(f"The propose in {self.env.strategy} is not implemented!")
+            else:
+                return super(MyDRLNegotiator, self).propose(state=state)
+        else:
+            raise NotImplementedError(f"The propose of {self.name} in predict is not implemented!")
 
     def respond(self, state: MechanismState, offer: "Outcome") -> "ResponseType":
         """
@@ -315,20 +356,36 @@ class MyDRLNegotiator(DRLNegotiator):
             Use the action trained by drl model if it existes!
             Otherwise always reject the offer from opponent!
         """
-        self.set_current_offer(offer)
-        if self.action is None:
-            if self.env is not None:
-                action = ResponseType(self.env.action_space.sample())
-                print(f"\033[1;32m response of {self.name} is {action} \033[0m")
-                return action
-            print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
-            return ResponseType.REJECT_OFFER
+        print(f"\ncurrent offer of {self.name} is {offer}")
+        if self.train:
+            if "_env" in self.__dict__:
+                if self.env.strategy == "ac_s":
+                    self.set_current_offer(offer)
+                    if self.action is None:
+                        if self.env is not None:
+                            action = ResponseType(self.env.action_space.sample())
+                            print(f"\033[1;32m response of {self.name} is {action} \033[0m")
+                            return action
+                        print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
+                        return ResponseType.REJECT_OFFER
 
-        if isinstance(self.action, ResponseType):
-            print(f"\033[1;32m response of {self.name} is {self.action} \033[0m!")
-            return self.action
-        print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
-        return ResponseType.REJECT_OFFER
+                    if isinstance(self.action, ResponseType):
+                        print(f"\033[1;32m response of {self.name} is {self.action} \033[0m!")
+                        return self.action
+                    print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
+                    return ResponseType.REJECT_OFFER
+                elif self.env.strategy == "of_s":
+                    print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
+                    return ResponseType.REJECT_OFFER
+                elif self.env.strategy == "hybrid":
+                    raise NotImplementedError(f"The reponse of {self.name} in {self.env.strategy} is not implemented!")
+                else:
+                    raise ValueError(f"The reponse of {self.name} in {self.env.strategy} is illegal!")
+            else:
+                print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
+                return ResponseType.REJECT_OFFER
+        else:
+            raise NotImplementedError(f"The reponse of {self.name} in predict is not implemented!")
 
 
 class MyOpponentNegotiator(DRLNegotiator):

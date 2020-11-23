@@ -30,11 +30,11 @@ def test_negotiation_env():
         issues = config.get("issues"),
         competitors=[MyDRLNegotiator(
             name="my_drl_negotiator",
-            # ufun=MyUtilityFunction(weights=(-0.25,)),
-            ufun=ANegmaUtilityFunction(
-                name="anegma_utility_function",
-                max_t=config.get("max_t"),
-            ),
+            ufun=MyUtilityFunction(weights=(-0.35,)),
+            # ufun=ANegmaUtilityFunction(
+            #     name="anegma_utility_function",
+            #     max_t=config.get("max_t"),
+            # ),
             rp_range=config.get("rp_range"),
             ip_range=config.get("ip_range"),
         ), MyOpponentNegotiator(
@@ -74,14 +74,14 @@ def test_negotiation_env():
         if done:
             break
 
-    print("Finish test of the Acceptance strategy!")
+    print("Finish test of the Acceptance strategy!\n")
 
     # test offer strategy
     print("Begining test of the Offer/bidding strategy")
 
     # dynamic changing the attributes in order to switch the strategy
     strategy = "of_s"
-    action_space = [config.get("issues")[0].values[0], config.get("issues")[0].values[1]]
+    action_space = [[config.get("issues")[0].values[0],], [config.get("issues")[0].values[1],]]
 
     n_env.set_action_space(action_space=action_space)
     n_env.strategy = strategy
@@ -96,8 +96,6 @@ def test_negotiation_env():
             break
 
     print("Finish test of the Offer/bidding strategy!")
-
-
     # test hybrid strategy
 
 def test_drl_negotiation_env():

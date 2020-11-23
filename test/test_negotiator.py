@@ -49,7 +49,7 @@ def test_drl_negotiator():
 
     # Test the basic attributes and functions
     # None
-    assert  drl_negotiator.env is None
+    assert  "_env" not in drl_negotiator.__dict__
     assert  drl_negotiator.action is None
 
     #TODO: initial value and reserved value
@@ -57,8 +57,10 @@ def test_drl_negotiator():
     # Test the respond and propose of negotiator
     offer = Issue.sample(issues, 1)
 
-    # Action: None, Env: None
+    # Test acceptance strategy
+    # Action: None, Env: None, Train: True
     # env is None, so the respond is always ResponseType.REJECT_OFFER
+    drl_negotiator.train = True
     respond = drl_negotiator.respond(mechanism.state, offer[0])
     assert  type(respond) == ResponseType
     if respond == ResponseType.REJECT_OFFER:
@@ -68,8 +70,9 @@ def test_drl_negotiator():
     else:
         assert False, "Reponse must be ResponseType.Reject_OFFER!"
 
-    # Action: None, Env: not None
+    # Action: None, Env: not None, Train: True
     # Env will automatically set the issues, games and so on attributes.
+    drl_negotiator.train = True
     name = "drl_negotiation_env"
     n_env = DRLNegotiationEnv(
         name=name
@@ -84,12 +87,15 @@ def test_drl_negotiator():
     drl_negotiator.reset(env=n_env)
     action = drl_negotiator.env.action_space.sample()
 
-    drl_negotiator.set_current_action(1)
+    drl_negotiator.set_current_action(action)
     assert type(drl_negotiator.action) == ResponseType
     assert type(respond) == ResponseType, "Type of response must be ResponseType!"
 
     respond = drl_negotiator.respond(mechanism.state, offer[0])
     assert respond == drl_negotiator.action
+
+    # Test Offer/bidding strategy
+
 
 def test_opponent_negotiator():
     from mynegotiator import MyOpponentNegotiator
