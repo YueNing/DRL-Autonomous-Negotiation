@@ -1,4 +1,5 @@
 from scml_env import DRLNegotiationEnv, NEnv
+from datetime import datetime
 
 MODEL_NEGOTIATION = [
     "DQN",
@@ -17,8 +18,9 @@ def train_negotiation(plot=True, model="DQN", env=None, monitor=True):
     from stable_baselines import logger
     from stable_baselines.common.base_class import BaseRLModel
     from stable_baselines.common.callbacks import EvalCallback
+    from stable_baselines.common.policies import MlpPolicy
 
-    NUM_TIMESTEPS = int(1000)
+    NUM_TIMESTEPS = int(10000)
     SEED = 721
     EVAL_FREQ = 100
     EVAL_EPISODES = 2
@@ -26,10 +28,10 @@ def train_negotiation(plot=True, model="DQN", env=None, monitor=True):
 
     logger.configure(folder=LOGDIR)
     
-    if env is None:
-        env = DRLNegotiationEnv(
-            name="default_negotiation_env"
-        )
+    # if env is None:
+    #     env = DRLNegotiationEnv(
+    #         name="default_negotiation_env"
+    #     )
     
     env = env
 
@@ -45,6 +47,7 @@ def train_negotiation(plot=True, model="DQN", env=None, monitor=True):
         return env
 
     if model == "DQN":
+        # train the acceptance strategy
         from stable_baselines import DQN
         env = _monitor_env(
             env=env,
@@ -56,7 +59,8 @@ def train_negotiation(plot=True, model="DQN", env=None, monitor=True):
             env,
             learning_rate=1e-3,
             prioritized_replay=True,
-            verbose=1
+            verbose=1,
+            tensorboard_log=os.path.join(LOGDIR, "tensorboard")
         )
 
         eval_callback = EvalCallback(
@@ -68,32 +72,31 @@ def train_negotiation(plot=True, model="DQN", env=None, monitor=True):
         
         env.close()
 
-    
+        if plot:
+            import matplotlib.pyplot as plt
+            from stable_baselines import results_plotter
+
+            results_plotter.plot_results(
+                [LOGDIR],
+                NUM_TIMESTEPS,
+                results_plotter.X_TIMESTEPS,
+                f"{model}_negotiation"
+            )
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            plt.savefig(
+                f"{now}_{model}_result.png",
+                dpi=600
+            )
+
     if model == "PPO1":
         from stable_baselines.ppo1 import PPO1
-        # TODO:
+        # TODO: train the offer/bidding strategy
+        model = PPO1(MlpPolicy, env, verbose=1, tensorboard_log=os.path.join(LOGDIR, "tensorboard"))
+        model.learn(total_timesteps=100000)
+        model.save(os.path.join(LOGDIR, "final_model"))
 
-    if plot:
-        import matplotlib.pyplot as plt
-        from stable_baselines import results_plotter
-
-        results_plotter.plot_results(
-            [LOGDIR],
-            NUM_TIMESTEPS,
-            results_plotter.X_TIMESTEPS,
-            f"{model}_negotiation"
-        )
-        
-        plt.savefig(
-            f"{model}_result.png",
-            dpi=600
-        )
-    
     return True, f"Finished! you can get the result at {LOGDIR}"
-        
-    
-
-    
 
 def train_scml():
     pass

@@ -35,7 +35,7 @@ def test_my_utility_function():
             ami=ami
         )
         offers = Issue.sample(issues=issues, n_outcomes=1, astype=tuple)
-        assert ufun(offers[0]) == ufun.delta**(getattr(ami.state, ufun.factor) - 1) * sum(w * v for w, v in zip(_, offers[0]))
+        assert ufun(offers[0]) == sum(w * v for w, v in zip(_, offers[0]))
         assert ufun.issues == issues
 
         # Test the utility of outcomes
@@ -81,7 +81,8 @@ def test_anegma_utility_function():
         offers = Issue.sample(issues=issues, n_outcomes=1, astype=tuple)
         mechanism.step()
         ufun = anegma_utility_function(offers[0])
-        assert ufun == ((float(rp) - float(offers[0][0])) / (float(rp) - float(ip))) * (float(getattr(ami.state, anegma_utility_function.factor)) / float(max_t)) ** delta
+        result = ((float(rp) - float(offers[0][0])) / (float(rp) - float(ip))) * (float(getattr(ami.state, anegma_utility_function.factor)+1.0) / float(max_t)) ** delta
+        assert ufun ==result
         print(ufun)
 
 if __name__ == '__main__':

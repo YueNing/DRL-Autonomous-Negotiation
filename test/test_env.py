@@ -35,8 +35,9 @@ def test_negotiation_env():
             #     name="anegma_utility_function",
             #     max_t=config.get("max_t"),
             # ),
-            rp_range=config.get("rp_range"),
-            ip_range=config.get("ip_range"),
+            init_proposal=False,
+            # rp_range=config.get("rp_range"),
+            # ip_range=config.get("ip_range"),
         ), MyOpponentNegotiator(
             name="my_opponent_negotiator",
             ufun= MyUtilityFunction(weights=(0.25, ))
@@ -46,7 +47,7 @@ def test_negotiation_env():
 
     # env
     observation_space = observation_space_anegma(config)
-    action_space = 5
+    action_space = 3
     strategy = "ac_s"
     n_env = NegotiationEnv(
         name=name,
@@ -55,7 +56,7 @@ def test_negotiation_env():
         observation_space=observation_space,
         action_space=action_space
     )
-    game.set_env(env=n_env)
+    # game.set_env(env=n_env)
 
     # test of basic attributes
     assert n_env.__str__() == f'The name of Env is {name}'
@@ -98,51 +99,51 @@ def test_negotiation_env():
     print("Finish test of the Offer/bidding strategy!")
     # test hybrid strategy
 
-def test_drl_negotiation_env():
-    """
-    Test DLRNegotiationEnv, based on the settings comes from scml Negotiation
-    """
-    name = "test_drl_negotiation_env"
-    drl_n_env = DRLNegotiationEnv(
-        name=name,
-    )
-    # import pdb;pdb.set_trace()
-    assert drl_n_env.__str__() == f'The name of Env is {name}'
-
-    # mainly test the step function inherit from gym.env
-    # design 1, [offer of my negotiator, time]
-    init_obs = drl_n_env.reset()
-    assert init_obs == [0 for _ in drl_n_env.game.format_issues[0]] + [0.0]
-
-    for _ in range(100):
-        action = drl_n_env.action_space.sample()
-        obs, reward, done, info = drl_n_env.step(action=action)
-        if done:
-            break
-
-
+# def test_drl_negotiation_env():
+#     """
+#     Test DLRNegotiationEnv, based on the settings comes from scml Negotiation
+#     """
+#     name = "test_drl_negotiation_env"
+#     drl_n_env = DRLNegotiationEnv(
+#         name=name,
+#     )
+#     # import pdb;pdb.set_trace()
+#     assert drl_n_env.__str__() == f'The name of Env is {name}'
+#
+#     # mainly test the step function inherit from gym.env
+#     # design 1, [offer of my negotiator, time]
+#     init_obs = drl_n_env.reset()
+#     assert init_obs == [0 for _ in drl_n_env.game.format_issues[0]] + [0.0]
+#
+#     for _ in range(100):
+#         action = drl_n_env.action_space.sample()
+#         obs, reward, done, info = drl_n_env.step(action=action)
+#         if done:
+#             break
 
 
-def test_my_negotiation_env():
-    name = "TestMyNEnv"
-    
-    my_n_env = MyNegotiationEnv(
-        name=name
-    )
 
-    # assert test used by pytest
-    assert my_n_env.__str__() == f'The name of Env is {name}'
-    assert isinstance(
-        my_n_env.game,
-        MyDRLNegotiationGame
-    )
-    
-    # pdb Test Block 
-    # import pdb
-    # pdb.set_trace()
+
+# def test_my_negotiation_env():
+#     name = "TestMyNEnv"
+#
+#     my_n_env = MyNegotiationEnv(
+#         name=name
+#     )
+#
+#     # assert test used by pytest
+#     assert my_n_env.__str__() == f'The name of Env is {name}'
+#     assert isinstance(
+#         my_n_env.game,
+#         MyDRLNegotiationGame
+#     )
+#
+#     # pdb Test Block
+#     # import pdb
+#     # pdb.set_trace()
 
 
 if __name__ == "__main__":
     test_negotiation_env()
-    test_drl_negotiation_env()
-    test_my_negotiation_env()
+    # test_drl_negotiation_env()
+    # test_my_negotiation_env()

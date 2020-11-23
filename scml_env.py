@@ -60,6 +60,7 @@ class BaseEnv(ABC):
         # super().__init__()
         self._name = name
         self._game = game
+        self._game.set_env(self)
 
     def __str__(self):
         return f'The name of Env is {self.name}'
@@ -209,7 +210,7 @@ class NEnv(RLEnvMixIn, BaseEnv, gym.Env, ABC):
         self.n_step = 0
         self.time = 0
 
-        print(f"Initial the environment {self.name}, game is {self.game.name}, ")
+        # print(f"Initial the environment {self.name}, game is {self.game.name}, ")
 
     @property
     def action_space(self):
@@ -224,7 +225,8 @@ class NEnv(RLEnvMixIn, BaseEnv, gym.Env, ABC):
         raise NotImplementedError("Error: function get_obs in DRLEnvMixIn has not been implemented!")
         
     def _get_obs(self) -> "gym.spaces.Box.sample()":
-        return self.get_obs()
+        obs: List = self.get_obs()
+        return np.array(obs)
 
     def step(self, action: "gym.spaces.Discrete.sample" = None):
         done = False
@@ -275,9 +277,10 @@ class NEnv(RLEnvMixIn, BaseEnv, gym.Env, ABC):
         self.game.reset()
 
         # get initial observation
-        init_obs = self._get_obs()
+        init_obs: np.array = self._get_obs()
 
         return init_obs
+
 
 
 ####################################################################################################
@@ -371,10 +374,13 @@ class NegotiationEnv(NEnv):
         """
         Condition 1: For negotiator perspective,
         Returns:
-            obs, [quantity, ]
+            obs, [offer, time]
+            Just return the my negotiator observation,
+            while set the game as competition firstly, information less
         """
-        obs = self.game.get_observation()
-        return obs
+        obs: List = self.game.get_observation()
+
+        return obs[0]
 
     def render(self, mode="human", close=False):
         pass

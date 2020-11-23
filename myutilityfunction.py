@@ -61,7 +61,7 @@ class ANegmaUtilityFunction(UtilityFunction):
 
     def eval(self, offer: "Outcome") -> UtilityValue:
         if self.ami:
-            return ((float(self.rp[0]) - float(offer[0])) / (float(self.rp[0]) - float(self.ip[0]))) * \
+            return ((float(self.rp) - float(offer[0])) / (float(self.rp) - float(self.ip))) * \
                     ((getattr(self.ami.state, self.factor)+1.0) / float(self.max_t)) ** self.delta
         return self.reserved_value
 

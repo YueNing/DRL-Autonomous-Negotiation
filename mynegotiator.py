@@ -30,6 +30,7 @@ from negmas import (
 import random
 from typing import List, Optional, Type, Sequence
 from myutilityfunction import MyUtilityFunction, ANegmaUtilityFunction, MyOpponentUtilityFunction
+from utils import normalize_observation, reverse_normalize_action
 
 __all__ = [
     "DRLMixIn",
@@ -120,8 +121,8 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
             ufun=ufun,
             # presort=presort,
         )
-        if env is not None:
-            self.set_env(env=env)
+        # if env is not None:
+        self.set_env(env=env)
 
         # Must set it
         self._action: ResponseType = None
@@ -157,7 +158,7 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
             if "rp" in self.ufun.__dict__:
                 self.ufun.rp = self._rp
 
-        self.end_time = 1
+        self.end_time = 0.90
 
 
     @property
@@ -170,7 +171,7 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
     
     def get_obs(self) -> "outcome+time":
         '''
-        Observation as,
+        Observation as, based on the design of observation space
         [opponent_Offer, Time] = [issue(quantity), issue(time), issue(unit price), time]
 
         TODO:
@@ -180,12 +181,18 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         Method2: set all issues to default value, for example 0
         others?
         '''
+        # if self.env.strategy == "ac_s":
         if self.get_current_offer is None:
             return self.reserved_obs()
-        return [i for i in self.get_current_offer] + [self.time]
+        _obs = [i for i in self.get_current_offer] + [self.time]
+        return normalize_observation(_obs, self)
 
     def reserved_obs(self):
-        return [0, 0, 0] + [self.time]
+        if self.env is not None:
+            _obs = [0 for _ in self.env.game.issues] + [self.time]
+            return normalize_observation(_obs, self)
+        else:
+            return None
 
     @property
     def action(self):
@@ -196,10 +203,13 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         self._action = ResponseType(action)
 
     def set_current_action(self, action=None):
-        if self.env.strategy == "ac_s":
-            self._action = ResponseType(action)
-        elif self.env.strategy == "of_s":
-            self._action = tuple(action)
+        if self.env is not None:
+            if self.env.strategy == "ac_s":
+                self._action = ResponseType(action)
+            elif self.env.strategy == "of_s":
+                self._action = tuple(action)
+        else:
+            self._action = action
 
     def get_current_action(self):
         return self._action
@@ -216,15 +226,17 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         return self._proposal_offer
     
     def set_proposal_offer(self, offer: "Outcome" = None):
-        if self.proposal_offer is None and offer is not None and self.ufun.ip is None:
-            self.ufun.ip = offer
+        # if "ip" in
+        if "proposal_offer" in self.__dict__ and "ip" in self.ufun.__dict__:
+            if self.proposal_offer is None and offer is not None and self.ufun.ip is None:
+                self.ufun.ip = offer
 
         self._proposal_offer = offer
     
     def respond(self, state: MechanismState, offer: "Outcome") -> "ResponseType":
-        print(f"\ncurrent offer of {self.name} is {offer}")
+        #print(f"\ncurrent offer of {self.name} is {offer}")
         action = super(DRLNegotiator, self).respond(state=state, offer=offer)
-        print(f"\033[1;32m response of {self.name} is {action} \033[0m")
+        #print(f"\033[1;32m response of {self.name} is {action} \033[0m")
         return action
     
     def propose(self, state: MechanismState) -> Optional["Outcome"]:
@@ -251,13 +263,13 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
 
         if self.init_proposal:
             self.init_proposal = False
-            print(f"\033[1;35m initial propose of {self.name} is {self.proposal_offer} \033[0m")
+            #print(f"\033[1;35m initial propose of {self.name} is {self.proposal_offer} \033[0m")
             return self.proposal_offer
 
         offer = super().propose(state=state)
 
         self.set_proposal_offer(offer)
-        print(f"\033[1;35m propose of {self.name} is {offer} \033[0m")
+        #print(f"\033[1;35m propose of {self.name} is {offer} \033[0m")
 
         return offer
 
@@ -334,13 +346,15 @@ class MyDRLNegotiator(DRLNegotiator):
         
     def propose(self, state: MechanismState) -> Optional["Outcome"]:
         if self.train:
-            if "_env" in self.__dict__:
+            if "_env" in self.__dict__ and self.env is not None:
                 if self.env.strategy == "ac_s":
                     return super().propose(state=state)
                 elif self.env.strategy == "of_s":
-                    if self.action in self.ami.outcomes:
-                        print(f"\033[1;35m propose of {self.name} is {self.action} \033[0m")
-                        return self.action
+                    if np.array(self.action) in self.env.action_space:
+                        action = reverse_normalize_action(self.action, self)
+                        # print(f"\033[1;35m propose of {self.name} is {action} \033[0m")
+                        return action
+                        # return (540, )
                     else:
                         raise ValueError(f"The propose in {self.env.strategy} action {self.action} is error!")
                 elif self.env.strategy == "hybrid":
@@ -356,33 +370,33 @@ class MyDRLNegotiator(DRLNegotiator):
             Use the action trained by drl model if it existes!
             Otherwise always reject the offer from opponent!
         """
-        print(f"\ncurrent offer of {self.name} is {offer}")
+        #print(f"\ncurrent offer of {self.name} is {offer}")
         if self.train:
-            if "_env" in self.__dict__:
+            self.set_current_offer(offer)
+            if "_env" in self.__dict__ and self.env is not None:
                 if self.env.strategy == "ac_s":
-                    self.set_current_offer(offer)
                     if self.action is None:
                         if self.env is not None:
                             action = ResponseType(self.env.action_space.sample())
-                            print(f"\033[1;32m response of {self.name} is {action} \033[0m")
+                            #print(f"\033[1;32m response of {self.name} is {action} \033[0m")
                             return action
                         print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
                         return ResponseType.REJECT_OFFER
 
                     if isinstance(self.action, ResponseType):
-                        print(f"\033[1;32m response of {self.name} is {self.action} \033[0m!")
+                        #print(f"\033[1;32m response of {self.name} is {self.action} \033[0m!")
                         return self.action
-                    print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
+                    #print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
                     return ResponseType.REJECT_OFFER
                 elif self.env.strategy == "of_s":
-                    print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
+                    #print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
                     return ResponseType.REJECT_OFFER
                 elif self.env.strategy == "hybrid":
                     raise NotImplementedError(f"The reponse of {self.name} in {self.env.strategy} is not implemented!")
                 else:
                     raise ValueError(f"The reponse of {self.name} in {self.env.strategy} is illegal!")
             else:
-                print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
+                #print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
                 return ResponseType.REJECT_OFFER
         else:
             raise NotImplementedError(f"The reponse of {self.name} in predict is not implemented!")

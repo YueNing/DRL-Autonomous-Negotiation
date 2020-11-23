@@ -8,7 +8,8 @@ from negmas import (
                         MechanismState, 
                         AspirationNegotiator,
                         Negotiator,
-                        ResponseType
+                        ResponseType,
+                        normalize
                     )
 from typing import Optional, Union, Dict, List
 from myagent import MyComponentsBasedAgent
@@ -17,9 +18,10 @@ from myutilityfunction import  MyUtilityFunction
 from scml.scml2020.agents import DecentralizingAgent, BuyCheapSellExpensiveAgent
 from scml.scml2020 import anac2020_std, anac2020_collusion
 from dataclasses import dataclass, field, fields
+from utils import reverse_normalize_action
 
 # extra reward for agreement when negotiator get a agreement
-EXTRA_REWARD = 0.1
+EXTRA_REWARD = 1
 
 __all__ = [
     "Game",
@@ -262,7 +264,7 @@ class DRLGameMixIn:
     def get_observation(self):
         """
         Returns:
-            obs: relates to the design of observation space
+            obs: all of the observation of competitors
             1. [offer of my negotiator, time], obs[0]
             2. [offer of all negotiators, time], obs
             3. ?
@@ -274,7 +276,7 @@ class DRLGameMixIn:
         for _ in self.competitors:
             obs.append(_.get_obs())
 
-        return obs[0]
+        return obs
 
 
 
@@ -338,70 +340,83 @@ class NegotiationGame(DRLGameMixIn, Game):
             # competitors go forward one step
             # session/simulator/environment go one step
             self.step_competitors(action=action, competitor=competitor)
-            self.session.step()
+            self.session.step() # opponent finish the step
+            # self.session.step() # to
 
             # result 
             result = self.session.state
 
             # reward
-            if self.env.strategy == "ac_s":
-                # reward design for acceptance strategy
-                reward = 0
-                if competitor.time < competitor.maximum_time:
+            if self.env is not None:
+                if self.env.strategy == "ac_s":
+                    # reward design for acceptance strategy
+                    reward = 0
+                    if competitor.time < competitor.maximum_time:
 
-                    if competitor.action == ResponseType.ACCEPT_OFFER:
-                        if result.agreement:
-                            if "_rp" in competitor.__dict__:
-                                if competitor.ufun(result.agreement) >= competitor.ufun(competitor._rp):
-                                    reward = competitor.get_ufun(result.agreement)
-                                    reward += EXTRA_REWARD
+                        if competitor.action == ResponseType.ACCEPT_OFFER:
+                            if result.agreement:
+                                if "_rp" in competitor.__dict__:
+                                    if competitor.ufun(result.agreement) >= competitor.ufun(competitor._rp):
+                                        ufun = normalize(competitor.get_ufun, competitor.ami.outcomes)
+                                        reward = ufun(result.agreement)
+                                        reward += EXTRA_REWARD
+                                    else:
+                                        reward = -1
                                 else:
-                                    reward = -1
+                                    ufun = normalize(competitor.get_ufun, competitor.ami.outcomes)
+                                    reward = ufun(result.agreement)+EXTRA_REWARD
                             else:
-                                reward = competitor.get_ufun(result.agreement)
-                        else:
-                            reward = 0
+                                reward = 0
 
-                    elif competitor.action == ResponseType.REJECT_OFFER:
-                        # when competitor reject the offer
-                        if competitor.proposal_offer:
-                            # proposal a meaningful offer
-                            # calculate the reward
-                            if "_rp" in competitor.__dict__:
-                                if competitor.ufun(competitor.proposal_offer) >= competitor.ufun(competitor._rp):
-                                    reward = competitor.get_ufun(competitor.proposal_offer)
+                        elif competitor.action == ResponseType.REJECT_OFFER:
+                            # when competitor reject the offer
+                            if competitor.proposal_offer:
+                                # proposal a meaningful offer
+                                # calculate the reward
+                                if "_rp" in competitor.__dict__:
+                                    if competitor.ufun(competitor.proposal_offer) >= competitor.ufun(competitor._rp):
+                                        ufun = normalize(competitor.get_ufun, competitor.ami.outcomes)
+                                        reward = ufun(competitor.proposal_offer)
+                                    else:
+                                        reward = -1
                                 else:
-                                    reward = -1
+                                    ufun = normalize(competitor.get_ufun, competitor.ami.outcomes)
+                                    reward = ufun(competitor.proposal_offer)
+                                # competitor.set_proposal_offer(offer=None)
                             else:
-                                reward = competitor.get_ufun(competitor.proposal_offer)
-                            # competitor.set_proposal_offer(offer=None)
-                        else:
-                            # reject the offer, but not proposal a meanful offer
+                                # reject the offer, but not proposal a meanful offer
+                                reward = -1
+
+                        elif competitor.action == ResponseType.END_NEGOTIATION or \
+                            competitor.action == ResponseType.NO_RESPONSE:
+
                             reward = -1
 
-                    elif competitor.action == ResponseType.END_NEGOTIATION or \
-                        competitor.action == ResponseType.NO_RESPONSE:
+                    else:
+                        reward = 0
 
+                    return reward
+                elif self.env.strategy == "of_s":
+                    if competitor.time < competitor.maximum_time:
+                        ufun = normalize(competitor.get_ufun, outcomes=competitor.ami.outcomes, rng=(-1, 1))
+                        action = reverse_normalize_action(action, competitor)
+                        # print(action)
+                        reward = ufun(action)
+
+                        if result.agreement:
+                            reward += EXTRA_REWARD
+                    else:
                         reward = -1
 
+                    return reward
+
+                elif self.env.strategy == "hybrid":
+                    raise NotImplementedError(f"Design of reward based on {self.env.strategy} is not Implemented!")
                 else:
-                    reward = 0
-
-                return reward
-            elif self.env.strategy == "of_s":
-                if competitor.time < competitor.maximum_time:
-                    reward = competitor.ufun(action)
-                    if result.agreement:
-                        reward += EXTRA_REWARD
-                else:
-                    reward = -1
-
-                return reward
-
-            elif self.env.strategy == "hybrid":
-                raise NotImplementedError(f"Design of reward based on {self.env.strategy} is not Implemented!")
+                    raise ValueError(f"Design of reward based on {self.env.strategy} is error!")
             else:
-                raise ValueError(f"Design of reward based on {self.env.strategy} is error!")
+                reward = "-inf"
+                return reward
 
     def step_competitors(self, action=None, competitor: Optional[DRLNegotiator] = None):
         """
