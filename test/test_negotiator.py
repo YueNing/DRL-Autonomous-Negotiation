@@ -4,10 +4,10 @@ sys.path.append(r'/home/nauen/PycharmProjects/tn_source_code')
 
 
 def test_drl_negotiator():
-    from mynegotiator import MyDRLNegotiator, DRLNegotiator
-    from myutilityfunction import MyUtilityFunction
+    from negotiator import MyDRLNegotiator, DRLNegotiator
+    from utility_functions import MyUtilityFunction
     from negmas import SAOMechanism, Issue, ResponseType, Outcome
-    from scml_env import DRLNegotiationEnv, NEnv
+    from env import DRLNegotiationEnv, NEnv
     
     name = "drl_negotiator"
     issues = [
@@ -49,7 +49,7 @@ def test_drl_negotiator():
 
     # Test the basic attributes and functions
     # None
-    assert  "_env" not in drl_negotiator.__dict__
+    assert  drl_negotiator.env is None
     assert  drl_negotiator.action is None
 
     #TODO: initial value and reserved value
@@ -98,9 +98,9 @@ def test_drl_negotiator():
 
 
 def test_opponent_negotiator():
-    from mynegotiator import MyOpponentNegotiator
+    from negotiator import MyOpponentNegotiator
     from negmas import Issue, SAOMechanism
-    from myutilityfunction import MyUtilityFunction
+    from utility_functions import MyUtilityFunction
 
     name = "test_opponent_negotiator"
     # seller

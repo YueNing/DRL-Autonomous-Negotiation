@@ -5,7 +5,7 @@ from negmas import AgentMechanismInterface, SAOMechanism, Issue, AspirationNegot
 import random # for generating random ufuns
 
 def test_my_utility_function():
-    from myutilityfunction import MyUtilityFunction
+    from utility_functions import MyUtilityFunction
 
     issues = [
         Issue(values=10, name="quantity"), 
@@ -50,8 +50,8 @@ def test_my_utility_function():
     # import pdb;pdb.set_trace()
 
 def test_anegma_utility_function():
-    from myutilityfunction import ANegmaUtilityFunction
-    from mynegotiator import DRLNegotiator
+    from utility_functions import ANegmaUtilityFunction
+    from negotiator import DRLNegotiator
     from negmas import Issue
 
     issues = [Issue((300, 550))]

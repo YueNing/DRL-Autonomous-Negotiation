@@ -3,12 +3,11 @@ import os
 sys.path.append(r'/home/nauen/PycharmProjects/tn_source_code')
 
 from train import train_negotiation
-from scml_env import DRLNegotiationEnv, NEnv
-from scml_env import NegotiationEnv
+from env import NegotiationEnv
 from utils import generate_config, genearate_observation_space, generate_action_space
-from scml_game import NegotiationGame
-from mynegotiator import MyDRLNegotiator, MyOpponentNegotiator
-from myutilityfunction import MyUtilityFunction
+from game import NegotiationGame
+from negotiator import MyDRLNegotiator, MyOpponentNegotiator
+from utility_functions import MyUtilityFunction
 
 
 
@@ -18,7 +17,7 @@ def test_train_negotiation():
     # env = DRLNegotiationEnv(
     #     name="my_negotiation_env"
     # )
-    n_issues = 3
+    n_issues = 1
     config = generate_config(n_issues=n_issues)
 
     # game
@@ -67,19 +66,18 @@ def test_train_negotiation():
     plot = True
     # assert isinstance(env, NEnv)
 
-    # game.set_env(env["ac_s"])
-    # model = "DQN"
-    # done, _ = train_negotiation(plot=plot, model=model, env=env["ac_s"], monitor=False)
-
-    game.set_env(env["of_s"])
-    model = "PPO1"
-    done, _ = train_negotiation(plot=plot, model=model, env=env["of_s"], monitor=False)
+    game.set_env(env["ac_s"])
+    model = "DQN"
+    done, _ = train_negotiation(plot=plot, model=model, env=env["ac_s"], monitor=False)
 
     assert done,  f'train false by the model {model}'
 
     # model = "PPO1"
-    # done, _ = train_negotiation(plot=plot, model=model, env=env)
-    # assert done,  f'train false by the model {model}'
+    game.set_env(env["of_s"])
+    model = "PPO1"
+    done, _ = train_negotiation(plot=plot, model=model, env=env["of_s"], monitor=False)
+    assert done,  f'train false by the model {model}'
+
     #
     # model = "Test"
     # done, _ = train_negotiation(plot=plot, model=model, env=env)

@@ -2,7 +2,7 @@ import sys
 sys.path.append(r'/home/nauen/PycharmProjects/tn_source_code')
 
 import numpy as np
-from scml_game import MyDRLNegotiationGame, DRLNegotiationGame
+from game import MyDRLNegotiationGame, DRLNegotiationGame
 
 def test_my_drl_negotiation_game():
     name = "test_my_drl_negotiation_game"

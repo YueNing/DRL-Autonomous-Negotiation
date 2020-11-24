@@ -1,4 +1,4 @@
-from scml_env import DRLNegotiationEnv, NEnv
+from env import NEnv
 from datetime import datetime
 
 MODEL_NEGOTIATION = [
@@ -20,7 +20,7 @@ def train_negotiation(plot=True, model="DQN", env=None, monitor=True):
     from stable_baselines.common.callbacks import EvalCallback
     from stable_baselines.common.policies import MlpPolicy
 
-    NUM_TIMESTEPS = int(1000000)
+    NUM_TIMESTEPS = int(1000)
     SEED = 721
     EVAL_FREQ = 100
     EVAL_EPISODES = 2
@@ -93,7 +93,7 @@ def train_negotiation(plot=True, model="DQN", env=None, monitor=True):
         from stable_baselines.ppo1 import PPO1
         # TODO: train the offer/bidding strategy
         model = PPO1(MlpPolicy, env, verbose=1, tensorboard_log=os.path.join(LOGDIR, "tensorboard"))
-        model.learn(total_timesteps=100000)
+        model.learn(total_timesteps=1000)
         model.save(os.path.join(LOGDIR, "final_model"))
 
     return True, f"Finished! you can get the result at {LOGDIR}"
