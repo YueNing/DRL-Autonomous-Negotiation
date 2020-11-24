@@ -6,7 +6,7 @@ from scml_env import NEnv, NegotiationEnv, DRLNegotiationEnv, MyNegotiationEnv
 from scml_game import MyDRLNegotiationGame, DRLNegotiationGame, NegotiationGame
 from mynegotiator import MyDRLNegotiator, MyOpponentNegotiator
 from myutilityfunction import ANegmaUtilityFunction, MyUtilityFunction
-from utils import  generate_config_anegma, observation_space_anegma
+from utils import  generate_config, genearate_observation_space
 # from ANLearning.lab_notebook.scml_negotiation.scml_game import Game
 
 def test_negotiation_env():
@@ -17,7 +17,7 @@ def test_negotiation_env():
     from negmas import Issue
 
     name = "test_n_env"
-    config = generate_config_anegma()
+    config = generate_config()
     n_steps = 100
 
     # test acceptance strategy
@@ -46,7 +46,7 @@ def test_negotiation_env():
     )
 
     # env
-    observation_space = observation_space_anegma(config)
+    observation_space = genearate_observation_space(config)
     action_space = 3
     strategy = "ac_s"
     n_env = NegotiationEnv(

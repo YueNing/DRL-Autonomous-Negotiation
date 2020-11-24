@@ -158,7 +158,7 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
             if "rp" in self.ufun.__dict__:
                 self.ufun.rp = self._rp
 
-        self.end_time = 0.90
+        self.end_time = 1
 
 
     @property
@@ -219,6 +219,15 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         return self._current_offer
 
     def set_current_offer(self, offer):
+        """
+
+        Args:
+            offer: in the side of negotiator,
+                the offer proposed by opponents, different with the state.current_offer
+
+        Returns:
+
+        """
         self._current_offer = offer
 
     @property
@@ -352,7 +361,7 @@ class MyDRLNegotiator(DRLNegotiator):
                 elif self.env.strategy == "of_s":
                     if np.array(self.action) in self.env.action_space:
                         action = reverse_normalize_action(self.action, self)
-                        # print(f"\033[1;35m propose of {self.name} is {action} \033[0m")
+                        # #print(f"\033[1;35m propose of {self.name} is {action} \033[0m")
                         return action
                         # return (540, )
                     else:
@@ -380,7 +389,7 @@ class MyDRLNegotiator(DRLNegotiator):
                             action = ResponseType(self.env.action_space.sample())
                             #print(f"\033[1;32m response of {self.name} is {action} \033[0m")
                             return action
-                        print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
+                        #print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
                         return ResponseType.REJECT_OFFER
 
                     if isinstance(self.action, ResponseType):
@@ -389,7 +398,7 @@ class MyDRLNegotiator(DRLNegotiator):
                     #print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
                     return ResponseType.REJECT_OFFER
                 elif self.env.strategy == "of_s":
-                    #print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
+                    ##print(f"\033[1;32m response of {self.name} is ResponseType.REJECT_OFFER! \033[0m")
                     return ResponseType.REJECT_OFFER
                 elif self.env.strategy == "hybrid":
                     raise NotImplementedError(f"The reponse of {self.name} in {self.env.strategy} is not implemented!")

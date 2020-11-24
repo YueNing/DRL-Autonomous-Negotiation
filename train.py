@@ -20,7 +20,7 @@ def train_negotiation(plot=True, model="DQN", env=None, monitor=True):
     from stable_baselines.common.callbacks import EvalCallback
     from stable_baselines.common.policies import MlpPolicy
 
-    NUM_TIMESTEPS = int(10000)
+    NUM_TIMESTEPS = int(1000000)
     SEED = 721
     EVAL_FREQ = 100
     EVAL_EPISODES = 2

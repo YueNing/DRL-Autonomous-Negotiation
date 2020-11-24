@@ -21,7 +21,8 @@ from dataclasses import dataclass, field, fields
 from utils import reverse_normalize_action
 
 # extra reward for agreement when negotiator get a agreement
-EXTRA_REWARD = 1
+EXTRA_REWARD = 1.01
+EXTRA_PUNISHMENT = 0.7
 
 __all__ = [
     "Game",
@@ -357,14 +358,13 @@ class NegotiationGame(DRLGameMixIn, Game):
                             if result.agreement:
                                 if "_rp" in competitor.__dict__:
                                     if competitor.ufun(result.agreement) >= competitor.ufun(competitor._rp):
-                                        ufun = normalize(competitor.get_ufun, competitor.ami.outcomes)
-                                        reward = ufun(result.agreement)
-                                        reward += EXTRA_REWARD
+                                        ufun = normalize(competitor.get_ufun, competitor.ami.outcomes, rng=(-1, 1))
+                                        reward = (ufun(result.agreement) + EXTRA_REWARD) * 1000
                                     else:
                                         reward = -1
                                 else:
-                                    ufun = normalize(competitor.get_ufun, competitor.ami.outcomes)
-                                    reward = ufun(result.agreement)+EXTRA_REWARD
+                                    ufun = normalize(competitor.get_ufun, competitor.ami.outcomes, rng=(-1, 1))
+                                    reward = (ufun(result.agreement)+EXTRA_REWARD) * 1000
                             else:
                                 reward = 0
 
@@ -375,12 +375,12 @@ class NegotiationGame(DRLGameMixIn, Game):
                                 # calculate the reward
                                 if "_rp" in competitor.__dict__:
                                     if competitor.ufun(competitor.proposal_offer) >= competitor.ufun(competitor._rp):
-                                        ufun = normalize(competitor.get_ufun, competitor.ami.outcomes)
+                                        ufun = normalize(competitor.get_ufun, competitor.ami.outcomes, rng=(-1, 1))
                                         reward = ufun(competitor.proposal_offer)
                                     else:
                                         reward = -1
                                 else:
-                                    ufun = normalize(competitor.get_ufun, competitor.ami.outcomes)
+                                    ufun = normalize(competitor.get_ufun, competitor.ami.outcomes, rng=(-1, 1))
                                     reward = ufun(competitor.proposal_offer)
                                 # competitor.set_proposal_offer(offer=None)
                             else:

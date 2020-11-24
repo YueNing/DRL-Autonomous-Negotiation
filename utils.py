@@ -4,27 +4,47 @@ from typing import List, Tuple
 # from scml_env import NegotiationEnv
 # from mynegotiator import DRLNegotiator
 
-def generate_config_anegma():
+def generate_config(n_issues=1):
     """
     Single issue
     For Anegma settings, generate random settings for game
     Returns:
         dict
-    >>> generate_config_anegma()
+    >>> generate_config()
 
     """
-    issues = [Issue((300, 550))]
-    rp_range = (500, 550)
-    ip_range = (300, 350)
+    issues = []
+    n_steps = 100
+    if n_issues == 1:
+        issues.append(Issue((300, 550)))
+        rp_range = (500, 550)
+        ip_range = (300, 350)
+        weights = [(-0.35, ), (0.25,)]
+    if n_issues == 2:
+        issues.append(Issue((0, 10))) # quantity
+        issues.append(Issue((10, 100))) # unit price
+        rp_range = None
+        ip_range = None
+        weights = [(0, -0.25), (0, 0.25)]
+    if n_issues == 3:
+        issues.append(Issue((0, 10))) # quantity
+        issues.append(Issue((0, 100))) # delivery time
+        issues.append(Issue((10, 100))) # unit price
+        rp_range = None
+        ip_range = None
+        weights = [(0, -0.25, -0.6), (0, 0.25, 1)]
+
     t_range = (0, 100)
     return {
         "issues": issues,
         "rp_range": rp_range,
         "ip_range": ip_range,
-        "max_t": random.randint(t_range[0] + 1, t_range[1])
+        "max_t": random.randint(t_range[0] + 1, t_range[1]),
+        "weights": weights,
+        "n_steps": n_steps
     }
 
-def observation_space_anegma(config=None, normalize: bool=True):
+def genearate_observation_space(config=None, normalize: bool=True):
     if config:
         if normalize:
             return [
@@ -46,7 +66,7 @@ def observation_space_anegma(config=None, normalize: bool=True):
              ],
         ]
 
-def action_space_anegma(config=None, normalize=True):
+def generate_action_space(config=None, normalize=True):
     if config:
         if normalize:
             return [
