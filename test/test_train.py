@@ -1,13 +1,9 @@
-import sys
-import os
-sys.path.append(r'/home/nauen/PycharmProjects/tn_source_code')
-
-from train import train_negotiation
-from env import NegotiationEnv
-from utils import generate_config, genearate_observation_space, generate_action_space
-from game import NegotiationGame
-from negotiator import MyDRLNegotiator, MyOpponentNegotiator
-from utility_functions import MyUtilityFunction
+from drl_negotiation.train import train_negotiation
+from drl_negotiation.env import NegotiationEnv
+from drl_negotiation.utils import generate_config, genearate_observation_space, generate_action_space
+from drl_negotiation.game import NegotiationGame
+from drl_negotiation.negotiator import MyDRLNegotiator, MyOpponentNegotiator
+from drl_negotiation.utility_functions import MyUtilityFunction
 
 
 

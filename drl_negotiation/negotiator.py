@@ -29,8 +29,8 @@ from negmas import (
     
 import random
 from typing import List, Optional, Type, Sequence
-from utility_functions import MyUtilityFunction, ANegmaUtilityFunction, MyOpponentUtilityFunction
-from utils import normalize_observation, reverse_normalize_action
+from .utility_functions import MyUtilityFunction, ANegmaUtilityFunction, MyOpponentUtilityFunction
+from .utils import normalize_observation, reverse_normalize_action
 
 __all__ = [
     "DRLMixIn",

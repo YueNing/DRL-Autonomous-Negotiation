@@ -11,12 +11,12 @@ from negmas import (
                         normalize
                     )
 from typing import Optional, Union, Dict, List
-from myagent import MyComponentsBasedAgent
-from negotiator import MyDRLNegotiator, MyOpponentNegotiator, DRLNegotiator
+from .myagent import MyComponentsBasedAgent
+from .negotiator import MyDRLNegotiator, MyOpponentNegotiator, DRLNegotiator
 from scml.scml2020.agents import DecentralizingAgent, BuyCheapSellExpensiveAgent
 from scml.scml2020 import anac2020_std, anac2020_collusion
 from dataclasses import dataclass
-from utils import reverse_normalize_action
+from .utils import reverse_normalize_action
 
 # extra reward for agreement when negotiator get a agreement
 EXTRA_REWARD = 1.01
@@ -367,7 +367,7 @@ class NegotiationGame(DRLGameMixIn, Game):
                                         reward = -1
                                 else:
                                     ufun = normalize(competitor.get_ufun, competitor.ami.outcomes, rng=(-1, 1))
-                                    reward = (ufun(result.agreement)+EXTRA_REWARD) * 1000
+                                    reward = ufun(result.agreement)+EXTRA_REWARD
                             else:
                                 reward = 0
 
