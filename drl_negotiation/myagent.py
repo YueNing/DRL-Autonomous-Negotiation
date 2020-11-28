@@ -51,18 +51,18 @@ from negmas import (
     Issue, AgentMechanismInterface, Contract, Negotiator,
     MechanismState, Breach, LinearUtilityFunction
 )
-from scml.scml2020.world import Failure
+# from scml.scml2020.world import Failure
 from scml.scml2020 import SCML2020Agent
 from scml.scml2020 import PredictionBasedTradingStrategy
-from scml.scml2020 import MovingRangeNegotiationManager
-from scml.scml2020 import TradeDrivenProductionStrategy
-# from .mynegotiationmanager import MyNegotiationManager
+# from scml.scml2020 import MovingRangeNegotiationManager
+from scml.scml2020 import DemandDrivenProductionStrategy
+from .mynegotiationmanager import MyNegotiationManager
 # from .myutilityfunction import MyUtilityFunction
 
 class MyComponentsBasedAgent(
-    TradeDrivenProductionStrategy,
-    MovingRangeNegotiationManager,
+    MyNegotiationManager,
     PredictionBasedTradingStrategy,
+    DemandDrivenProductionStrategy,
     SCML2020Agent
 ):
     """

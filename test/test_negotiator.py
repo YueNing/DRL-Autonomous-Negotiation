@@ -1,13 +1,8 @@
-import sys
-import os
-sys.path.append(r'/home/nauen/PycharmProjects/tn_source_code')
-
-
 def test_drl_negotiator():
-    from negotiator import MyDRLNegotiator, DRLNegotiator
-    from utility_functions import MyUtilityFunction
+    from drl_negotiation.negotiator import MyDRLNegotiator, DRLNegotiator
+    from drl_negotiation.utility_functions import MyUtilityFunction
     from negmas import SAOMechanism, Issue, ResponseType, Outcome
-    from env import DRLNegotiationEnv, NEnv
+    from drl_negotiation.env import DRLNegotiationEnv, NEnv
     
     name = "drl_negotiator"
     issues = [
@@ -98,9 +93,9 @@ def test_drl_negotiator():
 
 
 def test_opponent_negotiator():
-    from negotiator import MyOpponentNegotiator
+    from drl_negotiation.negotiator import MyOpponentNegotiator
     from negmas import Issue, SAOMechanism
-    from utility_functions import MyUtilityFunction
+    from drl_negotiation.utility_functions import MyUtilityFunction
 
     name = "test_opponent_negotiator"
     # seller

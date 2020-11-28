@@ -5,7 +5,7 @@ from gym.utils import seeding
 from gym.spaces import Discrete, Box
 from abc import ABC, abstractmethod, abstractproperty
 from typing import Optional, Union, List, Tuple
-from game import (Game,
+from .game import (Game,
                                     DRLSCMLGame, 
                                     SCMLGame, 
                                     NegotiationGame, 

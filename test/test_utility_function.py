@@ -1,11 +1,8 @@
-import sys
-import os
-sys.path.append(r'/home/nauen/PycharmProjects/tn_source_code')
 from negmas import AgentMechanismInterface, SAOMechanism, Issue, AspirationNegotiator, MappingUtilityFunction
 import random # for generating random ufuns
 
 def test_my_utility_function():
-    from utility_functions import MyUtilityFunction
+    from drl_negotiation.utility_functions import MyUtilityFunction
 
     issues = [
         Issue(values=10, name="quantity"), 
@@ -50,8 +47,7 @@ def test_my_utility_function():
     # import pdb;pdb.set_trace()
 
 def test_anegma_utility_function():
-    from utility_functions import ANegmaUtilityFunction
-    from negotiator import DRLNegotiator
+    from drl_negotiation.utility_functions import ANegmaUtilityFunction
     from negmas import Issue
 
     issues = [Issue((300, 550))]

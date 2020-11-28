@@ -1,12 +1,8 @@
-import sys
-import os
-sys.path.append(r'/home/nauen/PycharmProjects/tn_source_code')
-
-from env import NEnv, NegotiationEnv, DRLNegotiationEnv, MyNegotiationEnv
-from game import MyDRLNegotiationGame, DRLNegotiationGame, NegotiationGame
-from negotiator import MyDRLNegotiator, MyOpponentNegotiator
-from utility_functions import ANegmaUtilityFunction, MyUtilityFunction
-from utils import  generate_config, genearate_observation_space
+from drl_negotiation.env import NEnv, NegotiationEnv, DRLNegotiationEnv, MyNegotiationEnv
+from drl_negotiation.game import MyDRLNegotiationGame, DRLNegotiationGame, NegotiationGame
+from drl_negotiation.negotiator import MyDRLNegotiator, MyOpponentNegotiator
+from drl_negotiation.utility_functions import ANegmaUtilityFunction, MyUtilityFunction
+from drl_negotiation.utils import  generate_config, genearate_observation_space
 # from ANLearning.lab_notebook.scml_negotiation.scml_game import Game
 
 def test_negotiation_env():
