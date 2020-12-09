@@ -1,2 +1,2 @@
 # tn_source_code
-The finally soude code repository for thesis
+The final source code repository for thesis
