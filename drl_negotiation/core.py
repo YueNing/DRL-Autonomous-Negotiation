@@ -13,9 +13,9 @@ class Action(object):
     def __init__(object):
         # negotiation action
         # accept or reject negotiation
-        self.ac_n = None
+        self.m = None
         # communication action, communication channel
-        self.ac_c = None
+        self.c = None
 
 class MySCML2020Agent(SCML2020Agent):
     

@@ -59,11 +59,25 @@ from scml.scml2020 import DemandDrivenProductionStrategy
 from .mynegotiationmanager import MyNegotiationManager
 # from .myutilityfunction import MyUtilityFunction
 
+class DRLSCML2020Agent(SCML2020Agent):
+
+    def __init__(self):
+        super().__init__()
+
+    def action(self, obs):
+        #TODO: base on the obs, return action
+        pass
+
+    def experience(self, obs_n, action_n, rew_n, new_obs_n, done_n, terminal):
+        #TODO: save the experience into agent
+        pass
+
+
 class MyComponentsBasedAgent(
     MyNegotiationManager,
     PredictionBasedTradingStrategy,
     DemandDrivenProductionStrategy,
-    SCML2020Agent
+    DRLSCML2020Agent
 ):
     """
     TODO:
@@ -86,6 +100,7 @@ class MyComponentsBasedAgent(
         if is_seller:
             return LinearUtilityFunction((0, 0.25, 1))
         return LinearUtilityFunction((0, -0.5, -0.8))
+
 
 def run(competition='std',
          reveal_names=True,

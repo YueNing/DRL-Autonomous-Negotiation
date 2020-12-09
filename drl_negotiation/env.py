@@ -1,3 +1,4 @@
+import ipdb
 import gym
 import numpy as np
 
@@ -472,22 +473,234 @@ class MyNegotiationEnv(DRLNegotiationEnv):
 #
 ####################################################################################################
 
-class SCMLEnv(NEnv):
-    
+class SCMLEnv(gym.Env):
+    metadata = {
+            'render.modes': ['human']
+            }
     def __init__(
-        self,
-        name: str = "SCMLEnv",
-        game: Optional[SCMLGame] = None,
-        mechanism_state: "negmas.MechanismState" = None,
-    ):
-        super().__init__(
-            name=name,
-            game=game,
-        )
-        self._mechanism_state = mechanism_state
-    
-    def mechanism_state(self):
-        return self._mechanism_state
+            self,
+            world,
+            reset_callback=None,
+            reward_callback=None,
+            observation_callback=None,
+            info_callback=None,
+            done_callback=None,
+            shared_viewer=True
+            ):
+
+        self.world = world
+        self.agents = self.world.policy_agents
+
+        # vectorized gym env property
+        self.n = len(self.agents)
+        # callback
+        self.reset_callback = reset_callback
+        self.reward_callback = reward_callback
+        self.observation_callback = observation_callback
+        self.info_callback = info_callback
+        self.done_callback = done_callback
+        # env parameters
+        self.discrete_action_space = True
+        self.discrete_action_input = False
+        self.force_discrete_action = world.discrete_action if hasattr(world, 'discrete_action') else False
+        self.shared_reward = world.collaborative if hasattr(world, 'collaborative') else False
+        self.time = 0
+
+        # spaces
+        self.action_space = []
+        self.observation_space = []
+        for agent in self.agents:
+            total_action_space = []
+            # negotiation management action space
+            if self.discrete_action_space:
+                m_action_space = spaces.Discrete(world.dim_m)
+            else:
+                m_action_space = spaces.Box(low=-agent.m_range, high=+agent.m_range, shape=(world.dim_m, ), dtype=np.float32)
+
+            if agent.negotiable:
+                total_action_space.append(m_action_space)
+
+            # communication action space
+            if self.discrete_action_space:
+                c_action_space = spaces.Discrete(world.dim_c)
+            else:
+                c_action_space = spaces.Box(low=0.0, high=1.0, shape=(world.dim_c, ), dtype=np.float32)
+
+            if not agent.silent:
+                total_action_space.append(c_action_space)
+
+            if len(total_action_space) >1:
+
+                if all([isinstance(act_space, spaces.Discrete) for act_space in total_action_space]):
+                    act_space = MultiDiscrete([[0, act_space.n -1] for act_space in total_action_space])
+                else:
+                    act_space = space.Tuple(total_action_space)
+                self.action_space.append(act_space)
+            else:
+                self.action_space.append(total_action_space)
+
+            # observation space
+            obs_dim = len(observation_callback(agent, self.world))
+            self.observation_space.append(spaces.Box(low=np.inf, high=+np.inf, shape=(obs_dim, ), dtype=np.float32))
+            agent.action.c = np.zeros(self.world.dim_c)
+
+        # rendering
+        self.shared_viewer = shared_viewer
+        if self.shared_viewer:
+            self.viewers = [None]
+        else:
+            # policy agents
+            self.viewers = [None] * self.n
+        self._reset_render()
+
+    def step(self, action_n):
+        obs_n = []
+        reward_n = []
+        done_n = []
+        info_n = {'n': []}
+        self.agents = self.world.policy_agents
+
+        for i, agent in enumerate(self.agents):
+            self._set_action(action_n[i], agent, self.action_space[i])
+
+        self.world.step()
+        for agent in self.agents:
+            obs_n.append(self._get_obs(agent))
+            reward_n.append(self._get_reward(agent))
+            done_n.append(self._get_done(agent))
+
+            info_n['n'].append(self._get_info(agent))
+
+        reward = np.sum(reward_n)
+        if self.shared_reward:
+            reward_n = [reward] * self.n
+
+        return obs_n, reward_n, done_n, info_n
+
+    def reset(self):
+        # reset world
+        self.reset_callback(self.world)
+        
+        obs_n = []
+        self.agents = self.world.policy_agents
+        for agent in self.agents:
+            obs_n.append(self._get_obs(agent))
+        return obs_n
+
+    def render(self, mode="human"):
+        ipdb.set_trace()
+        if mode == 'human':
+            for agent in self.world.agents:
+                comm = []
+                for other in self.world.agents:
+                    if other is agent: continue
+                    if np.all(other.state.c==0):
+                    	word = '_'
+                    else:
+                        word = other.state.c
+
+                    message += (other.name + ' to ' + agent.name + ':' + world + '   ')
+            
+            print(message)
+
+        for i in range(len(self.viewers)):
+            if self.viewers[i] is None:
+                from rendering import Viewer
+                self.viewers[i] = rendering.Viewer(700, 700)
+
+        # create rendering geometry
+        if self.render_geoms is None:
+            import rendering as rd
+            self.render_geoms = []
+            self.render_geoms_xform = []
+            for entity in self.world.entities:
+                geom = rd.make_circle(entity.size)
+                xform = rd.Transform()
+                if 'agent' in entity.name:
+                    geom.set_color(*entity.color, alpha=0.5)
+                else:
+                    geom.set_color(*entity.color)
+                geom.add_attr(xform)
+                self.render_geoms.append(geom)
+                self.render_geoms_xform.append(xform)
+
+        # add geoms to viewer
+        for viewer in self.viewers:
+            viewer.geoms = []
+            for geom in self.render_geoms:
+                viewer.add_geom(geom)
+
+        results=[]
+        for i in range(len(self.viewers)):
+            import rendering as rd
+            cam_range = 1
+            if self.shared_viewer:
+                pos = np.zeros(2)
+            else:
+                pos = self.agents[i].state.p_pos
+	    
+            self.views[i].set_bounds(pos[0]-cam_range, pos[0]+cam_range, pos[1]-cam_range, pos[1]+cam_range)
+            for e, entity in enumerate(self.world.entities):
+            	self.render_geoms_xform[e].set_translation(*entity.state.p_pos)
+            
+            results.append(self.viewers[i].render(return_rgb_array=mode=="rgb_array"))
+        return results
+
+    def _reset_render(self):
+        self.render_geoms = None
+        self.render_geoms_xform = None
+
+    def _get_info(self, agent):
+        pass
+
+
+    def _get_obs(self, agent):
+        if self.observation_callback is None:
+            return np.zeros(0)
+        return self.observation_callback(agent, self.world)
+
+    def _get_done(self, agent):
+        if self.done_callback is None:
+            return False
+        return self.done_callback(agent, self.world)
+
+    def _get_reward(self, agent):
+        if self.reward_callback is None:
+            return 0.0
+        return self.reward_callback(agent, self.world)
+
+    def _set_action(self, action, agent, action_space, time=None):
+
+        if agent.negotiable:
+            # negotiation management action
+            if self.discrete_action_input:
+                agent.action.m = np.zeros(self.world.dim_m)
+                # process discrete action
+                for i in range(self.world.dim_m):
+                    if action[0] % 2 == 1: agent.action.m[int(i/2)+i%2-1] = -1.0
+                    if action[0] % 2 == 0: agent.action.m[int(i/2)+i%2-1] = +1.0
+            else:
+                if self.force_discrete_action:
+                    d = np.argmax(action[0])
+                    action[0][:] = 0.0
+                    action[0][d] = 1.0
+                if self.discrete_action_space:
+                    for i in range(self.world.dim_m):
+                        agent.action.m[i] +=action[0][2*i+1] - action[0][2*(i+1)]
+                else:
+                    agent.action.m = action[0]
+            
+            action = action[1:]
+        
+        if not agent.silent:
+            # communication action
+            if self.discrete_action_input:
+                agent.action.c = np.zeros(self.world.dim_c)
+                agent.action.c[action[0]] = 1.0
+            else:
+                agent.action.c = action[0]
+
+            action = action[1:]
 
 class DRLSCMLEnv(SCMLEnv):
 
@@ -525,3 +738,4 @@ class MySCMLEnv(DRLSCMLEnv):
     
     def __str__(self):
         return f"The name of MySCMLEnv is {self.name}"
+

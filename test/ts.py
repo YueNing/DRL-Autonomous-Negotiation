@@ -17,5 +17,6 @@ def test_scml_world():
     )
 
     world.draw()
+    world.run_with_progress()
 if __name__ == '__main__':
     test_scml_world()

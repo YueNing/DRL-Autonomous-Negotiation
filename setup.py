@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name = "drl_negotiation",
-    version = "0.0.2",
+    version = "0.0.3",
     author = "naodongbanana",
     author_email = "n1085633848@outlook.com",
     description = "environment for negotiation in negmas",

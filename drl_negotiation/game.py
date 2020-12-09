@@ -198,6 +198,10 @@ class Game(ABC):
     def competitors(self):
         return self._competitors
 
+    @competitors.setter
+    def competitors(self, competitors=None):
+        self._competitors = competitors
+
     def set_session_data(self, data: Optional[Dict] = None):
         self._session_data = data if data is not None else {}
 
@@ -506,7 +510,7 @@ class SCMLGame(Game):
         n_configs = 2, 
         max_n_worlds_per_config = None,
         n_runs_per_world = 1,
-        competitors: List[Agent] = [MyComponentsBasedAgent, DecentralizingAgent, BuyCheapSellExpensiveAgent],
+        competitors: "Type[Agent]" = [MyComponentsBasedAgent, DecentralizingAgent, BuyCheapSellExpensiveAgent],
         env = None,
         *args,
         **kwargs
@@ -518,17 +522,89 @@ class SCMLGame(Game):
         self.max_n_worlds_per_config = max_n_worlds_per_config
         self.n_runs_per_world = n_runs_per_world
         self.competitors = competitors
+
+        super().__init__(
+                    game_type = "SCML"
+                )
     
+    def add_competitor(self):
+        #TODO:In SCML2020World, add agents dynamically
+        # used in Game.init_game
+        pass
 
-    def step_forward(self, action=None):
+    def create_session(self) -> "SCML2020World":
+        from scml import SCML2020World
+        
+        world = SCML2020World(
+                **SCML2020World.generate(
+                    agent_types=self.competitors,
+                    n_steps = 50
+                    ),
+                construct_graphs = True,
+                )
+        self.competitors = self.get_agents()
+        return world
+    
+    def get_factories(self):
+        #get factories from world
+        return self.session.factories
 
-        if self.game_type == 'DRLNegotiation' or self.game_type == 'DRLSCML':
-            self._action = action
-            
-            # give the action passed through algorithm to negotiator
+    def get_agents(self):
+        #get factories from world
+        return self.session.agents
+
+    def session_step(self):
+        #TODO: session go one step forward
+        return self.session.step()
+    
+    def session_state(self):
+        #TODO: The state of the the SCML2020World
+
+        return self.session.state
+
+    def step_forward(self):
+        #TODO: let the game go one step forward
+        state = self.session_step()
+        return state
 
 class DRLSCMLGame(DRLGameMixIn, SCMLGame):
-    pass
+
+    def __init__(
+            self,
+            competitors: "Type[DRLAgent]" = None,
+            ):
+        """
+        competitors: DRLAgent<-Agent
+        """
+        super()._init__(
+                competitors = competitors
+                )
+
+    def step_forward(self, action=None, competitor: "DRLAgent" = None) -> 'reward':
+        # competitors, my agent
+        self.step_competitors(action, competitor)
+        super().step_forward()
+
+        result = self.session_state()
+
+        return self.reward()
+    
+    def step_competitors(self, action, competitor):
+        #TODO: all agent based on type competitor needed to set the action
+        competitor.set_current_action(action=action)
+
+    def reward(self):
+        #TODO: Definition of reward function
+
+        return 1
+
+
+        
+
+
 
 class MyDRLSCMLGame(DRLSCMLGame):
+    """
+    For test
+    """
     pass
