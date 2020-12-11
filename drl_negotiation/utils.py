@@ -1,4 +1,8 @@
+import numpy as np
+import collections
 import random
+import tensorflow as tf
+from gym import spaces
 from  negmas import Issue
 from typing import List, Tuple
 # from scml_env import NegotiationEnv
@@ -117,41 +121,105 @@ def reverse_normalize_action(action: Tuple=None, negotiator:"DRLNegotiator" = No
 
     return _action
 
+# Global session
+def get_session():
+    '''
+        get the default tensorflow session
+    '''
+    return tf.get_default_session()
 
 # Distribution
-class Pd(object):
+
+class Pd:
     """
     Probality distribution
     """
     def flatparam(self):
+        '''
+            flat the params
+        '''
         raise NotImplementedError()
 
     def mode(self):
+        '''
+            value that appears most often in a set of data values.
+        '''
         raise NotImplementedError()
 
-    def logp(self):
+    def logp(self, x):
+        '''
+            log probability
+        '''
         raise NotImplementedError()
 
     def kl(self, other):
+        '''
+            kullback-Leibler Divergence
+        '''
+
         raise NotImplementedError()
 
     def entropy(self):
+        '''
+            entropy
+        '''
         raise NotImplementedError()
 
     def sample(self):
-        raie NotImplementedError()
+        '''
+            sample data from this probability distribution
+        '''
+        raise NotImplementedError()
 
-class PdType(object):
+class PdType:
     """
     parametirzed family of pd
     """
-    
+    def param_shape(self):
+        '''
+            the shape of params
+        '''
+        raise NotImplementedError
+    def sample_shape(self):
+        '''
+            the shape of sample data
+        '''
+        raise NotImplementedError
+    def sample_dtype(self):
+        '''
+            the type of the sampled data
+        '''
+        raise NotImplementedError
+    def pdfromflat(self, flat):
+        '''
+            create probability distribution from flat params
+        '''
+        return self.pdclass()(flat)
+    def pdclass(self):
+        '''
+            return the class of probability distribution
+        '''
+        raise NotImplementedError
+
     def param_placeholder(self, prepend_shape, name=None):
+        '''
+            parameters placeholder with tensorflow
+        '''
         return tf.placeholder(dtype=tf.float32, shape=prepend_shape+self.param_shape(), name=name)
     def sample_paceholder(self, prepend_shape, name=None):
-        return tf.placeholder(dtype=self.sample_dtype(), shape=prepend_shape+self.sample_shape(), name=name)
+        '''
+            sample data placeholder with tensorflow
+        '''
+        return tf.placeholder(dtype=self.sample_dtype(),
+                shape=prepend_shape+self.sample_shape(),
+                name=name
+                )
 
-class DiaGaussianPdType(PdType):
+class DiagGaussianPdType(PdType):
+    '''
+        Gaussian Distribution With a Diagonal Covariance Matrix,
+        multivariate gaussian distribution type
+    '''
     def __init__(self, size):
         self.size = size
 
@@ -168,12 +236,16 @@ class DiaGaussianPdType(PdType):
         return tf.float32
 
 class DiagGaussianPd(Pd):
+    '''
+        Gaussian distribution with a diagonal covariance matrix,
+        multivariate guassian distribution
+    '''
     def __init__(self, flat):
         self.flat = flat
-        mean, logstd = tf.split(flat, 2, axis=1)
-        self.mean = mean
-        self.logstd = logstd
-        self.std = tf.exp(logstd)
+        _mean, _logstd = tf.split(flat, 2, axis=1)
+        self.mean = _mean
+        self.logstd = _logstd
+        self.std = tf.exp(_logstd)
 
     def flatparam(self):
         return self.flat
@@ -182,50 +254,79 @@ class DiagGaussianPd(Pd):
         return self.mean
 
     def logp(self, x):
-        return 
+        return x
 
     def kl(self, other):
-        assert isinstance(other, DiagGuassianPd)
-        return
+        assert isinstance(other, DiagGaussianPd)
+        return 1
 
     def entropy(self):
-        return 
+        return None
 
     def sample(self):
         return self.mean + self.std * tf.random_normal(tf.shape(self.mean))
 
     @classmethod
     def fromflat(cls, flat):
+        '''
+        return the class from flat parameters
+        '''
         return cls(flat)
 
+class SoftCategoricalPdType(PdType):
+    pass
+
+class SoftCateforicalPd(Pd):
+    pass
+
 def make_pdtype(ac_space):
-    from gym import spaces
+    '''
+        create probability distribution type based on the type of action space
+    '''
     if isinstance(ac_space, spaces.Box):
         assert len(ac_space.shape) == 1
-        return DiagGaussianPdType(ac_space.shape[0])
+        pd_type = DiagGaussianPdType(ac_space.shape[0])
     elif isinstance(ac_space, spaces.Discrete):
-        return SoftCategoricalPdType(ac_space.n)
-    else:
-        raise NotImplementedError
+        pd_type = SoftCategoricalPdType(ac_space.n)
+    else: raise NotImplementedError()
+    return pd_type
 
 
 # tf utils
 def function(inputs, outputs, updates=None):
-
+    '''
+    like Theano function.
+    Example:
+        x = tf.placeholder(tf.int32, (), name="x")
+        y = tf.placeholder(tf.int32, (), name="y")
+        z = 3 * x + 2 * y
+        lin = function([x, y], z, givens={y: 0})
+        with single_threaded_session():
+            initialize()
+            assert lin(2) == 6
+            assert lin(x=3) == 9
+            assert lin(2, 2) == 10
+            assert lin(x=2, y=3) == 12
+    '''
     if isinstance(outputs, list):
-        return _Function(inputs, outputs, updates)
+        _function = _Function(inputs, outputs, updates)
     elif isinstance(outputs, (dict, collections.OrderedDict)):
-        f = _Function(inputs, output.values(), updates)
-        return lambda *args, **kwargs: type(outputs)(zip(outputs.keys(), f(*args, **kwargs)))
+        f = _Function(inputs, outputs.values(), updates)
+        _function = lambda *args, **kwargs: type(outputs)(zip(outputs.keys(), f(*args, **kwargs)))
     else:
         f = _Function(inputs, [outputs], updates)
-        return lambda *args, **kwargs: f(*args, **kwargs)[0]
+        _function = lambda *args, **kwargs: f(*args, **kwargs)[0]
+    return _function
 
-class _Function(object):
+class _Function:
+    '''
+        Capsules functions
+    '''
     def __init__(self, inputs, outputs, updates, check_nan=False):
         for inp in inputs:
             if not issubclass(type(inp), TfInput):
-                assert len(inp.op.inputs) == 0, "inputs should all be placeholders of rl_algs.common.IfInput"
+                assert len(inp.op.inputs) == 0,\
+                    "inputs should all be placeholders of rl_algs.common.IfInput"
         self.inputs =inputs
         updates = updates or []
         self.update_group = tf.group(*updates)
@@ -233,10 +334,11 @@ class _Function(object):
         self.givens = {}
         self.check_nan = check_nan
 
-    def _feed_input(self, feed_dict, inpt, value):
+    @staticmethod
+    def _feed_input(feed_dict, inpt, value):
         if issubclass(type(inpt), TfInput):
             feed_dict.update(inpt.make_feed_dict(value))
-        elif is_placehodler(inpt):
+        elif is_placeholder(inpt):
             feed_dict[inpt] = value
 
     def __call__(self, *args, **kwargs):
@@ -259,7 +361,7 @@ class _Function(object):
             else:
                 assert inpt in self.givens, "Missing argument" + inpt_name
 
-        assert len(kwargs) == 0, f"Function got extra arguments {str(list(kwargs.keys()))}")
+        assert len(kwargs) == 0, f"Function got extra arguments {str(list(kwargs.keys()))}"
 
         # update feed dict with givens
         for inpt in self.givens:
@@ -286,7 +388,7 @@ class TfInput(object):
     def make_feed_dict(self):
         raise NotImplementedError
 
-class PlaceholderInput(TfInput):
+class PlaceholderTfInput(TfInput):
     def __init__(self, placeholder):
         self._placeholder = placeholder
 
@@ -294,16 +396,16 @@ class PlaceholderInput(TfInput):
         return self._placeholder
 
     def make_feed_dict(self, data):
-        return (self._placeholder: data)
+        return {self._placeholder: data}
 
-class BatchInput(Placehholder):
+class BatchInput(PlaceholderTfInput):
     def __init__(self, shape, dtype=tf.float32, name=None):
         super().__init__(tf.placeholder(dtype, [None]+list(shape), name=name))
 
 class Unit8Input(PlaceholderTfInput):
     def __init__(self, shape, name=None):
 
-        super().__init__(tf.placeholder(tf.unit8, [None]+list(shape), name=name))
+        super().__init__(tf.placeholder(tf.uint8, [None]+list(shape), name=name))
         self._shape= shape
         self._output = tf.cast(super().get(), tf.float32) / 255.0
 
@@ -320,7 +422,7 @@ def mean(x, axis=None, keepdims=False):
 
 def var(x, axis=None, keepdims=False):
     meanx = mean(x, axis=axis, keepdims=keepdims)
-    return mean(tf.square(x-means), axis=axis, keepdims=keepdims)
+    return mean(tf.square(x-meanx), axis=axis, keepdims=keepdims)
 
 def std(x, axis=None, keepdims=False):
     return tf.sqrt(var(x, axis=axis, keepdims=keepdims))
