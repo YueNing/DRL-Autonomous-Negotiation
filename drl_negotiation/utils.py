@@ -257,13 +257,15 @@ class DiagGaussianPd(Pd):
         return self.mean
 
     def logp(self, x):
-        result = -0.5 * _sum(tf.square((x-self.mean) / self.std), axis=1)
-                    -0.5 * np.log(2.0 * np.pi) * tf.cast(tf.shape(x)[1], dtype=tf.float32) 
-                    -_sum(self.logstd, axis=1)
+        result = -0.5 * _sum(tf.square((x-self.mean) / self.std), axis=1)\
+                -0.5 * np.log(2.0 * np.pi) * tf.cast(tf.shape(x)[1], dtype=tf.float32)\
+                -_sum(self.logstd, axis=1)
         return result 
 
     def kl(self, other):
         assert isinstance(other, DiagGaussianPd)
+        #TODO
+        result = None
         return result
 
     def entropy(self):
@@ -427,11 +429,11 @@ def _mean(x, axis=None, keepdims=False):
     return tf.reduce_mean(x, axis=None if axis is None else [axis], keep_dims=keepdims)
 
 def _var(x, axis=None, keepdims=False):
-    meanx = mean(x, axis=axis, keepdims=keepdims)
-    return mean(tf.square(x-meanx), axis=axis, keepdims=keepdims)
+    meanx = _mean(x, axis=axis, keepdims=keepdims)
+    return _mean(tf.square(x-meanx), axis=axis, keepdims=keepdims)
 
 def _std(x, axis=None, keepdims=False):
-    return tf.sqrt(var(x, axis=axis, keepdims=keepdims))
+    return tf.sqrt(_var(x, axis=axis, keepdims=keepdims))
 
 def _max(x, axis=None, keepdims=False):
     return tf.reduce_max(x, axis=None if axis is None else [axis], keep_dims=keepdims)
