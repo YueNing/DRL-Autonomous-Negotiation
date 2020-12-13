@@ -84,7 +84,10 @@ class TrainWorld(SCML2020World):
         self.dim_m = 2
         # simulation timestep
         self.dt = 0.1
-        
+       
+        # world done
+        self.__done = False
+
         # set up the scml2020world
         super().__init__(
                 **SCML2020World.generate(
@@ -154,13 +157,27 @@ class TrainWorld(SCML2020World):
             # set by user
             pass
 
-        super().step()
+        #TODO: simulation is already ends
+        if self.time >= self.time_limit:
+            self.__done = True
+            return
+        
+        if not super().step():
+            self.__done = True
+            return 
         
         # update agents' state
         # policy agents
         for agent in self.policy_agents:
             self.update_agent_state(agent)
     
+    @property 
+    def world_done(self):
+        '''
+            running info of world
+        '''
+        return self.__done
+
     def update_agent_state(self, agent):
         # set management status
         if agent.blind:

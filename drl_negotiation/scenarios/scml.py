@@ -18,11 +18,12 @@ class Scenario(BaseScenario):
                 BuyCheapSellExpensiveAgent
                 ]
         n_steps = 10
-        world = TrainWorld(agent_types=agent_types, n_steps=50)
+        world = TrainWorld(agent_types=agent_types, n_steps=n_steps)
         self.reset_world(world)
         return world
 
     def reset_world(self, world):
+        #TODO: callback, reset
         pass
 
     def good_agents(self, world):
@@ -32,7 +33,7 @@ class Scenario(BaseScenario):
         return [agent for agent in world.agents if agent.adversary]
 
     def reward(self, agent, world):
-        #TODO:
+        #TODO: callback, reward
         return self.adversary_reward(agent, world) if agent.adversary else self.agent_reward(agent, world)
 
     def agent_reward(self, agent, world):
@@ -51,7 +52,8 @@ class Scenario(BaseScenario):
 
     def observation(self, agent, world):
         #TODO? get all observation,
-       
+        # callback: observation 
+        
         # set financial goal
 
         #1. communication Economic gap with others
@@ -63,3 +65,15 @@ class Scenario(BaseScenario):
             else:
                 pass
         return np.concatenate(economic_gaps+ [[1.0]])
+
+    def done(self, agent, world):
+        # TODO: callback of done
+        
+        # simulation is end
+        if world.world_done:
+            return True
+
+        import ipdb
+        # agent is brankrupt
+        return [_.is_bankrupt for _ in world.factories if _.agent_id == agent.id][0]
+

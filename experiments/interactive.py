@@ -16,21 +16,31 @@ if __name__ == '__main__':
 
     # load scenario from script
     scenario = scenarios.load(args.scenario).Scenario()
+    
     # create world
     world = scenario.make_world()
+    
     # create scml  environment
-    env = SCMLEnv(world, scenario.reset_world, scenario.reward, scenario.observation, info_callback=None, shared_viewer=False)
+    env = SCMLEnv(
+            world, 
+            scenario.reset_world, 
+            scenario.reward, 
+            scenario.observation, 
+            info_callback=None, 
+            done_callback=scenario.done, 
+            shared_viewer=False
+            )
+    
     # render call to create window
     env.render()
+    
     # create interactive policies for each agent
     policies = [InteractivePolicy(env, i) for i in range(env.n)]
     
     # execution loop
-    import ipdb
-    #ipdb.set_trace()
-    
     obs_n = env.reset()
     done = False
+    print(f'{env.world.n_steps}')
     while not done:
         act_n = []
         for i, policy in enumerate(policies):
