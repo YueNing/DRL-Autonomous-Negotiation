@@ -15,8 +15,11 @@ from .game import (Game,
                                     MyDRLSCMLGame)
 
 from negmas import AgentMechanismInterface
+import drl_negotiation.rendering as rendering
 from drl_negotiation.rendering import Viewer
-
+from scml import (
+            is_system_agent
+        )
 __all__ = [
     "BaseEnv",
     "DRLEnvMixIn",
@@ -561,7 +564,8 @@ class SCMLEnv(gym.Env):
         done_n = []
         info_n = {'n': []}
         self.agents = self.world.policy_agents
-
+        
+        # policy agents
         for i, agent in enumerate(self.agents):
             self._set_action(action_n[i], agent, self.action_space[i])
 
@@ -589,8 +593,9 @@ class SCMLEnv(gym.Env):
         return obs_n
 
     def render(self, mode="human"):
-        pass
+        #pass
         #ipdb.set_trace()
+        #TODO: rendering communication
         #if mode == 'human':
         #    for agent in self.world.agents:
         #        comm = []
@@ -605,47 +610,54 @@ class SCMLEnv(gym.Env):
         #    
         #    print(message)
 
+        # create viewers
         for i in range(len(self.viewers)):
             if self.viewers[i] is None:
                 self.viewers[i] = Viewer(700, 700)
         
-        ## create rendering geometry
-        #if self.render_geoms is None:
-        #    import rendering as rd
-        #    self.render_geoms = []
-        #    self.render_geoms_xform = []
-        #    for entity in self.world.entities:
-        #        geom = rd.make_circle(entity.size)
-        #        xform = rd.Transform()
-        #        if 'agent' in entity.name:
-        #            geom.set_color(*entity.color, alpha=0.5)
-        #        else:
-        #            geom.set_color(*entity.color)
-        #        geom.add_attr(xform)
-        #        self.render_geoms.append(geom)
-        #        self.render_geoms_xform.append(xform)
+        ## create rendering geometry, represents agents
+        if self.render_geoms is None:
+            self.render_geoms = []
+            self.render_geoms_xform = []
+            for entity in self.world.entities:
+                geom = rendering.make_circle(0.050)
+                xform = rendering.Transform()
+                if not is_system_agent(entity.name):
+                    geom.set_color(*(0, 0, 0), alpha=0.5)
+                else:
+                    geom.set_color(*(0, 0, 0))
+                geom.add_attr(xform)
+                self.render_geoms.append(geom)
+                self.render_geoms_xform.append(xform)
 
         ## add geoms to viewer
-        #for viewer in self.viewers:
-        #    viewer.geoms = []
-        #    for geom in self.render_geoms:
-        #        viewer.add_geom(geom)
+        for viewer in self.viewers:
+            viewer.geoms = []
+            for geom in self.render_geoms:
+                viewer.add_geom(geom)
+        
 
-        #results=[]
-        #for i in range(len(self.viewers)):
-        #    import rendering as rd
-        #    cam_range = 1
-        #    if self.shared_viewer:
-        #        pos = np.zeros(2)
-        #    else:
-        #        pos = self.agents[i].state.p_pos
-	#    
-        #    self.views[i].set_bounds(pos[0]-cam_range, pos[0]+cam_range, pos[1]-cam_range, pos[1]+cam_range)
-        #    for e, entity in enumerate(self.world.entities):
+        results=[]
+        for i in range(len(self.viewers)):
+            cam_range = 1
+            if self.shared_viewer:
+                pos = np.zeros(2)
+            else:
+                pos = self.agents[i].state.p_pos    
+            self.viewers[i].set_bounds(pos[0]-cam_range, pos[0]+cam_range, pos[1]-cam_range, pos[1]+cam_range)
+
+            for e, entity in enumerate(self.world.entities):
+                if entity.id == self.agents[i].id:
+                    self.render_geoms_xform[e].set_translation(*entity.state.p_pos)
+                else:
+                    # TODO render other agents
+                    pass
         #    	self.render_geoms_xform[e].set_translation(*entity.state.p_pos)
-        #    
-        #    results.append(self.viewers[i].render(return_rgb_array=mode=="rgb_array"))
-        #return results
+
+            results.append(self.viewers[i].render(return_rgb_array=mode=="rgb_array"))
+        return results
+        #import ipdb
+        #ipdb.set_trace()
 
     def _reset_render(self):
         self.render_geoms = None
@@ -713,6 +725,8 @@ class SCMLEnv(gym.Env):
                 agent.action.c = action[0]
 
             action = action[1:]
+        
+        #print(f'{agent}\'management action is {agent.action.m}, communication action is {agent.action.c}')
 
 class DRLSCMLEnv(SCMLEnv):
 

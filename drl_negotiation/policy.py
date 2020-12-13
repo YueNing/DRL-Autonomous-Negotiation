@@ -18,9 +18,8 @@ class InteractivePolicy(Policy):
         self.comm = [False for i in range(env.world.dim_c)]
         # register keyboard events with this environment's window
         env.viewers[agent_index].window.on_key_press = self.key_press
-        env.viewers[agent_index].window.on_key_press = self.key_release
-
-
+        env.viewers[agent_index].window.on_key_release = self.key_release
+        self.pressed = False
 
     def action(self, obs):
         if self.env.discrete_action_input:
@@ -41,6 +40,9 @@ class InteractivePolicy(Policy):
             if self.management[5]: m[6] +=1.0
             if True not in self.management:
                 m[0] += 1.0
+            else:
+                print(f'{self}:{m}')
+
         return np.concatenate([m, np.zeros(self.env.world.dim_c)])
 
     def key_press(self, k, mod):

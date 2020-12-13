@@ -11,6 +11,8 @@ class AgentState:
         Agent state
     '''
     def __init__(self):
+        # physical position for rendering
+        self.p_pos = (0, 0)
         # financial report
         self.f = 0
         # current step
@@ -151,11 +153,6 @@ class TrainWorld(SCML2020World):
         # agents have action_callback
         for agent in self.script_agents:
             agent.action = agent.action_callback(agent, self)
-
-        #TODO: set actions for interative_agents
-        for agent in self.interactive_agents:
-            # set by user
-            pass
 
         #TODO: simulation is already ends
         if self.time >= self.time_limit:

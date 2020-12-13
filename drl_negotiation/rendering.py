@@ -30,6 +30,8 @@ except ImportError as e:
 import math
 import numpy as np
 
+RAD2DEG = 57.29577951308232
+
 def get_display(spec):
     if spec is None:
         return None
@@ -60,9 +62,31 @@ class Viewer(object):
 
     def add_geom(self, geom):
         self.geoms.append(geom)
-
+    
+    def set_bounds(self, left, right, bottom, top):
+        assert right > left and top > bottom
+        scalex = self.width/(right-left)
+        scaley = self.height/(top-bottom)
+        self.transform = Transform(
+                translation = (-left*scalex, -bottom*scaley),
+                scale = (scalex, scaley)
+                )
     def render(self, return_rgb_array=False):
-        pass
+        glClearColor(1, 1, 1, 1)
+        self.window.clear()
+        self.window.switch_to()
+        self.window.dispatch_events()
+        self.transform.enable()
+        for geom in self.geoms:
+            geom.render()
+        self.transform.disable()
+        
+        # rgb mode 
+        arr = None
+        if return_rgb_array:
+            pass
+        self.window.flip()
+        return arr
 
 class Attr:
     def enable(self):
@@ -140,7 +164,7 @@ class Transform(Attr):
     def enable(self):
         glPushMatrix()
         glTranslatef(self.translation[0], self.translation[1], 0)
-        glRotatef(RAD2DEG * self.ratation, 0, 0, 1.0)
+        glRotatef(RAD2DEG * self.rotation, 0, 0, 1.0)
         glScalef(self.scale[0], self.scale[1], 1)
 
     def disable(self):

@@ -7,6 +7,7 @@ from drl_negotiation.env import SCMLEnv
 from drl_negotiation.policy import InteractivePolicy
 import drl_negotiation.scenarios as scenarios
 import ipdb
+import time
 
 if __name__ == '__main__':
     # parse parameters
@@ -33,7 +34,6 @@ if __name__ == '__main__':
     
     # render call to create window
     env.render()
-    
     # create interactive policies for each agent
     policies = [InteractivePolicy(env, i) for i in range(env.n)]
     
@@ -41,14 +41,18 @@ if __name__ == '__main__':
     obs_n = env.reset()
     done = False
     print(f'{env.world.n_steps}')
-    while not done:
+    #while not done:
+    while True:
+        print(env.world.current_step)
         act_n = []
         for i, policy in enumerate(policies):
             act_n.append(policy.action(obs_n[i]))
+        
+        #print(act_n)
         # step env
         obs_n, reward_n, done_n, _ = env.step(act_n)
-        print(env.world.current_step)
         done = all(done_n)
         # render all agent views
         env.render()
+        time.sleep(1)
 
