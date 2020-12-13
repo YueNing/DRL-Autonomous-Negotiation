@@ -4,7 +4,7 @@
     E-Mail: n1085633848@outlook.com
 '''
 import numpy as np
-from scml.scml2020 import SCML2020World, SCML2020Agent
+from scml.scml2020 import SCML2020World, SCML2020Agent, is_system_agent
 
 class AgentState:
     '''
@@ -12,7 +12,7 @@ class AgentState:
     '''
     def __init__(self):
         # financial report
-        # self.f = None
+        self.f = 0
         # current step
         # self.c_step = None
         # management state, e.g. issues range
@@ -42,6 +42,8 @@ class MySCML2020Agent(SCML2020Agent):
         My scml 2020 agent, subclass of scml2020agent,
         action_callback: action decided by the callback
     '''
+    Owner = 'My'
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -63,54 +65,80 @@ class MySCML2020Agent(SCML2020Agent):
         self.action_callback = None
         # agents are interactive
         self.interative = False
+        # agents are adversary
+        self.adversary = False
 
 class TrainWorld(SCML2020World):
     """
     Multi-Agent, SCML world, used for training
     """
-
     def __init__(self, *args, **kwargs):
         # maddpg drived agents, heuristic agents, script drived agents, interative agents
-        self.agents = []
+        # self.agents = []
         # SELLER, BUYER
         self.system_entities = []
 
         # communication channel dimensionality
-        self.dim_c = 0
+        self.dim_c = 2
         # negotiation management dimensionality
-        self.dim_m = 1
+        self.dim_m = 2
         # simulation timestep
         self.dt = 0.1
-
-        super().__init__(*args, **kwargs)
+        
+        # set up the scml2020world
+        super().__init__(
+                **SCML2020World.generate(
+                    *args, 
+                    **kwargs
+            )
+        )
+        
+        # set action_callback for agent which hasnot it
+        for agent in self.agents.values():
+            if not hasattr(agent, 'action_callback'):
+                if is_system_agent(agent.id):
+                    agent.action_callback = 'system'
+                    self.system_entities.append(agent)
+                else:
+                    agent.action_callback = 'heuristic'
+            
+            if not hasattr(agent, 'interactive'):
+                agent.interactive = False
 
     @property
     def entities(self):
         '''
             agents + system_entities
         '''
-        return self.agents + self.system_entities
+        return [agent for agent in self.agents.values()]
 
     @property
     def policy_agents(self):
         '''
            e.g. maddpg drived agents,
         '''
-        return [agent for agent in self.agents if agent.action_callback is None]
+        return [agent for agent in self.entities if agent.action_callback is None]
     
     @property
     def heuristic_agents(self):
         '''
-            e.g. script-drived agents
+            e.g. heuristic agents, BuyCheapSellExpensiveAgent
         '''
-        return [agent for agent in self.agents if agent.action_callback is not None]
+        return [agent for agent in self.entities if agent.action_callback=='heuristic']
 
     @property
     def interactive_agents(self):
         '''
             e.g. controlled by user
         '''
-        return [agent for agent in self.agents if agent.interactive]
+        return [agent for agent in self.entities if agent.interactive]
+    
+    @property
+    def script_agents(self):
+        '''
+            My script-drived agents, with action_callback
+        '''
+        return [agent for agent in self.entities if callable(agent.action_callback)] 
 
     def step(self):
         # actions of policy agents are preset in environement.
@@ -118,7 +146,7 @@ class TrainWorld(SCML2020World):
         # set actions for heuristic_agents
         # controlled by scripts
         # agents have action_callback
-        for agent in self.heuristic_agents:
+        for agent in self.script_agents:
             agent.action = agent.action_callback(agent, self)
 
         #TODO: set actions for interative_agents
@@ -129,7 +157,8 @@ class TrainWorld(SCML2020World):
         super().step()
         
         # update agents' state
-        for agent in self.agents:
+        # policy agents
+        for agent in self.policy_agents:
             self.update_agent_state(agent)
     
     def update_agent_state(self, agent):
@@ -144,5 +173,5 @@ class TrainWorld(SCML2020World):
         if agent.silent:
             agent.state.c = np.zeros(self.dim_c)
         else:
-            noise = np.random.randn(*agent.action.c.shape) * agent.c_noise if agent.c_noise else 0.0
+            noise = np.random.randn(*agent.action.c.shape) * agent.c_nois if agent.c_nois else 0.0
             agent.state.c = agent.action.c + noise

@@ -20,7 +20,7 @@ except ImportError as e:
 try:
     from pyglet.gl import *
 except ImportError as e:
-     raise ImportError('''
+    raise ImportError('''
     Error occured while running `from pyglet.gl import *`
     HINT: make sure you have OpenGL install. On Ubuntu, you can run 'apt-get install python-opengl'.
     If you're running on a server, you may need a virtual frame buffer; something like this should work:
@@ -62,6 +62,12 @@ class Viewer(object):
         self.geoms.append(geom)
 
     def render(self, return_rgb_array=False):
+        pass
+
+class Attr:
+    def enable(self):
+        raise NotImplementedError
+    def disable(self):
         pass
 
 class Color(Attr):
@@ -124,11 +130,6 @@ def make_circle(radius=10, res=30, filled=True):
     else:
         return PolyLine(points, True)
 
-class Attr(object):
-    def enable(self):
-        raise NotImplementedError
-    def disable(self):
-        pass
 
 class Transform(Attr):
     def __init__(self, translation=(0.0, 0.0), rotation=0.0, scale=(1, 1)):
