@@ -490,7 +490,7 @@ class SCMLEnv(gym.Env):
             observation_callback=None,
             info_callback=None,
             done_callback=None,
-            shared_viewer=True
+            shared_viewer=True,
             ):
 
         self.world = world
@@ -506,7 +506,8 @@ class SCMLEnv(gym.Env):
         self.done_callback = done_callback
         # env parameters
         self.discrete_action_space = True
-        self.discrete_action_input = False
+        # action is a number 0...N, otherwise action is a one-hot N-dimensional vector
+        self.discrete_action_input = False 
         self.force_discrete_action = world.discrete_action if hasattr(world, 'discrete_action') else False
         self.shared_reward = world.collaborative if hasattr(world, 'collaborative') else False
         self.time = 0
@@ -685,6 +686,7 @@ class SCMLEnv(gym.Env):
     def _set_action(self, action, agent, action_space, time=None):
         agent.action.m = np.zeros(self.world.dim_m)
         agent.action.c = np.zeros(self.world.dim_c)
+       
         # process action
         if isinstance(action_space, spaces.MultiDiscrete):
             act = []
@@ -700,10 +702,10 @@ class SCMLEnv(gym.Env):
             # negotiation management action
             if self.discrete_action_input:
                 agent.action.m = np.zeros(self.world.dim_m)
-                # process discrete action
+                #process discrete action
                 for i in range(self.world.dim_m):
-                    if action[0] % 2 == 1: agent.action.m[int(i/2)+i%2-1] = -1.0
-                    if action[0] % 2 == 0: agent.action.m[int(i/2)+i%2-1] = +1.0
+                    if action[0] % 2 == 1: agent.action.m[i] = 1.0
+                    if action[0] % 2 == 0: agent.action.m[i] = -1.0
             else:
                 if self.force_discrete_action:
                     d = np.argmax(action[0])
@@ -715,7 +717,8 @@ class SCMLEnv(gym.Env):
                 else:
                     agent.action.m = action[0]
             action = action[1:]
-        
+        #import ipdb
+        #ipdb.set_trace()
         if not agent.silent:
             # communication action
             if self.discrete_action_input:

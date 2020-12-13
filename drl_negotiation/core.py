@@ -22,6 +22,11 @@ class AgentState:
         # communication utterance
         self.c = None
 
+class NegotiationRequestAction:
+    DEFAULT_REQUEST = 0.0
+    ACCEPT_REQUEST = 1.0
+    REJECT_REQUEST = -1.0
+
 class Action:
     '''
         agent's action
@@ -83,7 +88,7 @@ class TrainWorld(SCML2020World):
         # communication channel dimensionality
         self.dim_c = 2
         # negotiation management dimensionality
-        self.dim_m = 2
+        self.dim_m = 1
         # simulation timestep
         self.dt = 0.1
        

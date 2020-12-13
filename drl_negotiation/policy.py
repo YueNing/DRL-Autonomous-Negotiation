@@ -12,7 +12,7 @@ class InteractivePolicy(Policy):
     def __init__(self, env, agent_index):
         super(InteractivePolicy, self).__init__()
         self.env = env
-
+        self.agent_index = agent_index
         # hard-coded keyboard events
         self.management = [False for i in range(6)]
         self.comm = [False for i in range(env.world.dim_c)]
@@ -41,7 +41,7 @@ class InteractivePolicy(Policy):
             if True not in self.management:
                 m[0] += 1.0
             else:
-                print(f'{self}:{m}')
+                print(f'{self.env.agents[self.agent_index]}:{m}')
 
         return np.concatenate([m, np.zeros(self.env.world.dim_c)])
 
@@ -55,7 +55,7 @@ class InteractivePolicy(Policy):
         
         if k==key.O: self.management[0] == True
         if k==key.P: self.management[1] == True
-
+    
     def key_release(self, k, mod):
         if k==key._1: self.management[0] = False
         if k==key._2: self.management[1] = False
