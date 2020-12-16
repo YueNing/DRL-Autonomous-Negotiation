@@ -11,7 +11,7 @@ from scml.scml2020 import IndependentNegotiationsManager
 ########################################################
 from negmas import AgentMechanismInterface, Negotiator, Issue, SAONegotiator
 import numpy as np
-
+from typing import Tuple, List
 from .negotiator import MyDRLNegotiator
 from .core import NegotiationRequestAction
 
@@ -29,14 +29,15 @@ class MyNegotiationManager(IndependentNegotiationsManager):
         """
             IDEA 4.2: TODO: observation: finanical report of initiator
                             action: ACCEPT or REJECT to negotiate
-            IDEA 4.3: TODO: observation: market conditions
-                            action: range of issues
-        """ 
-        print(f'{self}: negotiation manager {self.action.m}')
-        if self.action.m in ([NegotiationRequestAction.ACCEPT_REQUEST], 
-                                [NegotiationRequestAction.DEFAULT_REQUEST]):
-            return self.negotiator(annotation["seller"] == self.id, issues=issues)
-        return None
+        """
+        #import ipdb
+        #ipdb.set_trace()
+        
+        #print(f'{self}: negotiation manager {self.action.m}, issues{issues}')
+        #if self.action.m in ([NegotiationRequestAction.ACCEPT_REQUEST], 
+        #                        [NegotiationRequestAction.DEFAULT_REQUEST]):
+        return self.negotiator(annotation["seller"] == self.id, issues=issues)
+        #return None
 
     def acceptable_unit_price(self, step: int, sell: bool) -> int:
         
@@ -48,7 +49,7 @@ class MyNegotiationManager(IndependentNegotiationsManager):
     def target_quantity(self, step: int, sell:bool) -> int:
         """
             Idea 4.1. TODO: observation: negotiations, negotiation_requests
-                         action: target quantity, continuous action_space
+                         action: target quantity, discrete action_space
             return target quantity
 
         """
@@ -58,3 +59,65 @@ class MyNegotiationManager(IndependentNegotiationsManager):
             needed, secured = self.inputs_needed, self.inputs_secured
 
         return needed[step] - secured[step]
+
+    def _start_negotiations(
+            self,
+            product: int,
+            sell: bool,
+            step: int,
+            qvalues: Tuple[int, int],
+            uvalues: Tuple[int, int],
+            tvalues: Tuple[int, int],
+            partners: List[str] = None,
+            ) -> None:
+        """
+            IDEA 4.3: TODO: observation: market conditions, target_quantity, 
+                                            acceptable_unit_price, negotiations, negotiation_requests,
+                                            qvalues, uvalues, tvalues, step, sell
+                            action: range of issues
+        """
+        import numpy as np
+
+        # set up observation 
+        self.observation_q_values = qvalues
+        self.observation_u_values = uvalues
+        self.observation_t_values = tvalues
+
+        
+        if not np.isin(self.action.m, 0).all():
+            qvalues = tuple(np.array(qvalues) + (self.action.m[0:2] * (qvalues[1] - qvalues[0])).astype("int32"))
+            uvalues = tuple(np.array(uvalues) + (self.action.m[2:4] * (uvalues[1] - uvalues[0])).astype("int32"))
+            tvalues = tuple(np.array(tvalues) + (self.action.m[4:6] * (tvalues[1] - tvalues[0])).astype("int32"))
+        
+        #import ipdb
+        #ipdb.set_trace()
+        print(f"qvalues: {qvalues}, uvalues: {uvalues}, tvalues: {tvalues}")
+        
+        issues = [
+                Issue(qvalues, name="quantity"),
+                Issue(tvalues, name="time"),
+                Issue(uvalues, name="uvalues")
+                ]
+
+        for partner in partners:
+            self.awi.request_negotiation(
+                    is_buy = not sell,
+                    product = product,
+                    quantity = qvalues,
+                    unit_price = uvalues,
+                    time = tvalues,
+                    partner = partner,
+                    negotiator = self.negotiator(sell, issues=issues)
+                    )
+
+
+
+
+
+
+
+
+
+
+
+

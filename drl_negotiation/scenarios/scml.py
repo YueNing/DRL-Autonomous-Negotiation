@@ -59,12 +59,12 @@ class Scenario(BaseScenario):
         #1. communication Economic gap with others
         economic_gaps = []
         for entity in world.entities:
-            if entity is agent: continue
+            #if entity is agent: continue
             if entity in world.policy_agents:
                 economic_gaps.append(np.array([entity.state.f]) - np.array([agent.state.f]))
             else:
                 pass
-        return np.concatenate(economic_gaps+ [[1.0]])
+        return np.concatenate(economic_gaps)
 
     def done(self, agent, world):
         # TODO: callback of done

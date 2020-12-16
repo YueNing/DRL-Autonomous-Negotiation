@@ -126,13 +126,39 @@ def get_session():
     '''
         get the default tensorflow session
     '''
-    return tf.get_default_session()
+    return tf.compat.v1.get_default_session()
+
+def make_session(num_cpu):
+    """
+        returns a session that will use num_cpu CPU's only
+    """
+    tf_config = tf.compat.v1.ConfigProto(
+            inter_op_parallelism_threads=num_cpu,
+            intra_op_parallelism_threads=num_cpu,
+            )
+    return tf.compat.v1.Session(config=tf_config)
+
+def single_threaded_session():
+    """
+        Returns a session which will only use a single CPU
+    """
+    return make_session(1)
+
+ALREADY_INITIALIZED = set()
+
+def initialize():
+    """
+        Initialize all uninitalized variables in the global scope
+    """
+    new_variables = set(tf.compat.v1.global_variables()) - ALREADY_INITIALIZED
+    get_session().run(tf.compat.v1.variables_initializer(new_variables))
+    ALREADY_INITIALIZED.update(new_variables)
 
 # Distribution
 
 class Pd:
     """
-    Probality distribution
+    Probality distribution, for action
     """
     def flatparam(self):
         '''
@@ -206,11 +232,12 @@ class PdType:
             parameters placeholder with tensorflow
         '''
         return tf.placeholder(dtype=tf.float32, shape=prepend_shape+self.param_shape(), name=name)
-    def sample_paceholder(self, prepend_shape, name=None):
+    
+    def sample_placeholder(self, prepend_shape, name=None):
         '''
             sample data placeholder with tensorflow
         '''
-        return tf.placeholder(dtype=self.sample_dtype(),
+        return tf.compat.v1.placeholder(dtype=self.sample_dtype(),
                 shape=prepend_shape+self.sample_shape(),
                 name=name
                 )
@@ -282,10 +309,98 @@ class DiagGaussianPd(Pd):
         return cls(flat)
 
 class SoftCategoricalPdType(PdType):
-    pass
+    def __init__(self, ncat):
+        self.ncat = ncat
 
-class SoftCateforicalPd(Pd):
-    pass
+    def pdclass(self):
+        return SoftCategoricalPd
+
+    def param_shape(self):
+        return [self.ncat]
+
+    def sample_shape(self):
+        return [self.ncat]
+
+    def sample_dtype(self):
+        return tf.float32
+
+class SoftCategoricalPd(Pd):
+    """
+       Soft Categorical probability distribution 
+    """
+
+    def __init__(self, logits):
+        self.logits = logits
+
+    def flatparam(self):
+        return self.logits
+
+    def mode(self):
+        return _softmax(self.logits, axis=-1)
+    
+    def logp(self, x):
+        return -tf.nn.softmax_cross_entropy_with_logits(logits=self.logits, labels=x)
+
+    def kl(self, other):
+        pass
+
+    def entropy(self):
+        pass
+
+    def sample(self):
+        u = tf.random.uniform(tf.shape(self.logits))
+        return _softmax(self.logits - tf.math.log(-tf.math.log(u)), axis=-1)
+
+    @classmethod
+    def fromflat(cls, flat):
+        return cls(flat)
+
+class BernoulliPdType(PdType):
+    def __init__(self, size):
+        self.size = size
+
+    def pdclass(self):
+        return BernoulliPd
+
+    def param_shape(self):
+        return [self.size]
+
+    def sample_shape(self):
+        return [self.size]
+
+    def sample_dtype(self):
+        return tf.int32
+
+class BernoulliPd(Pd):
+    """
+        0 and 1, bernoullipd probability distribution
+    """
+    def __init__(self, logits):
+        self.logits = logtis
+        self.ps = tf.sigmoid(logits)
+
+    def flatparam(self):
+        return self.logits
+
+    def mode(self):
+        return tf.round(self.ps)
+
+    def logp(self, x):
+        pass
+
+    def kl(self, other):
+        pass
+
+    def entropy(self):
+        pass
+
+    def sample(self):
+        pass
+
+    @classmethod
+    def fromflat(cls, flat):
+        return cls(flat)
+
 
 def make_pdtype(ac_space):
     '''
@@ -408,7 +523,7 @@ class PlaceholderTfInput(TfInput):
 
 class BatchInput(PlaceholderTfInput):
     def __init__(self, shape, dtype=tf.float32, name=None):
-        super().__init__(tf.placeholder(dtype, [None]+list(shape), name=name))
+        super().__init__(tf.compat.v1.placeholder(dtype, [None]+list(shape), name=name))
 
 class Unit8Input(PlaceholderTfInput):
     def __init__(self, shape, name=None):
@@ -419,6 +534,32 @@ class Unit8Input(PlaceholderTfInput):
 
     def get(self):
         return self._output
+
+# scope
+def scope_name():
+    return tf.compat.v1.get_variable_scope().name
+
+def scope_vars(scope, trainable_only=False):
+    """
+        get the paramters inside a scope
+    """
+    return tf.compat.v1.get_collection(
+            tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES if trainable_only else tf.compat.v1.GraphKeys.GLOBAL_VARIABLES,
+            scope=scope if isinstance(scope, str) else scope.name
+            )
+def absolute_scope_name(relative_scope_name):
+    return scope_name() + "/" + relative_scope_name
+
+# optimizer 
+def minimize_and_clip(optimizer, objective, var_list, clip_val=10):
+    if clip_val is None:
+        return optimizer.minimize(objective, var_list=var_list)
+    else:
+        gradients = optimizer.compute_gradients(objective, var_list=var_list)
+        for i, (grad, var) in enumerate(gradients):
+            if grad is not None:
+                gradients[i] = (tf.clip_by_norm(grad, clip_val), var)
+        return optimizer.apply_gradients(gradients)
 
 # operations
 
@@ -449,16 +590,3 @@ def _argmax(x, axis=None):
 
 def _softmax(x, axis=None):
     return tf.nn.softmax(x, axis=axis)
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,14 +1,18 @@
+import drl_negotiation.utils as U
+import tensorflow as tf
+from drl_negotiation.a2c.replay_buffer import ReplayBuffer
+
 def make_update_exp(vals, target_vals):
     polyak = 1.0 - 1e-2
     expression = []
 
     for var, var_target in zip(sorted(vals, key=lambda v: v.name), sorted(target_vals, key=lambda v: v.name)):
-        pass
+        expression.append(var_target.assign(polyak*var_target - (1-polyak) * var))
     expression = tf.group(*expression)
     return U.function([], [], updates=[expression])
 
 def p_train(
-        make_obs_pb_n, 
+        make_obs_ph_n, 
         act_space_n,
         p_index,
         p_func,
@@ -20,40 +24,48 @@ def p_train(
         scope="trainer",
         reuse=None
         ):
-    with tf.variable_scope(scope, reuse=reuse):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
         # distributions of actions
-        act_pdtype_n = [make_pdtype(act_space) for act_space in act_space_n]
+        import ipdb
+        act_pdtype_n = [U.make_pdtype(act_space) for act_space in act_space_n]
 
         # set up placeholders
         obs_ph_n = make_obs_ph_n
         act_ph_n = [act_pdtype_n[i].sample_placeholder([None], name="action"+str(i)) for i in range(len(act_space_n))]
 
+        # agent could just observe own space
         p_input = obs_ph_n[p_index]
 
-        p = p_func(p_input, int(act_pdtype_n[p_index].param_shape()[0]), scope="p_func", num_units=num_num_units)
+        # output is probability of all actions
+        p = p_func(p_input, int(act_pdtype_n[p_index].param_shape()[0]), scope="p_func", num_units=num_units)
         p_func_vars = U.scope_vars(U.absolute_scope_name("p_func"))
 
-        # 
+        # esitmate probability distribution 
         act_pd = act_pdtype_n[p_index].pdfromflat(p)
 
         act_sample = act_pd.sample()
         p_reg = tf.reduce_mean(tf.square(act_pd.flatparam()))
 
+        # for critic
         act_input_n = act_ph_n + []
         act_input_n[p_index] = act_pd.sample()
+
         q_input = tf.concat(obs_ph_n + act_input_n, 1)
+
         if local_q_func:
             q_input = tf.concat([obs_ph_n[p_index], act_input_n[p_index]], 1)
 
         q = q_func(q_input, 1, scope="q_func", reuse=True, num_units=num_units)[:,0]
+        
+        #TODO: need to understand
         pg_loss = -tf.reduce_mean(q)
 
         loss = pg_loss + p_reg * 1e-3
-        
+
         optimizer_expr = U.minimize_and_clip(optimizer, loss, p_func_vars, grad_norm_clipping)
 
         # callback
-        train = U.function(inputs=obs_ph_n + act_ph_n, outpus=loss, updates=[optimizer_expr])
+        train = U.function(inputs=obs_ph_n + act_ph_n, outputs=loss, updates=[optimizer_expr])
         act = U.function(inputs=[obs_ph_n[p_index]], outputs=act_sample)
         p_values = U.function([obs_ph_n[p_index]], p)
 
@@ -63,30 +75,43 @@ def p_train(
         update_target_p = make_update_exp(p_func_vars, target_p_func_vars)
 
         target_act_sample = act_pdtype_n[p_index].pdfromflat(target_p).sample()
-        target_act = U.function(inputs=[obs_ph_n[p_index]], outpus=target_act_sample)
+        target_act = U.function(inputs=[obs_ph_n[p_index]], outputs=target_act_sample)
 
         return act, train, update_target_p, {"p_values": p_values, "target_act": target_act}
 
 def q_train(make_obs_ph_n, act_space_n, q_index, q_func, optimizer, grad_norm_clipping=None, local_q_func=False, scope="trainer", reuse=None, num_units=64):
-    with tf.variable_scope(scope, reuse=reuse):
-        act_pdtype_n = [make_pdtype(act_space) for act_space in act_space_n]
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
+        # action probability distribution
+        import ipdb
+        act_pdtype_n = [U.make_pdtype(act_space) for act_space in act_space_n]
 
         obs_ph_n = make_obs_ph_n
-        act_ph_n = [act_pdtype_n[i].sample_placeholder([None], name="action"+str(i)) for i in range(len(act_space_n))]
-        target_ph = tf.placeholder(tf.float32, [None], name="target")
+        act_ph_n = [act_pdtype_n[i].sample_placeholder([None], name=f"action"+str(i)) for i in range(len(act_space_n))]
 
+
+        target_ph = tf.compat.v1.placeholder(tf.float32, [None], name="target")
+
+        # critic could observe many information, and actions of all agents and so on.
         q_input = tf.concat(obs_ph_n + act_ph_n, 1)
+
         if local_q_func:
             q_input = tf.concat([obs_ph_n[q_index], act_ph_n[q_index]], 1)
-        q = q_func(q_input, 1, scope="q_func", num_units=num_units)[:,0]
-        q_func_vars = U.scope.vars(U.absolute_scope_name("q_func"))
 
+        # output is not action, q-value
+        q = q_func(q_input, 1, scope="q_func", num_units=num_units)[:,0]
+
+        q_func_vars = U.scope_vars(U.absolute_scope_name("q_func"))
+
+        # loss of q-value, mean square error
         q_loss = tf.reduce_mean(tf.square(q-target_ph))
 
         q_reg = tf.reduce_mean(tf.square(q))
-        loss = q_loss
+
+        # TODO: need to unstand
+        loss = q_loss * q_reg
 
         optimizer_expr = U.minimize_and_clip(optimizer, loss, q_func_vars, grad_norm_clipping)
+
 
         # callable
         train = U.function(inputs=obs_ph_n+act_ph_n + [target_ph], outputs=loss, updates=[optimizer_expr])
@@ -114,7 +139,7 @@ class AgentTrainer(object):
         raise NotImplemented()
 
     def update(self):
-        raie NotImplemented()
+        raise NotImplemented()
 
 class MADDPGAgentTrainer(AgentTrainer):
 
@@ -124,27 +149,50 @@ class MADDPGAgentTrainer(AgentTrainer):
         self.agent_index = agent_index
         self.args = args
         obs_ph_n = []
+
+        # n-observation placeholder, observation of all policy agents
         for i in range(self.n):
             obs_ph_n.append(U.BatchInput(obs_shape_n[i], name="observation"+str(i)).get())
-
+        
+        # q-value, critic in actor-critic 
         self.q_train, self.q_update, self.q_debug = q_train(
                 scope=self.name,
                 make_obs_ph_n=obs_ph_n,
                 act_space_n=act_space_n,
                 q_index=agent_index,
                 q_func=model,
-                optimizer=tf.train.AdamOptimizer(learning_rate=args.lr),
+                optimizer=tf.compat.v1.train.AdamOptimizer(learning_rate=args.lr),
                 grad_norm_clipping=0.5,
                 local_q_func=local_q_func,
                 num_units=args.num_units
                 )
 
-        self.act, self.p_train, self.p_update, self.p_debug = p_train()
+        
+        # policy, actor in actor-critic
+        self.act, self.p_train, self.p_update, self.p_debug = p_train(
+                scope=self.name,
+                make_obs_ph_n=obs_ph_n,
+                act_space_n=act_space_n,
+                p_index=agent_index,
+                p_func=model,
+                q_func=model,
+                optimizer=tf.compat.v1.train.AdamOptimizer(learning_rate=args.lr),
+                grad_norm_clipping=0.5,
+                local_q_func=local_q_func,
+                num_units=args.num_units
+                )
 
+        # replay buffer for training
         self.replay_buffer = ReplayBuffer(1e6)
         self.max_replay_buffer_len = args.batch_size * args.max_episode_len
         self.replay_sample_index = None
-
+    
+    def __str__(self):
+        return f'MADDPGAgentTrainer:{self.name}'
+    
+    def __repr__(self):
+        return f'MADDPGAgentTrainer:{self.name}'
+    
     def action(self, obs):
         return self.act(obs[None])[0]
 

@@ -101,11 +101,31 @@ class Color(Attr):
     def enable(self):
         glColor4f(*self.vec4)
 
+class Label(Attr):
+    def __init__(self, text='Test', font_size=10, pos=(0, 0)):
+        self.label = pyglet.text.Label(text,
+                font_name = "Times New Roman",
+                color=(123, 125, 0, 200),
+                font_size = font_size,
+                x = pos[0], y=pos[1],
+                )
+
+    def enable(self):
+        print("label enable")
+        print(self.label.text)
+        self.label.draw()
+
+    def set_position(self, x, y, text):
+        #print(f"label set position {x}, {y}, {text}")
+        self.label.x = x
+        self.label.y = y
+        self.label.text = text
+
 class Geom(object):
     def __init__(self):
         self._color = Color((0, 0, 0, 1.0))
         self.attrs = [self._color]
-
+       
     def render(self):
         for attr in reversed(self.attrs):
             attr.enable()
@@ -154,6 +174,12 @@ def make_circle(radius=10, res=30, filled=True):
     else:
         return PolyLine(points, True)
 
+def generate_pos(radius=10, res=30):
+    points = []
+    for i in range(res):
+        ang = 2*math.pi*i / res
+        points.append((math.cos(ang)*radius, math.sin(ang)*radius))
+    return points
 
 class Transform(Attr):
     def __init__(self, translation=(0.0, 0.0), rotation=0.0, scale=(1, 1)):

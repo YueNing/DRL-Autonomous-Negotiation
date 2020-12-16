@@ -26,7 +26,7 @@ class ReplayBuffer(object):
             self._storage.append(data)
         else:
             self._storage[self._next_idx] = data
-        self._next_idx = (self._next_idx + 1) % self._maxisze
+        self._next_idx = (self._next_idx + 1) % self._maxsize
 
     def make_index(self, batch_size):
         return [random.randint(0, len(self._storage) -1) for _ in range(batch_size)]

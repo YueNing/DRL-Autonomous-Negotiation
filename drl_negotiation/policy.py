@@ -14,7 +14,7 @@ class InteractivePolicy(Policy):
         self.env = env
         self.agent_index = agent_index
         # hard-coded keyboard events
-        self.management = [False for i in range(6)]
+        self.management = [False for i in range(12)]
         self.comm = [False for i in range(env.world.dim_c)]
         # register keyboard events with this environment's window
         env.viewers[agent_index].window.on_key_press = self.key_press
@@ -31,13 +31,19 @@ class InteractivePolicy(Policy):
             if self.management[4]: m = 5
             if self.management[5]: m = 6
         else:
-            m = np.zeros(7) # 7-d because of no-change action
+            m = np.zeros(13) # 7-d because of no-change action
             if self.management[0]: m[1] +=1.0
             if self.management[1]: m[2] +=1.0
             if self.management[2]: m[3] +=1.0
             if self.management[3]: m[4] +=1.0
             if self.management[4]: m[5] +=1.0
             if self.management[5]: m[6] +=1.0
+            if self.management[6]: m[7] +=1.0
+            if self.management[7]: m[8] +=1.0
+            if self.management[8]: m[9] +=1.0
+            if self.management[9]: m[10] +=1.0
+            if self.management[10]: m[11] +=1.0
+            if self.management[11]: m[12] +=1.0
             if True not in self.management:
                 m[0] += 1.0
             else:

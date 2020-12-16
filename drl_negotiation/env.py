@@ -544,10 +544,12 @@ class SCMLEnv(gym.Env):
                     act_space = space.Tuple(total_action_space)
                 self.action_space.append(act_space)
             else:
-                self.action_space.append(total_action_space)
+                self.action_space.append(total_action_space[0])
+            
             # observation space
             obs_dim = len(observation_callback(agent, self.world))
-            self.observation_space.append(spaces.Box(low=np.inf, high=+np.inf, shape=(obs_dim, ), dtype=np.float32))
+            self.observation_space.append(spaces.Box(low=-np.inf, high=+np.inf, shape=(obs_dim, ), dtype=np.float32))
+            
             agent.action.c = np.zeros(self.world.dim_c)
         
         # rendering
@@ -620,16 +622,25 @@ class SCMLEnv(gym.Env):
         if self.render_geoms is None:
             self.render_geoms = []
             self.render_geoms_xform = []
+            self.render_geoms_label = []
             for entity in self.world.entities:
                 geom = rendering.make_circle(0.050)
                 xform = rendering.Transform()
+                label = rendering.Label()
                 if not is_system_agent(entity.name):
                     geom.set_color(*(0, 0, 0), alpha=0.5)
                 else:
                     geom.set_color(*(0, 0, 0))
                 geom.add_attr(xform)
+                
+                # others attr
+                #geom.add_attr(label)
+
                 self.render_geoms.append(geom)
                 self.render_geoms_xform.append(xform)
+
+                # others attr which needed to set paramters
+                #self.render_geoms_label.append(label)
 
         ## add geoms to viewer
         for viewer in self.viewers:
@@ -647,14 +658,20 @@ class SCMLEnv(gym.Env):
                 pos = self.agents[i].state.p_pos    
             self.viewers[i].set_bounds(pos[0]-cam_range, pos[0]+cam_range, pos[1]-cam_range, pos[1]+cam_range)
 
+            points = rendering.generate_pos(radius=0.8, res=len(self.world.entities)-1)
+            point_index = 0
             for e, entity in enumerate(self.world.entities):
                 if entity.id == self.agents[i].id:
                     self.render_geoms_xform[e].set_translation(*entity.state.p_pos)
+                    #self.render_geoms_label[e].set_position(*entity.state.p_pos, entity.id)
                 else:
-                    # TODO render other agents
-                    pass
+                    # render other agents
+                    self.render_geoms_xform[e].set_translation(*points[point_index])
+                    
+                    # self.render_geoms_label[e].set_position(*points[point_index], entity.id)
+                    point_index +=1
+                    #pass
         #    	self.render_geoms_xform[e].set_translation(*entity.state.p_pos)
-
             results.append(self.viewers[i].render(return_rgb_array=mode=="rgb_array"))
         return results
         #import ipdb
@@ -698,6 +715,8 @@ class SCMLEnv(gym.Env):
         else:
             action = [action]
 
+        import ipdb
+        #ipdb.set_trace()
         if agent.manageable:
             # negotiation management action
             if self.discrete_action_input:
@@ -716,6 +735,7 @@ class SCMLEnv(gym.Env):
                         agent.action.m[i] +=action[0][2*i+1] - action[0][2*(i+1)]
                 else:
                     agent.action.m = action[0]
+            #ipdb.set_trace()
             action = action[1:]
         #import ipdb
         #ipdb.set_trace()
@@ -728,7 +748,6 @@ class SCMLEnv(gym.Env):
                 agent.action.c = action[0]
 
             action = action[1:]
-        
         #print(f'{agent}\'management action is {agent.action.m}, communication action is {agent.action.c}')
 
 class DRLSCMLEnv(SCMLEnv):

@@ -57,7 +57,7 @@ class MySCML2020Agent(SCML2020Agent):
         # agents are manageable by default
         self.manageable = True
         # cannot send communication signals
-        self.silent = False
+        self.silent = True 
         # cannot observe the world
         self.blind = False
         # management noise amount
@@ -88,7 +88,7 @@ class TrainWorld(SCML2020World):
         # communication channel dimensionality
         self.dim_c = 2
         # negotiation management dimensionality
-        self.dim_m = 1
+        self.dim_m = 6 
         # simulation timestep
         self.dt = 0.1
        
