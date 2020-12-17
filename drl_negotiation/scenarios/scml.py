@@ -32,7 +32,7 @@ class Scenario(BaseScenario):
         return world
 
     def reset_world(self, world):
-        #TODO: callback, reset
+        # callback, reset
 
         # reset world, agents, factories
         # fixed position
@@ -56,7 +56,10 @@ class Scenario(BaseScenario):
         return [agent for agent in world.agents if agent.adversary]
 
     def reward(self, agent, world):
-        #TODO: callback, reward
+        # callback, reward
+        # idea 1: external rewards, e.g. balance - initial balance for agent, -(balance - initial balance) for adversary agent
+        # idea 2: Intrinsic motivation rewards.
+        # On Learning Intrinsic Rewards for Policy Gradient Methods, https://arxiv.org/abs/1804.06459
         return self.adversary_reward(agent, world) if agent.adversary else self.agent_reward(agent, world)
 
     def agent_reward(self, agent, world):
@@ -90,7 +93,7 @@ class Scenario(BaseScenario):
         return np.concatenate(economic_gaps)
 
     def done(self, agent, world):
-        # TODO: callback of done
+        # callback of done
         
         # simulation is end
         if world.world_done:

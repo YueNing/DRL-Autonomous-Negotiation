@@ -167,7 +167,7 @@ class TrainWorld(SCML2020World):
         for agent in self.script_agents:
             agent.action = agent.action_callback(agent, self)
 
-        #TODO: simulation is already ends
+        # simulation is already ends
         if self.time >= self.time_limit:
             self.__done = True
             return

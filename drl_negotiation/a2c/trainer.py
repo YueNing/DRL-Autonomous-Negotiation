@@ -1,5 +1,6 @@
 import drl_negotiation.utils as U
 import tensorflow as tf
+import numpy as np
 from drl_negotiation.a2c.replay_buffer import ReplayBuffer
 
 def make_update_exp(vals, target_vals):
@@ -12,7 +13,7 @@ def make_update_exp(vals, target_vals):
     return U.function([], [], updates=[expression])
 
 def p_train(
-        make_obs_ph_n, 
+        make_obs_ph_n,
         act_space_n,
         p_index,
         p_func,
