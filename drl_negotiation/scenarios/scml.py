@@ -4,10 +4,10 @@ from drl_negotiation.myagent import MyComponentsBasedAgent
 from scml.scml2020 import (
             DecentralizingAgent,
             BuyCheapSellExpensiveAgent,
-            IndDecentralizingAgent,
-            MovingRangeAgent
+            SCML2020World,
        )
 import numpy as np
+
 
 class Scenario(BaseScenario):
 
@@ -18,13 +18,36 @@ class Scenario(BaseScenario):
                 BuyCheapSellExpensiveAgent
                 ]
         n_steps = 10
-        world = TrainWorld(agent_types=agent_types, n_steps=n_steps)
+
+        # configuration, for Scenario scml
+        world_configuration = SCML2020World.generate(
+            agent_types=agent_types,
+            n_steps=n_steps
+        )
+
+        world = TrainWorld(configuration=world_configuration)
+
         self.reset_world(world)
+
         return world
 
     def reset_world(self, world):
         #TODO: callback, reset
-        pass
+
+        # reset world, agents, factories
+        # fixed position
+        agent_types = world.configuration['agent_types']
+        agent_params = world.configuration['agent_params'][:-2]
+        n_steps = world.configuration['n_steps']
+
+        reset_configuration = SCML2020World.generate(
+            #TODO: could be reset
+            agent_types=agent_types,
+            agent_params=agent_params,
+            n_steps=n_steps
+        )
+
+        world.__init__(configuration=reset_configuration)
 
     def good_agents(self, world):
         return [agent for agent in world.agents if not agent.adversary]

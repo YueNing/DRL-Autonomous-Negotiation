@@ -5,6 +5,7 @@
 '''
 import numpy as np
 from scml.scml2020 import SCML2020World, SCML2020Agent, is_system_agent
+import  copy
 
 class AgentState:
     '''
@@ -48,12 +49,14 @@ class MySCML2020Agent(SCML2020Agent):
     '''
         My scml 2020 agent, subclass of scml2020agent,
         action_callback: action decided by the callback
+
+        hook:
+            init
     '''
     Owner = 'My'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         # agents are manageable by default
         self.manageable = True
         # cannot send communication signals
@@ -75,11 +78,14 @@ class MySCML2020Agent(SCML2020Agent):
         # agents are adversary
         self.adversary = False
 
+    def init(self):
+        super(MySCML2020Agent, self).init()
+
 class TrainWorld(SCML2020World):
     """
     Multi-Agent, SCML world, used for training
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, configuration=None, *args, **kwargs):
         # maddpg drived agents, heuristic agents, script drived agents, interative agents
         # self.agents = []
         # SELLER, BUYER
@@ -96,13 +102,15 @@ class TrainWorld(SCML2020World):
         self.__done = False
 
         # set up the scml2020world
-        super().__init__(
-                **SCML2020World.generate(
-                    *args, 
-                    **kwargs
-            )
+        if configuration is None:
+            configuration = SCML2020World.generate(
+            *args,
+            **kwargs
         )
-        
+
+        self.configuration = copy.deepcopy(configuration)
+
+        super().__init__(**self.configuration)
         # set action_callback for agent which hasnot it
         for agent in self.agents.values():
             if not hasattr(agent, 'action_callback'):
