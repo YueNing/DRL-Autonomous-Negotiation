@@ -5,6 +5,7 @@
 '''
 import numpy as np
 from scml.scml2020 import SCML2020World, SCML2020Agent, is_system_agent
+from typing import Optional
 import  copy
 
 class AgentState:
@@ -14,12 +15,14 @@ class AgentState:
     def __init__(self):
         # physical position for rendering
         self.p_pos = (0, 0)
+        # others state
+        self.o_negotiation_step = 0
         # financial report
         self.f = 0
         # current step
         # self.c_step = None
         # management state, e.g. issues range
-        self.m = None
+        # self.m = None
         # communication utterance
         self.c = None
 
@@ -81,6 +84,35 @@ class MySCML2020Agent(SCML2020Agent):
     def init(self):
         super(MySCML2020Agent, self).init()
 
+    @property
+    def running_negotiations(self) -> [int, int]:
+        """
+
+        Returns:
+            number of runniing negotiations
+        """
+        return self._count(super(MySCML2020Agent, self).running_negotiations())
+
+
+    @property
+    def negotiation_requests(self) -> [int, int]:
+        """
+
+        Returns:
+            number of standing negotiation requests, sell, buy
+        """
+        return self._count(super(MySCML2020Agent, self).negotiation_requests())
+
+    def _count(self, negotiations):
+        sell = 0
+        buy = 0
+        for n in negotiations:
+            if n['annotation'] == "sell":
+                sell +=1
+            elif n['annotation'] == "buy":
+                buy +=1
+        return sell, buy
+
 class TrainWorld(SCML2020World):
     """
     Multi-Agent, SCML world, used for training
@@ -122,6 +154,9 @@ class TrainWorld(SCML2020World):
             
             if not hasattr(agent, 'interactive'):
                 agent.interactive = False
+
+            if not hasattr(agent, 'state'):
+                agent.state = AgentState()
 
     @property
     def entities(self):
@@ -188,17 +223,25 @@ class TrainWorld(SCML2020World):
         '''
         return self.__done
 
-    def update_agent_state(self, agent):
-        # set management status
-        if agent.blind:
-            agent.state.m = np.zeros(self.dim_m)
-        else:
-            # TODO: get the management state
-            agent.state.m = None
-        
-        # set communication status
-        if agent.silent:
-            agent.state.c = np.zeros(self.dim_c)
-        else:
-            noise = np.random.randn(*agent.action.c.shape) * agent.c_nois if agent.c_nois else 0.0
-            agent.state.c = agent.action.c + noise
+    def update_agent_state(self, agent: Optional[MySCML2020Agent]):
+        if agent.state.o_current_step == agent.awi.current_step:
+            # set management status
+            if agent.blind:
+                # agent.state.m = np.zeros(self.dim_m)
+                agent.state.f = 0
+            else:
+
+                # update agent state, get the management state
+                # qvalues = (1, agent.target_quantity(agent.state.o_step, agent.state.o_is_sell))
+                # tvalues = agent._trange(agent.state.o_negotiation_step, agent.state.o_step)
+                # uvalues = agent._urange(agent.state.o_step, agent.state.o_is_sell, tvalues)
+                # agent.state.m = [qvalues, tvalues, uvalues]
+
+                agent.state.f = [_.current_balance for _ in self.factories if _.agent_id == agent.id][0]
+
+            # set communication status
+            if agent.silent:
+                agent.state.c = np.zeros(self.dim_c)
+            else:
+                noise = np.random.randn(*agent.action.c.shape) * agent.c_nois if agent.c_nois else 0.0
+                agent.state.c = agent.action.c + noise

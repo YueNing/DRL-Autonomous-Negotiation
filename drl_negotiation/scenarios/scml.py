@@ -1,13 +1,15 @@
 from drl_negotiation.scenario import BaseScenario
-from drl_negotiation.core import TrainWorld
+from drl_negotiation.core import TrainWorld, MySCML2020Agent
 from drl_negotiation.myagent import MyComponentsBasedAgent
 from scml.scml2020 import (
             DecentralizingAgent,
             BuyCheapSellExpensiveAgent,
             SCML2020World,
        )
+from typing import Optional
 import numpy as np
 
+REW_FACTOR = 0.2
 
 class Scenario(BaseScenario):
 
@@ -41,7 +43,7 @@ class Scenario(BaseScenario):
         n_steps = world.configuration['n_steps']
 
         reset_configuration = SCML2020World.generate(
-            #TODO: could be reset
+            #TODO: [Future work Improvement] could be reset
             agent_types=agent_types,
             agent_params=agent_params,
             n_steps=n_steps
@@ -63,10 +65,15 @@ class Scenario(BaseScenario):
         return self.adversary_reward(agent, world) if agent.adversary else self.agent_reward(agent, world)
 
     def agent_reward(self, agent, world):
-        #TODO: Difference from initial funds
-        #agent.f - agent.init_f
+        # Difference from initial funds
+        # agent.f - agent.init_f
         rew = 0
-        return 0
+
+        # means in this world step, the agent starts a sell negotiation except initial state
+        if agent.state.o_negotiation_step == agent.awi.current_step:
+            rew = (agent.state.f - agent.stata.init_f) / (agent.state.init_f) * REW_FACTOR
+
+        return rew
 
     def adversary_reward(self, agent, world):
         #TODO: keep the good agents near the intial funds
@@ -76,21 +83,54 @@ class Scenario(BaseScenario):
         rew = 0
         return rew
 
-    def observation(self, agent, world):
-        #TODO? get all observation,
-        # callback: observation 
-        
-        # set financial goal
+    def observation(self, agent: Optional[MyComponentsBasedAgent, MySCML2020Agent], world: Optional[TrainWorld]):
+        # get all observation,
+        # callback: obrvation
 
-        #1. communication Economic gap with others
+        # parameters needed to be observed
+        # in order to determine the range of negotiation issues,
+
+        # global information, market information
+        o_m = [agent.awi.profile.costs]
+
+        # agent information, agent's
+        o_a = [agent._horizon]
+
+        # unit_price
+        #   1. catalog price in the market, not just input product and output product of agents.
+        #   2. estimate of the current trading price of products from component Prediction Trading Strategy
+        #   3. seller or buyer, seller or buyer are influenced by the outputs_needed, outputs_secured, inputs_needed
+        #   and inputs_secured, Let iner learn this parameter by itself
+
+        o_u_c = agent.awi.catalog_prices
+        o_u_e = [agent.expected_inputs, agent.expected_outputs, agent.input_cost, agent.output_price]
+        o_u_t = [agent.outputs_needed, agent.outputs_secured, agent.inputs_needed, agent.inputs_secured]
+
+        # quantity
+        #   1. seller or buyer
+        #   2. target quantity
+        #   3. running negotiation, negotiation request
+
+        # running negotiation and negotiation request of agent
+        o_q_n = [
+            agent.running_negotiations,
+            agent.negotiation_requests,
+        ]
+
+        # time
+        #   1. seller or buyer
+        #   2. current step
+        #   3. total step
+        #   4. current step / total step
+        o_t_c = agent.awi.current_step / agent.awi.n_steps
+
+        #2. Economic gap with others
         economic_gaps = []
         for entity in world.entities:
-            #if entity is agent: continue
-            if entity in world.policy_agents:
-                economic_gaps.append(np.array([entity.state.f]) - np.array([agent.state.f]))
-            else:
-                pass
-        return np.concatenate(economic_gaps)
+            if entity is agent: continue
+            economic_gaps.append(np.array([entity.state.f]) - np.array([agent.state.f]))
+
+        return np.concatenate(economic_gaps + o_m + o_a + o_u_c + o_u_e + o_u_t + o_q_n + o_t_c)
 
     def done(self, agent, world):
         # callback of done
@@ -102,4 +142,3 @@ class Scenario(BaseScenario):
         import ipdb
         # agent is brankrupt
         return [_.is_bankrupt for _ in world.factories if _.agent_id == agent.id][0]
-

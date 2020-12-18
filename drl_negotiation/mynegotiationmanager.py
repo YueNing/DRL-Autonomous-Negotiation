@@ -78,13 +78,17 @@ class MyNegotiationManager(IndependentNegotiationsManager):
         """
         import numpy as np
 
-        # set up observation 
-        self.observation_q_values = qvalues
-        self.observation_u_values = uvalues
-        self.observation_t_values = tvalues
+        if not np.isin(self.action.m, 0).all() and sell:
+            # set up observation
+            # self.state.o_role = sell
+            self.state.o_negotiation_step = self.awi.current_step
+            #self.state.o_step = step
+            #self.state.o_is_sell = sell
 
-        
-        if not np.isin(self.action.m, 0).all():
+            #self.state.o_q_values = qvalues
+            #self.state.o_u_values = uvalues
+            #self.state.o_t_values = tvalues
+
             qvalues = tuple(np.array(qvalues) + (self.action.m[0:2] * (qvalues[1] - qvalues[0])).astype("int32"))
             uvalues = tuple(np.array(uvalues) + (self.action.m[2:4] * (uvalues[1] - uvalues[0])).astype("int32"))
             tvalues = tuple(np.array(tvalues) + (self.action.m[4:6] * (tvalues[1] - tvalues[0])).astype("int32"))
