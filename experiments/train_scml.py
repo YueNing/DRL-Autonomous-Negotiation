@@ -35,7 +35,7 @@ def parse_args():
     parser.add_argument("--save-rate", type=int, default=1000, help="save model once every time this many episodes are compeleted")
     parser.add_argument("--load-dir", type=str, default='', help="directory in which training state and model are loaded")
     
-    # TODO: Evaluation
+    # Evaluation
     parser.add_argument("--restore", action="store_true", default=False)
     parser.add_argument("--display", action="store_true", default=False)
     parser.add_argument("--benchmark", action="store_true", default=False)
@@ -157,6 +157,7 @@ def train(arglist):
             # environment
             #ipdb.set_trace()
             new_obs_n, rew_n, done_n, info_n = env.step(action_n)
+
             episode_step +=1
             done = all(done_n)
             terminal = (episode_step >=arglist.max_episode_len)
@@ -215,6 +216,7 @@ def train(arglist):
 
                 if num_adversaries ==0:
                     print()
+
 
 if __name__ == '__main__':
     arglist = parse_args()

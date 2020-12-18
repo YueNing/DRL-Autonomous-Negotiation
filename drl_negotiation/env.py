@@ -173,7 +173,7 @@ class RLEnvMixIn:
 
 class DRLEnvMixIn:
     '''
-    TODO: Some Mixin function of deep reinforcement learning
+    Some Mixin function of deep reinforcement learning
     '''
     def network(self):
         pass
@@ -333,7 +333,7 @@ class NegotiationEnv(NEnv):
         )
         self._strategy = strategy
 
-        # TODO: set the observation space, for reinforcement learning
+        # set the observation space, for reinforcement learning
         # Default ANEGMA, single issue
         # state: ("Xbest":, "Tleft":, "IP_my", "RP_my")
         # observ_space = spaces.Box(low=np.array([300, 0, 300, 500]), high=np.array([550, 1, 350, 550]), dtype=np.int)
@@ -343,7 +343,7 @@ class NegotiationEnv(NEnv):
 
         self.set_observation_space(observation_space=observation_space)
 
-        # TODO: set the action space ....
+        # set the action space ....
         if action_space is None:
             if self.strategy == "ac_s":
                 # Default 5 actions: REJECT, ACCEPT, END, NO_RESPONSE, WAIT
@@ -442,7 +442,7 @@ class DRLNegotiationEnv(DRLEnvMixIn, NegotiationEnv):
 
     def hybrid_action_space(self) -> gym.spaces.Space:
         """
-        TODO: for hybrid action space
+        for hybrid action space
         Returns:
             gym.spaces.Space
         """
@@ -541,7 +541,7 @@ class SCMLEnv(gym.Env):
                     # act_space = spaces.MultiDiscrete([[0, act_space.n -1] for act_space in total_action_space])
                     act_space = spaces.MultiDiscrete([act_space.n for act_space in total_action_space])
                 else:
-                    act_space = space.Tuple(total_action_space)
+                    act_space = spaces.Tuple(total_action_space)
                 self.action_space.append(act_space)
             else:
                 self.action_space.append(total_action_space[0])
@@ -579,6 +579,7 @@ class SCMLEnv(gym.Env):
             done_n.append(self._get_done(agent))
 
             info_n['n'].append(self._get_info(agent))
+
         reward = np.sum(reward_n)
         if self.shared_reward:
             reward_n = [reward] * self.n
@@ -598,7 +599,7 @@ class SCMLEnv(gym.Env):
     def render(self, mode="human"):
         #pass
         #ipdb.set_trace()
-        #TODO: rendering communication
+        #TODO: rendering
         #if mode == 'human':
         #    for agent in self.world.agents:
         #        comm = []
