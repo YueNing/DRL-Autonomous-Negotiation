@@ -18,9 +18,12 @@ class AgentState:
         # others state
         self.o_negotiation_step = 0
         # financial report
-        self.f = 0
+        self.f: np.array = np.zeros(3)
+        # self.f_init = 0
+        # self.f_begin = 0
+        # self.f_end = 0
         # current step
-        # self.c_step = None
+        # self.o_current_step = 0
         # management state, e.g. issues range
         # self.m = None
         # communication utterance
@@ -91,7 +94,8 @@ class MySCML2020Agent(SCML2020Agent):
         Returns:
             number of runniing negotiations
         """
-        return self._count(super(MySCML2020Agent, self).running_negotiations())
+
+        return self._count(super(MySCML2020Agent, self).running_negotiations)
 
 
     @property
@@ -101,15 +105,15 @@ class MySCML2020Agent(SCML2020Agent):
         Returns:
             number of standing negotiation requests, sell, buy
         """
-        return self._count(super(MySCML2020Agent, self).negotiation_requests())
+        return self._count(super(MySCML2020Agent, self).negotiation_requests)
 
     def _count(self, negotiations):
         sell = 0
         buy = 0
         for n in negotiations:
-            if n['annotation'] == "sell":
+            if n.annotation["seller"] == self.id:
                 sell +=1
-            elif n['annotation'] == "buy":
+            elif n.annotation["buyer"] == self.id:
                 buy +=1
         return sell, buy
 
@@ -224,11 +228,17 @@ class TrainWorld(SCML2020World):
         return self.__done
 
     def update_agent_state(self, agent: Optional[MySCML2020Agent]):
-        if agent.state.o_current_step == agent.awi.current_step:
-            # set management status
+        # initial update the state of
+        if agent.awi.current_step == 0:
+            f_init = [_.initial_balance for _ in self.factories if _.agent_id == agent.id][0]
+            f_begin = f_init
+            f_end = f_begin
+            agent.state.f = np.array([f_init, f_begin, f_end])
+        else:
+            # set financial status
             if agent.blind:
                 # agent.state.m = np.zeros(self.dim_m)
-                agent.state.f = 0
+                agent.state.f = np.zeros(3)
             else:
 
                 # update agent state, get the management state
@@ -237,7 +247,18 @@ class TrainWorld(SCML2020World):
                 # uvalues = agent._urange(agent.state.o_step, agent.state.o_is_sell, tvalues)
                 # agent.state.m = [qvalues, tvalues, uvalues]
 
-                agent.state.f = [_.current_balance for _ in self.factories if _.agent_id == agent.id][0]
+                f_end = [_.current_balance for _ in self.factories if _.agent_id == agent.id][0]
+                agent.state.f[2] = f_end
+
+                #TODO: interactive test
+                agent.state.o_negotiation_step = agent.awi.current_step
+
+                if agent.state.o_negotiation_step == agent.awi.current_step:
+                    # after calculate the reward, then update the f_begin
+                    pass
+                else:
+                    f_begin = f_end
+                    agent.state.f[1] = f_begin
 
             # set communication status
             if agent.silent:
@@ -245,3 +266,4 @@ class TrainWorld(SCML2020World):
             else:
                 noise = np.random.randn(*agent.action.c.shape) * agent.c_nois if agent.c_nois else 0.0
                 agent.state.c = agent.action.c + noise
+

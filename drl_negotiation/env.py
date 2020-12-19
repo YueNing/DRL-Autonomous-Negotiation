@@ -477,6 +477,7 @@ class MyNegotiationEnv(DRLNegotiationEnv):
 #
 ####################################################################################################
 from gym import spaces
+from drl_negotiation.core import TrainWorld
 
 class SCMLEnv(gym.Env):
     metadata = {
@@ -484,7 +485,7 @@ class SCMLEnv(gym.Env):
             }
     def __init__(
             self,
-            world,
+            world: Union[TrainWorld],
             reset_callback=None,
             reward_callback=None,
             observation_callback=None,
@@ -592,8 +593,15 @@ class SCMLEnv(gym.Env):
         
         obs_n = []
         self.agents = self.world.policy_agents
+        # intial the state of agents
+
+        for agent in self.agents:
+            self.world.update_agent_state(agent)
+
+        # and get the initial obs
         for agent in self.agents:
             obs_n.append(self._get_obs(agent))
+
         return obs_n
 
     def render(self, mode="human"):

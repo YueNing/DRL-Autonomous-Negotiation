@@ -6,7 +6,7 @@ from scml.scml2020 import (
             BuyCheapSellExpensiveAgent,
             SCML2020World,
        )
-from typing import Optional
+from typing import Union
 import numpy as np
 
 REW_FACTOR = 0.2
@@ -59,19 +59,21 @@ class Scenario(BaseScenario):
 
     def reward(self, agent, world):
         # callback, reward
+        # Delayed reward problem？？？？
         # idea 1: external rewards, e.g. balance - initial balance for agent, -(balance - initial balance) for adversary agent
         # idea 2: Intrinsic motivation rewards.
         # On Learning Intrinsic Rewards for Policy Gradient Methods, https://arxiv.org/abs/1804.06459
         return self.adversary_reward(agent, world) if agent.adversary else self.agent_reward(agent, world)
 
     def agent_reward(self, agent, world):
-        # Difference from initial funds
-        # agent.f - agent.init_f
+        # 1. Difference of balance with the end of last step, begin of current step
+        # TODO: 2. Difference of balance with the other agents
         rew = 0
 
         # means in this world step, the agent starts a sell negotiation except initial state
         if agent.state.o_negotiation_step == agent.awi.current_step:
-            rew = (agent.state.f - agent.stata.init_f) / (agent.state.init_f) * REW_FACTOR
+            rew = (agent.state.f[2]- agent.state.f[1]) / (agent.state.f[0]) * REW_FACTOR
+            agent.state.f[1] = agent.state.f[2]
 
         return rew
 
@@ -83,18 +85,20 @@ class Scenario(BaseScenario):
         rew = 0
         return rew
 
-    def observation(self, agent: Optional[MyComponentsBasedAgent, MySCML2020Agent], world: Optional[TrainWorld]):
+    def observation(self, agent: Union[MyComponentsBasedAgent, MySCML2020Agent], world: Union[TrainWorld]):
         # get all observation,
         # callback: obrvation
 
         # parameters needed to be observed
         # in order to determine the range of negotiation issues,
 
-        # global information, market information
-        o_m = [agent.awi.profile.costs]
+        # global information, e.g. market information
+
+        # factory profile costs of every processes
+        o_m = agent.awi.profile.costs
 
         # agent information, agent's
-        o_a = [agent._horizon]
+        o_a = np.array([agent._horizon])
 
         # unit_price
         #   1. catalog price in the market, not just input product and output product of agents.
@@ -102,9 +106,12 @@ class Scenario(BaseScenario):
         #   3. seller or buyer, seller or buyer are influenced by the outputs_needed, outputs_secured, inputs_needed
         #   and inputs_secured, Let iner learn this parameter by itself
 
+        # catalog prices of products
         o_u_c = agent.awi.catalog_prices
-        o_u_e = [agent.expected_inputs, agent.expected_outputs, agent.input_cost, agent.output_price]
-        o_u_t = [agent.outputs_needed, agent.outputs_secured, agent.inputs_needed, agent.inputs_secured]
+        #TODO: excepted value after predict
+        o_u_e = np.array([agent.expected_inputs, agent.expected_outputs, agent.input_cost, agent.output_price])
+        #TODO: trading strategy, needed and secured
+        o_u_t = np.array([agent.outputs_needed, agent.outputs_secured, agent.inputs_needed, agent.inputs_secured])
 
         # quantity
         #   1. seller or buyer
@@ -112,25 +119,27 @@ class Scenario(BaseScenario):
         #   3. running negotiation, negotiation request
 
         # running negotiation and negotiation request of agent
-        o_q_n = [
+        o_q_n = np.array([
             agent.running_negotiations,
             agent.negotiation_requests,
-        ]
+        ])
 
         # time
         #   1. seller or buyer
         #   2. current step
         #   3. total step
         #   4. current step / total step
-        o_t_c = agent.awi.current_step / agent.awi.n_steps
+        o_t_c = np.array([agent.awi.current_step / agent.awi.n_steps])
 
         #2. Economic gap with others
         economic_gaps = []
         for entity in world.entities:
             if entity is agent: continue
-            economic_gaps.append(np.array([entity.state.f]) - np.array([agent.state.f]))
+            economic_gaps.append(entity.state.f - agent.state.f)
+        economic_gaps = np.array(economic_gaps)
 
-        return np.concatenate(economic_gaps + o_m + o_a + o_u_c + o_u_e + o_u_t + o_q_n + o_t_c)
+        #return np.concatenate(economic_gaps + o_m.flatten() + o_a + o_u_c + o_u_e + o_u_t + o_q_n.flatten() + o_t_c)
+        return np.concatenate((economic_gaps.flatten(), o_m.flatten(), o_a, o_u_c, o_q_n.flatten(), o_t_c))
 
     def done(self, agent, world):
         # callback of done

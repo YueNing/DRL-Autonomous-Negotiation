@@ -92,10 +92,11 @@ class MyNegotiationManager(IndependentNegotiationsManager):
             qvalues = tuple(np.array(qvalues) + (self.action.m[0:2] * (qvalues[1] - qvalues[0])).astype("int32"))
             uvalues = tuple(np.array(uvalues) + (self.action.m[2:4] * (uvalues[1] - uvalues[0])).astype("int32"))
             tvalues = tuple(np.array(tvalues) + (self.action.m[4:6] * (tvalues[1] - tvalues[0])).astype("int32"))
-        
+            #print(f"qvalues: {qvalues}, uvalues: {uvalues}, tvalues: {tvalues}")
+
         #import ipdb
         #ipdb.set_trace()
-        print(f"qvalues: {qvalues}, uvalues: {uvalues}, tvalues: {tvalues}")
+        #print(f"qvalues: {qvalues}, uvalues: {uvalues}, tvalues: {tvalues}")
         
         issues = [
                 Issue(qvalues, name="quantity"),

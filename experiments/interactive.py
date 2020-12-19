@@ -51,6 +51,7 @@ if __name__ == '__main__':
         #print(act_n)
         # step env
         obs_n, reward_n, done_n, _ = env.step(act_n)
+        print(reward_n)
         done = all(done_n)
         # render all agent views
         env.render()
