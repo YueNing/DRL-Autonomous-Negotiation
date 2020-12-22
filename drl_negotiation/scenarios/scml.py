@@ -60,6 +60,7 @@ class Scenario(BaseScenario):
     def reward(self, agent, world):
         # callback, reward
         # Delayed reward problem？？？？
+        # Keep this in mind when writing reward functions: You get what you incentivize, not what you intend.
         # idea 1: external rewards, e.g. balance - initial balance for agent, -(balance - initial balance) for adversary agent
         # idea 2: Intrinsic motivation rewards.
         # On Learning Intrinsic Rewards for Policy Gradient Methods, https://arxiv.org/abs/1804.06459

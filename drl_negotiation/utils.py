@@ -376,7 +376,7 @@ class BernoulliPd(Pd):
         0 and 1, bernoullipd probability distribution
     """
     def __init__(self, logits):
-        self.logits = logtis
+        self.logits = logits
         self.ps = tf.sigmoid(logits)
 
     def flatparam(self):

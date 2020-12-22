@@ -48,6 +48,7 @@ class Action:
     def __init__(self):
         # agent management action
         self.m = None
+        self.m_vel = None
         # agent communication action, communication channel
         self.c = None
 
@@ -130,7 +131,7 @@ class TrainWorld(SCML2020World):
         # communication channel dimensionality
         self.dim_c = 2
         # negotiation management dimensionality
-        self.dim_m = 6 
+        self.dim_m = 2
         # simulation timestep
         self.dt = 0.1
        

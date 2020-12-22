@@ -12,6 +12,7 @@ import argparse
 import drl_negotiation.utils as U
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
+import pickle
 from drl_negotiation.a2c.trainer import MADDPGAgentTrainer
 
 def parse_args():
@@ -28,7 +29,7 @@ def parse_args():
     # Training
     parser.add_argument("--lr", type=float, default=1e-2, help="learning rate for Adam optimizer")
     parser.add_argument("--gamma", type=float, default=0.95, help="discount factor")
-    parser.add_argument("--batch-size", type=int, default=1024, help="number of episodes to optimize at the same time")
+    parser.add_argument("--batch-size", type=int, default=128, help="number of episodes to optimize at the same time")
     parser.add_argument("--num-units", type=int, default=64, help="number of units in the mlp")
     parser.add_argument("--exp-name", type=str, default=None, help="name of the experiment")
     parser.add_argument("--save-dir", type=str, default="/tmp/policy/", help="directory in which training state and model should be saved")
@@ -150,7 +151,7 @@ def train(arglist):
 
         print('Starting iterations....')
         while True:
-
+            print(f"episodes {len(episode_rewards)}")
             # get the joint action based on joint obs
             action_n = [agent.action(obs) for agent, obs in zip(trainers, obs_n)]
             
@@ -217,6 +218,13 @@ def train(arglist):
                 if num_adversaries ==0:
                     print()
 
+            #######################################################
+            # saves final episode reward for plotting training curve
+            #
+            ########################################################
+            if len(episode_rewards) > arglist.num_episodes:
+                print(f"...Finished total of {len(episode_rewards)} episodes")
+                break
 
 if __name__ == '__main__':
     arglist = parse_args()
