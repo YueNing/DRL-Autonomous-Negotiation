@@ -5,7 +5,7 @@
 # scml, http://www.yasserm.com/scml/scml2020docs/
 
 # Two main modules
-# Module 1: Train an Negotiator in SAOMechanism
+# Module 1: Train a Negotiator in SAOMechanism
 # Idea comes from ANegma, https://arxiv.org/abs/2001.11785
 
 # Module 2: Train an Agent in SCML2020World
