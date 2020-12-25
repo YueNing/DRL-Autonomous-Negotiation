@@ -154,267 +154,6 @@ def initialize():
     get_session().run(tf.compat.v1.variables_initializer(new_variables))
     ALREADY_INITIALIZED.update(new_variables)
 
-# Distribution
-
-class Pd:
-    """
-    Probality distribution, for action
-    """
-    def flatparam(self):
-        '''
-            flat the params
-        '''
-        raise NotImplementedError()
-
-    def mode(self):
-        '''
-            value that appears most often in a set of data values.
-        '''
-        raise NotImplementedError()
-
-    def logp(self, x):
-        '''
-            log probability
-        '''
-        raise NotImplementedError()
-
-    def kl(self, other):
-        '''
-            kullback-Leibler Divergence
-        '''
-
-        raise NotImplementedError()
-
-    def entropy(self):
-        '''
-            entropy
-        '''
-        raise NotImplementedError()
-
-    def sample(self):
-        '''
-            sample data from this probability distribution
-        '''
-        raise NotImplementedError()
-
-class PdType:
-    """
-    parametirzed family of pd
-    """
-    def param_shape(self):
-        '''
-            the shape of params
-        '''
-        raise NotImplementedError
-    def sample_shape(self):
-        '''
-            the shape of sample data
-        '''
-        raise NotImplementedError
-    def sample_dtype(self):
-        '''
-            the type of the sampled data
-        '''
-        raise NotImplementedError
-    def pdfromflat(self, flat):
-        '''
-            create probability distribution from flat params
-        '''
-        return self.pdclass()(flat)
-    def pdclass(self):
-        '''
-            return the class of probability distribution
-        '''
-        raise NotImplementedError
-
-    def param_placeholder(self, prepend_shape, name=None):
-        '''
-            parameters placeholder with tensorflow
-        '''
-        return tf.placeholder(dtype=tf.float32, shape=prepend_shape+self.param_shape(), name=name)
-    
-    def sample_placeholder(self, prepend_shape, name=None):
-        '''
-            sample data placeholder with tensorflow
-        '''
-        return tf.compat.v1.placeholder(dtype=self.sample_dtype(),
-                shape=prepend_shape+self.sample_shape(),
-                name=name
-                )
-
-class DiagGaussianPdType(PdType):
-    '''
-        Gaussian Distribution With a Diagonal Covariance Matrix,
-        multivariate gaussian distribution type
-    '''
-    def __init__(self, size):
-        self.size = size
-
-    def pdclass(self):
-        return DiagGaussianPd
-
-    def param_shape(self):
-        return [2*self.size]
-
-    def sample_shape(self):
-        return [self.size]
-
-    def sample_dtype(self):
-        return tf.float32
-
-class DiagGaussianPd(Pd):
-    '''
-        Gaussian distribution with a diagonal covariance matrix,
-        multivariate guassian distribution,
-        off-diagonals of the covariance matrix only play a minor
-        role, an alternative representation of a multivariate Gaussian
-        distribution.
-    '''
-    def __init__(self, flat):
-        self.flat = flat
-        _mean, _logstd = tf.split(flat, 2, axis=1)
-        self.mean = _mean
-        self.logstd = _logstd
-        self.std = tf.exp(_logstd)
-
-    def flatparam(self):
-        return self.flat
-
-    def mode(self):
-        return self.mean
-
-    def logp(self, x):
-        result = -0.5 * _sum(tf.square((x-self.mean) / self.std), axis=1)\
-                -0.5 * np.log(2.0 * np.pi) * tf.cast(tf.shape(x)[1], dtype=tf.float32)\
-                -_sum(self.logstd, axis=1)
-        return result 
-
-    def kl(self, other):
-        assert isinstance(other, DiagGaussianPd)
-        #TODO
-        result = None
-        return result
-
-    def entropy(self):
-        return None
-
-    def sample(self):
-        return self.mean + self.std * tf.random_normal(tf.shape(self.mean))
-
-    @classmethod
-    def fromflat(cls, flat):
-        '''
-        return the class from flat parameters
-        '''
-        return cls(flat)
-
-class SoftCategoricalPdType(PdType):
-    def __init__(self, ncat):
-        self.ncat = ncat
-
-    def pdclass(self):
-        return SoftCategoricalPd
-
-    def param_shape(self):
-        return [self.ncat]
-
-    def sample_shape(self):
-        return [self.ncat]
-
-    def sample_dtype(self):
-        return tf.float32
-
-class SoftCategoricalPd(Pd):
-    """
-       Soft Categorical probability distribution 
-    """
-
-    def __init__(self, logits):
-        self.logits = logits
-
-    def flatparam(self):
-        return self.logits
-
-    def mode(self):
-        return _softmax(self.logits, axis=-1)
-    
-    def logp(self, x):
-        return -tf.nn.softmax_cross_entropy_with_logits(logits=self.logits, labels=x)
-
-    def kl(self, other):
-        pass
-
-    def entropy(self):
-        pass
-
-    def sample(self):
-        u = tf.random.uniform(tf.shape(self.logits))
-        return _softmax(self.logits - tf.math.log(-tf.math.log(u)), axis=-1)
-
-    @classmethod
-    def fromflat(cls, flat):
-        return cls(flat)
-
-class BernoulliPdType(PdType):
-    def __init__(self, size):
-        self.size = size
-
-    def pdclass(self):
-        return BernoulliPd
-
-    def param_shape(self):
-        return [self.size]
-
-    def sample_shape(self):
-        return [self.size]
-
-    def sample_dtype(self):
-        return tf.int32
-
-class BernoulliPd(Pd):
-    """
-        0 and 1, bernoullipd probability distribution
-    """
-    def __init__(self, logits):
-        self.logits = logits
-        self.ps = tf.sigmoid(logits)
-
-    def flatparam(self):
-        return self.logits
-
-    def mode(self):
-        return tf.round(self.ps)
-
-    def logp(self, x):
-        pass
-
-    def kl(self, other):
-        pass
-
-    def entropy(self):
-        pass
-
-    def sample(self):
-        pass
-
-    @classmethod
-    def fromflat(cls, flat):
-        return cls(flat)
-
-
-def make_pdtype(ac_space):
-    '''
-        create probability distribution type based on the type of action space
-    '''
-    if isinstance(ac_space, spaces.Box):
-        assert len(ac_space.shape) == 1
-        pd_type = DiagGaussianPdType(ac_space.shape[0])
-    elif isinstance(ac_space, spaces.Discrete):
-        pd_type = SoftCategoricalPdType(ac_space.n)
-    else: raise NotImplementedError()
-    return pd_type
-
-
 # tf utils
 def function(inputs, outputs, updates=None):
     '''
@@ -590,3 +329,52 @@ def _argmax(x, axis=None):
 
 def _softmax(x, axis=None):
     return tf.nn.softmax(x, axis=axis)
+
+
+########################################################
+# negotiation model
+########################################################
+from drl_negotiation.a2c.trainer import MADDPGAgentTrainer
+
+def load_seller_neg_model(path="NEG_SELL_PATH") ->MADDPGAgentTrainer:
+    """
+
+    Returns:
+        model of seller, to decide the next step seller's action
+    """
+    pass
+
+def load_buyer_neg_model(path="NEG_BUY_PATH"):
+    """
+
+    Returns:
+        model of buyer, to decide the next step buyer's action
+    """
+    pass
+
+
+###########################################################
+# env
+###########################################################
+def make_env(scenario_name, arglist):
+    from drl_negotiation.env import SCMLEnv
+    import drl_negotiation.scenarios as scenarios
+
+    # load scenario from script
+    scenario = scenarios.load(scenario_name + '.py').Scenario()
+
+    # create world/game
+    world = scenario.make_world()
+
+    # create multi-agent supply chain management environment
+    env = SCMLEnv(
+        world,
+        reset_callback=scenario.reset_world,
+        reward_callback=scenario.reward,
+        observation_callback=scenario.observation,
+        info_callback=None,
+        done_callback=scenario.done,
+        shared_viewer=False
+    )
+
+    return env
