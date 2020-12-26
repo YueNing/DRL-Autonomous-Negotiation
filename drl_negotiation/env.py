@@ -478,6 +478,7 @@ class MyNegotiationEnv(DRLNegotiationEnv):
 ####################################################################################################
 from gym import spaces
 from drl_negotiation.core import TrainWorld
+from drl_negotiation.hyperparameters import *
 
 class SCMLEnv(gym.Env):
     metadata = {
@@ -506,9 +507,9 @@ class SCMLEnv(gym.Env):
         self.info_callback = info_callback
         self.done_callback = done_callback
         # env parameters
-        self.discrete_action_space = True
+        self.discrete_action_space = DISCRETE_ACTION_SPACE
         # action is a number 0...N, otherwise action is a one-hot N-dimensional vector
-        self.discrete_action_input = False 
+        self.discrete_action_input = DISCRETE_ACTION_INPUT
         self.force_discrete_action = world.discrete_action if hasattr(world, 'discrete_action') else False
         self.shared_reward = world.collaborative if hasattr(world, 'collaborative') else False
         self.time = 0
@@ -727,7 +728,7 @@ class SCMLEnv(gym.Env):
         import ipdb
         #ipdb.set_trace()
         if agent.manageable:
-            # negotiation management action
+            #TODO: negotiation management action, both seller and buyer
             if self.discrete_action_input:
                 agent.action.m = np.zeros(self.world.dim_m)
                 #process discrete action

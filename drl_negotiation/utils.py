@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import collections
 import random
@@ -300,6 +301,28 @@ def minimize_and_clip(optimizer, objective, var_list, clip_val=10):
                 gradients[i] = (tf.clip_by_norm(grad, clip_val), var)
         return optimizer.apply_gradients(gradients)
 
+# ================================================================
+# Saving variables
+# ================================================================
+def get_saver():
+    return tf.compat.v1.train.Saver()
+
+def load_state(fname, saver=None):
+    """Load all the variables to the current session from the location <fname>"""
+    if saver is None:
+        saver = tf.train.Saver()
+    saver.restore(get_session(), fname)
+    return saver
+
+
+def save_state(fname, saver=None, global_step=None):
+    """Save all the variables in the current session to the location <fname>"""
+    os.makedirs(os.path.dirname(fname), exist_ok=True)
+    if saver is None:
+        saver = tf.train.Saver()
+    saver.save(get_session(), fname, global_step=global_step)
+    return saver
+
 # operations
 
 def _sum(x, axis=None, keepdims=False):
@@ -356,7 +379,7 @@ def load_buyer_neg_model(path="NEG_BUY_PATH"):
 ###########################################################
 # env
 ###########################################################
-def make_env(scenario_name, arglist):
+def make_env(scenario_name, arglist=None):
     from drl_negotiation.env import SCMLEnv
     import drl_negotiation.scenarios as scenarios
 
@@ -378,3 +401,71 @@ def make_env(scenario_name, arglist):
     )
 
     return env
+
+
+#####################################################################
+# trainer
+#####################################################################
+from drl_negotiation.a2c.policy import mlp_model
+
+def get_trainers(env, num_adversaries=0, obs_shape_n=None, arglist=None):
+    trainers = []
+    model = mlp_model
+    trainer = MADDPGAgentTrainer
+
+    # first set up the adversaries, default num_adversaries is 0
+    for i in range(num_adversaries):
+        trainers.append(trainer(
+            env.agents[i].name.replace("@", '-'), model, obs_shape_n, env.action_space, i, arglist,
+            local_q_func=(arglist.adv_policy == 'ddpg')
+        ))
+
+    # set up the good agent
+    for i in range(num_adversaries, env.n):
+        trainers.append(trainer(
+            env.agents[i].name.replace("@", '-'), model, obs_shape_n, env.action_space, i, arglist,
+            local_q_func=(arglist.good_policy == "ddpg")
+        )
+        )
+
+    return trainers
+
+
+#########################################################################
+# inputs
+#########################################################################
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        "Reinforcement Learning experiments for multiagent supply chain managerment environments")
+
+    # env
+    parser.add_argument('--scenario', type=str, default="scml", help="name of the scenario script")
+    parser.add_argument('--num-episodes', type=int, default=60000, help="number of episodes")
+    parser.add_argument('--max-episode-len', type=int, default=100, help="maximum episode length")
+    parser.add_argument('--num-adversaries', type=int, default=0, help="number of adversaries")
+    parser.add_argument('--good-policy', type=str, default="maddpg", help="policy for good agents")
+    parser.add_argument("--adv-policy", type=str, default="heuristic", help="policy of adversaries")
+
+    # Training
+    parser.add_argument("--lr", type=float, default=1e-2, help="learning rate for Adam optimizer")
+    parser.add_argument("--gamma", type=float, default=0.95, help="discount factor")
+    parser.add_argument("--batch-size", type=int, default=128, help="number of episodes to optimize at the same time")
+    parser.add_argument("--num-units", type=int, default=64, help="number of units in the mlp")
+    parser.add_argument("--exp-name", type=str, default=None, help="name of the experiment")
+    parser.add_argument("--save-dir", type=str, default="/tmp/policy/",
+                        help="directory in which training state and model should be saved")
+    parser.add_argument("--save-rate", type=int, default=1000,
+                        help="save model once every time this many episodes are compeleted")
+    parser.add_argument("--load-dir", type=str, default='',
+                        help="directory in which training state and model are loaded")
+
+    # Evaluation
+    parser.add_argument("--restore", action="store_true", default=False)
+    parser.add_argument("--display", action="store_true", default=False)
+    parser.add_argument("--benchmark", action="store_true", default=False)
+    parser.add_argument("--plots-dir", type=str, default="./learning_curves/",
+                        help="directory where plot data is saved")
+
+    return parser.parse_args()

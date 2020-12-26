@@ -85,6 +85,30 @@ class InteractivePolicy(Policy):
         if k == key.O: self.management[0] = False
         if k == key.P: self.management[1] = False
 
+##########################################################
+# a2c trainer policy network
+##########################################################
+def mlp_model(input, num_outputs, scope, reuse=False, num_units=64, rnn_cell=None):
+    """
+    multi layers perceptron
+    Args:
+        input:
+        num_outputs:
+        scope:
+        reuse:
+        num_units:
+        rnn_cell:
+
+    Returns:
+
+    """
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
+        out = input
+        output = tf.layers.dense(out, num_units, activation=tf.nn.relu)
+        out = tf.layers.dense(out, num_units, activation=tf.nn.relu)
+        out = tf.layers.dense(out, num_outputs, activation=None)
+        return out
+
 
 class BasePolicy(ABC):
     '''

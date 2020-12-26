@@ -3,7 +3,6 @@ DRL Controller
 '''
 ############################
 # Packages used for Test
-from collections import defaultdict
 from negmas import LinearUtilityFunction
 from scml import (IndependentNegotiationsManager, 
                     PredictionBasedTradingStrategy, 
@@ -14,79 +13,61 @@ from scml import (IndependentNegotiationsManager,
 import matplotlib.pyplot as plt
 ############################
 from typing import Union, Optional, Dict
-from negmas import (SAOController, 
+from negmas import (SAOSyncController,
                     MechanismState, 
                     SAONegotiator,
                     AspirationNegotiator,
-                    get_class)
+                    SAOResponse,
+                    SAOState)
 
 from scml import SCML2020World, NegotiationManager
 
-class DRLSCMLController(SAOController):
-    """
-    A Controller that used by Deep Reinforcement learning method
 
-    Args: 
-    """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-    
-    def propose(self, negotiator_id: str, state: MechanismState):
-        pass
-    
-    def response(self, negotiator_id:str, state:MechanismState, offer: "Outcome") -> "ResponseType":
-        pass
 
-class DRLNegotiationManager(NegotiationManager):
+##########################################################################################################
+# Controller for SCML, Used for training concurrent negotiation with DRL
+# Author naodongbanana
+# Datum 25.12.2020
+##########################################################################################################
+class MyDRLSCMLSAOSyncController(SAOSyncController):
     """
-    Negotiation Manager that manages dlr negotiatiors that negotiator uses dlr method,
-    TODO: negotiator_type will be replaced by my dlr sao negotiator
+    TODO:
+    A Controller that used by Deep Reinforcement learning method, can manage multiple negotiators synchronously
+
+    Args:
     """
 
     def __init__(self,
-                *args,
-                negotiator_type: Union[SAONegotiator, str] = AspirationNegotiator,
-                negotiator_params: Optional[Dict[str, any]] = None,
-                **kwargs
-                ):
+                 parent:str = "PredictionBasedTradingStrategy",
+                 is_seller: bool = None,
+                 default_negotiator_type ="MyDRLNegotiator",
+                 *args,
+                 **kwargs
+        ):
+        kwargs['default_negotiator_type'] = default_negotiator_type
         super().__init__(*args, **kwargs)
-        
-        self.negotiator_type = get_class(negotiator_type)
-        self.negotiator_params = (
-            negotiator_params if negotiator_params is not None else dict()
-        )
+        self._is_seller = is_seller
+        self.__parent = parent
+        self.ufun = None
 
-        self.buyers = self.sellers = None
-    
-    def init(self):
-        super().init()
-    
-    def respond_to_negotiation_request(self):
+
+    def counter_all(
+        self, offers: Dict[str, "Outcome"], states: Dict[str, SAOState]
+    ) -> Dict[str, SAOResponse]:
+        """Calculate a response to all offers from all negotiators (negotiator ID is the key).
+
+            Args:
+                offers: Maps negotiator IDs to offers
+                states: Maps negotiator IDs to offers AT the time the offers were made.
+
+            Remarks:
+                - The response type CANNOT be WAIT.
+                - If the system determines that a loop is formed, the agent may receive this call for a subset of
+                  negotiations not all of them.
+
+        """
         pass
 
-class MyAgent(IndependentNegotiationsManager, PredictionBasedTradingStrategy, DemandDrivenProductionStrategy, SCML2020Agent):
-    '''
-    My Agent used drl,
-    '''
-    def target_quantity(self, step: int, sell: bool) -> int:
-        return self.awi.n_lines // 2
-    
-    def acceptable_unit_price(self, step: int, sell: bool) -> int:
-        return self.awi.catalog_prices[self.awi.my_output_product] if sell else self.awi.catalog_prices[self.awi.my_input_product]
-
-    def create_ufun(self, is_seller: bool, issues=None, outcomes=None):
-        
-        if is_seller:
-            return LinearUtilityFunction((0, 0.25, 1))
-        return LinearUtilityFunction((0, -0.5, -0.8))
-
-def show_agent_scores(world):
-    scores = defaultdict(list)
-    for aid, score in world.scores().items():
-        scores[world.agents[aid].__class__.__name__.split(".")[-1]].append(score)
-    scores = {k: sum(v) / len(v) for k, v in scores.items()}
-    plt.bar(list(scores.keys()), list(scores.values()), width=0.2)
-    plt.show()
 
 if __name__ == "__main__":
     ComparisonAgent = DecentralizingAgent

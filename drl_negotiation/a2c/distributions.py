@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.ops import math_ops
 from gym import spaces
-
+import drl_negotiation.utils as U
 from stable_baselines.common.tf_layers import linear
 
 
@@ -476,12 +476,15 @@ class BernoulliProbabilityDistribution(ProbabilityDistribution):
         return cls(flat)
 
 
-class SoftCategoricalPdType(ProbabilityDistributionType):
+class SoftCategoricalProbabilityDistributionType(ProbabilityDistributionType):
     def __init__(self, ncat):
         self.ncat = ncat
 
-    def pdclass(self):
-        return SoftCategoricalPd
+    def proba_distribution_from_flat(self, flat):
+        return self.probability_distribution_class()(flat)
+
+    def probability_distribution_class(self):
+        return SoftCategoricalProbabilityDistribution
 
     def param_shape(self):
         return [self.ncat]
@@ -493,33 +496,33 @@ class SoftCategoricalPdType(ProbabilityDistributionType):
         return tf.float32
 
 
-class SoftCategoricalPd(ProbabilityDistribution):
-    """
-       Soft Categorical probability distribution
-    """
-
+class SoftCategoricalProbabilityDistribution(ProbabilityDistribution):
     def __init__(self, logits):
         self.logits = logits
-
     def flatparam(self):
         return self.logits
-
     def mode(self):
         return tf.nn.softmax(self.logits, axis=-1)
-
     def logp(self, x):
         return -tf.nn.softmax_cross_entropy_with_logits(logits=self.logits, labels=x)
-
     def kl(self, other):
-        pass
-
+        a0 = self.logits - U.max(self.logits, axis=1, keepdims=True)
+        a1 = other.logits - U.max(other.logits, axis=1, keepdims=True)
+        ea0 = tf.exp(a0)
+        ea1 = tf.exp(a1)
+        z0 = U.sum(ea0, axis=1, keepdims=True)
+        z1 = U.sum(ea1, axis=1, keepdims=True)
+        p0 = ea0 / z0
+        return U.sum(p0 * (a0 - tf.log(z0) - a1 + tf.log(z1)), axis=1)
     def entropy(self):
-        pass
-
+        a0 = self.logits - U.max(self.logits, axis=1, keepdims=True)
+        ea0 = tf.exp(a0)
+        z0 = U.sum(ea0, axis=1, keepdims=True)
+        p0 = ea0 / z0
+        return U.sum(p0 * (tf.log(z0) - a0), axis=1)
     def sample(self):
-        u = tf.random.uniform(tf.shape(self.logits))
-        return tf.nn.softmax(self.logits - tf.math.log(-tf.math.log(u)), axis=-1)
-
+        u = tf.random_uniform(tf.shape(self.logits))
+        return tf.nn.softmax(self.logits - tf.log(-tf.log(u)), axis=-1)
     @classmethod
     def fromflat(cls, flat):
         return cls(flat)
@@ -535,7 +538,8 @@ def make_pd_type(ac_space):
         assert len(ac_space.shape) == 1, "Error: the action space must be a vector"
         pd_type = DiagGaussianProbabilityDistributionType(ac_space.shape[0])
     elif isinstance(ac_space, spaces.Discrete):
-        pd_type = CategoricalProbabilityDistributionType(ac_space.n)
+       # pd_type = CategoricalProbabilityDistributionType(ac_space.n)
+       pd_type = SoftCategoricalProbabilityDistributionType(ac_space.n)
     elif isinstance(ac_space, spaces.MultiDiscrete):
         pd_type = MultiCategoricalProbabilityDistributionType(ac_space.nvec)
     elif isinstance(ac_space, spaces.MultiBinary):

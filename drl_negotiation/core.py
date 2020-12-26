@@ -6,6 +6,8 @@
 import numpy as np
 from scml.scml2020 import SCML2020World, SCML2020Agent, is_system_agent
 from typing import Optional
+from drl_negotiation.hyperparameters import *
+
 import  copy
 
 class AgentState:
@@ -46,9 +48,17 @@ class Action:
                 or info of competitors predicted by agent
     '''
     def __init__(self):
-        # agent management action
+        # agent management action, used after training, in test periode
+        self.s = None
+        self.s_vel = None
+
+        # seller, used in training
         self.m = None
-        self.m_vel = None
+        self.m_vel = 5
+        # buyer, used in training
+        self.b = None
+        self.b_vel = None
+
         # agent communication action, communication channel
         self.c = None
 
@@ -65,11 +75,11 @@ class MySCML2020Agent(SCML2020Agent):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # agents are manageable by default
-        self.manageable = True
+        self.manageable = MANAGEABLE
         # cannot send communication signals
-        self.silent = True 
+        self.silent = SLIENT
         # cannot observe the world
-        self.blind = False
+        self.blind = BLIND
         # management noise amount
         self.m_nois = None
         # communication noise amount
@@ -118,6 +128,39 @@ class MySCML2020Agent(SCML2020Agent):
                 buy +=1
         return sell, buy
 
+    def _get_obs(self):
+        # local observation
+
+        o_m = self.awi.profile.costs
+        o_m = o_m[:, self.awi.profile.processes]
+
+        # agent information, agent's
+        o_a = np.array([self._horizon])
+
+        # catalog prices of products
+        o_u_c = self.awi.catalog_prices
+        # TODO: excepted value after predict
+        o_u_e = np.array([self.expected_inputs, self.expected_outputs, self.input_cost, self.output_price])
+        # TODO: trading strategy, needed and secured
+        o_u_t = np.array([self.outputs_needed, self.outputs_secured, self.inputs_needed, self.inputs_secured])
+
+        # running negotiation and negotiation request of agent
+        o_q_n = np.array([
+            self.running_negotiations,
+            self.negotiation_requests,
+        ])
+
+        o_t_c = np.array([self.awi.current_step / self.awi.n_steps])
+
+        # 2. Economic gap
+        economic_gaps = []
+        economic_gaps.append(self.state.f[2] - self.state.f[1])
+        economic_gaps = np.array(economic_gaps)
+
+        # return np.concatenate(economic_gaps + o_m.flatten() + o_a + o_u_c + o_u_e + o_u_t + o_q_n.flatten() + o_t_c)
+
+        return np.concatenate((economic_gaps.flatten(), o_m.flatten(), o_a, o_u_c, o_q_n.flatten(), o_t_c))
+
 class TrainWorld(SCML2020World):
     """
     Multi-Agent, SCML world, used for training
@@ -131,7 +174,7 @@ class TrainWorld(SCML2020World):
         # communication channel dimensionality
         self.dim_c = 2
         # negotiation management dimensionality
-        self.dim_m = 2
+        self.dim_m = DIM_M
         # simulation timestep
         self.dt = 0.1
        

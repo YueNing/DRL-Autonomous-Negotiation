@@ -4,7 +4,7 @@ sys.path.append("/home/nauen/PycharmProjects/tn_source_code")
 import argparse
 
 from drl_negotiation.env import SCMLEnv
-from drl_negotiation.policy import InteractivePolicy
+from drl_negotiation.a2c.policy import InteractivePolicy
 import drl_negotiation.scenarios as scenarios
 import ipdb
 import time

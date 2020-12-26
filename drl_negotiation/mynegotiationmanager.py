@@ -14,11 +14,52 @@ import numpy as np
 from typing import Tuple, List
 from .negotiator import MyDRLNegotiator
 from .core import NegotiationRequestAction
+from .controller import MyDRLSCMLSAOSyncController
+from .hyperparameters import *
+from drl_negotiation.utils import load_seller_neg_model
+from drl_negotiation.utils import load_buyer_neg_model
 
 class MyNegotiationManager(IndependentNegotiationsManager):
     """
-        my negotiation manager
+        my negotiation manager, strategy
     """
+
+    def __init__(
+            self,
+            controller=MyDRLSCMLSAOSyncController,
+            seller_model_path=NEG_SELL_PATH,
+            buyer_model_path=NEG_BUY_PATH,
+            load_model=LOAD_MODEL,
+            train=TRAIN,
+            * args,
+            **kwargs
+    ):
+        super(MyNegotiationManager, self).__init__(*args, **kwargs)
+        self.train = train
+        self.seller_model = None
+        self.buyer_model = None
+
+        self.load_model = load_model
+        if load_model:
+            self.seller_model_path = seller_model_path
+            self.buyer_model_path = buyer_model_path
+        else:
+            self.seller_model_path = None
+            self.buyer_model_path = None
+
+        if not train:
+            self._load_model()
+        # TODO: concurrent negotiation manager
+        pass
+
+    def _load_model(self, sell=True):
+        if self.load_model:
+            if self.seller_model_path is not None:
+                self.seller_model = load_seller_neg_model(self.seller_model_path)
+
+            if self.buyer_model_path is not None:
+                self.buyer_model = load_buyer_neg_model(self.buyer_model_path)
+
     def respond_to_negotiation_request(
             self,
             initiator: str,
@@ -27,7 +68,7 @@ class MyNegotiationManager(IndependentNegotiationsManager):
             mechanism: AgentMechanismInterface,
             ) -> Optional[Negotiator]:
         """
-            IDEA 4.2: TODO: observation: finanical report of initiator
+            IDEA 4.2: TODO: observation: financial report of initiator
                             action: ACCEPT or REJECT to negotiate
         """
         #import ipdb
@@ -76,29 +117,61 @@ class MyNegotiationManager(IndependentNegotiationsManager):
                                             qvalues, uvalues, tvalues, step, sell
                             action: range of issues
         """
-        import numpy as np
+        # using model to predict the action
+        _model = None
+        if sell and self.seller_model is not None:
+            _model = self.seller_model
 
-        if not np.isin(self.action.m, 0).all() and sell:
-            # set up observation
-            # self.state.o_role = sell
-            self.state.o_negotiation_step = self.awi.current_step
-            # for debug
-            self.state.o_step = step
-            self.state.o_is_sell = sell
+        if not sell and self.buyer_model is not None:
+            _model = self.buyer_model
 
-            self.state.o_q_values = qvalues
-            self.state.o_u_values = uvalues
-            self.state.o_t_values = tvalues
+        if _model is not None:
+            # test period, get the action from model
+            _obs = self._get_obs()
+            _act = _model.action(_obs)
 
-            #qvalues = tuple(np.array(qvalues) + (self.action.m[0:2] * (qvalues[1] - qvalues[0])).astype("int32"))
-            uvalues = tuple(np.array(uvalues) + (self.action.m[0:2] * ((uvalues[1] - uvalues[0]) / 2)).astype("int32"))
-            #tvalues = tuple(np.array(tvalues) + (self.action.m[4:6] * (tvalues[1] - tvalues[0])).astype("int32"))
-            #print(f"{self}, qvalues: {qvalues}, uvalues: {uvalues}, tvalues: {tvalues}")
+            self.action.s = np.zeros(DIM_S)
+
+            if MANAGEABLE:
+                if DISCRETE_ACTION_INPUT:
+                    if _act[0] == 1: self.action.s[0] = -1.0
+                    if _act[0] == 2: self.action.s[0] = +1.0
+                    if _act[0] == 3: self.action.s[1] = -1.0
+                    if _act[0] == 4: self.action.s[1] = +1.0
+                else:
+                    # one hot
+                    if DISCRETE_ACTION_SPACE:
+                        self.action.s[0] += _act[0][1] - _act[0][2]
+                        self.action.s[1] += _act[0][3] - _act[0][4]
+                    else:
+                        self.action.s = _act[0]
+
+                uvalues = tuple(np.array(uvalues) + np.array(self.action.s).astype("int32"))
+        else:
+            # training period, action has been set up in env
+            if sell:
+                if self.action.m is not None:
+                    # set up observation
+                    # self.state.o_role = sell
+                    self.state.o_negotiation_step = self.awi.current_step
+                    # for debug
+                    self.state.o_step = step
+                    self.state.o_is_sell = sell
+
+                    self.state.o_q_values = qvalues
+                    self.state.o_u_values = uvalues
+                    self.state.o_t_values = tvalues
+
+                    uvalues = tuple(np.array(uvalues) + (np.array(self.action.m)*self.action.m_vel).astype("int32"))
+            else:
+                #TODO: for buyer, not implemented
+                if self.action.b is not None:
+                    uvalues = tuple(np.array(uvalues) + np.array(self.action.b))
 
         #import ipdb
         #ipdb.set_trace()
         #print(f"qvalues: {qvalues}, uvalues: {uvalues}, tvalues: {tvalues}")
-        
+
         issues = [
                 Issue(qvalues, name="quantity"),
                 Issue(tvalues, name="time"),

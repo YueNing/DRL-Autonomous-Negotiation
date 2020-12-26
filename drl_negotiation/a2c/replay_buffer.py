@@ -39,7 +39,7 @@ class ReplayBuffer(object):
             idxes = self.make_index(batch_size)
         else:
             idxes = range(0, len(self._storage))
-        return self._conde_sample(idxes)
+        return self._encode_sample(idxes)
 
     def collect(self):
         return self.sample(-1)
@@ -50,7 +50,7 @@ class ReplayBuffer(object):
             data = self._storage[i]
             obs_t, action, reward, obs_tp1, done = data
             obses_t.append(np.array(obs_t, copy=False))
-            actions.append(np.array(actino, copy=False))
+            actions.append(np.array(action, copy=False))
             rewards.append(reward)
             obses_tp1.append(np.array(obs_tp1, copy=False))
             dones.append(done)
