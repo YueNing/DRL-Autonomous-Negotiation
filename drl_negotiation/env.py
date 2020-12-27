@@ -1,7 +1,8 @@
 import ipdb
+import os
 import gym
 import numpy as np
-
+import time
 from gym.utils import seeding
 from gym.spaces import Discrete, Box
 from abc import ABC, abstractmethod, abstractproperty
@@ -586,7 +587,7 @@ class SCMLEnv(gym.Env):
             obs_n = obs_n * 2
             reward_n = reward_n * 2
             done_n = done_n * 2
-            info_n = info_n * 2
+            info_n['n'] = info_n['n'] * 2
 
         reward = np.sum(reward_n)
         if self.shared_reward:
@@ -614,90 +615,35 @@ class SCMLEnv(gym.Env):
         return obs_n
 
     def render(self, mode="human"):
-        #pass
-        #ipdb.set_trace()
-        #TODO: rendering
-        #if mode == 'human':
-        #    for agent in self.world.agents:
-        #        comm = []
-        #        for other in self.world.agents:
-        #            if other is agent: continue
-        #            if np.all(other.state.c==0):
-        #            	word = '_'
-        #            else:
-        #                word = other.state.c
-
-        #            message += (other.name + ' to ' + agent.name + ':' + world + '   ')
-        #    
-        #    print(message)
-
         # create viewers
         for i in range(len(self.viewers)):
             if self.viewers[i] is None:
-                self.viewers[i] = Viewer(700, 700)
-        
-        ## create rendering geometry, represents agents
-        if self.render_geoms is None:
-            self.render_geoms = []
-            self.render_geoms_xform = []
-            self.render_geoms_label = []
-            for entity in self.world.entities:
-                geom = rendering.make_circle(0.050)
-                xform = rendering.Transform()
-                label = rendering.Label()
-                if not is_system_agent(entity.name):
-                    geom.set_color(*(0, 0, 0), alpha=0.5)
-                else:
-                    geom.set_color(*(0, 0, 0))
-                geom.add_attr(xform)
-                
-                # others attr
-                #geom.add_attr(label)
+                self.viewers[i] = Viewer(700, 700, self.agents[i])
 
-                self.render_geoms.append(geom)
-                self.render_geoms_xform.append(xform)
+        # add infos
+        self.infos = {}
+        for agent in self.agents:
+            # TODO: visible information
+            self.infos[agent] = f"{agent}, test {time.time()}"
 
-                # others attr which needed to set paramters
-                #self.render_geoms_label.append(label)
+        # write infos into the files
+        for agent in self.agents:
+            filename = f'{agent}.log'
+            try:
+                with open(filename, "a+") as fp:
+                    fp.write(self.infos[agent]+"\n")
+            except:
+                logging.error("Error, write the info into files when rendering!")
 
-        ## add geoms to viewer
-        for viewer in self.viewers:
-            viewer.geoms = []
-            for geom in self.render_geoms:
-                viewer.add_geom(geom)
-        
-
-        results=[]
+        # results
+        results = []
         for i in range(len(self.viewers)):
-            cam_range = 1
-            if self.shared_viewer:
-                pos = np.zeros(2)
-            else:
-                pos = self.agents[i].state.p_pos    
-            self.viewers[i].set_bounds(pos[0]-cam_range, pos[0]+cam_range, pos[1]-cam_range, pos[1]+cam_range)
+            results.append(self.viewers[i].render())
 
-            points = rendering.generate_pos(radius=0.8, res=len(self.world.entities)-1)
-            point_index = 0
-            for e, entity in enumerate(self.world.entities):
-                if entity.id == self.agents[i].id:
-                    self.render_geoms_xform[e].set_translation(*entity.state.p_pos)
-                    #self.render_geoms_label[e].set_position(*entity.state.p_pos, entity.id)
-                else:
-                    # render other agents
-                    self.render_geoms_xform[e].set_translation(*points[point_index])
-                    
-                    # self.render_geoms_label[e].set_position(*points[point_index], entity.id)
-                    point_index +=1
-                    #pass
-        #    	self.render_geoms_xform[e].set_translation(*entity.state.p_pos)
-            results.append(self.viewers[i].render(return_rgb_array=mode=="rgb_array"))
         return results
-        #import ipdb
-        #ipdb.set_trace()
 
     def _reset_render(self):
-        self.render_geoms = None
-        self.render_geoms_xform = None
+        self.infos = None
 
     def _get_info(self, agent):
         pass

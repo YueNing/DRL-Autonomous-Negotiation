@@ -1,44 +1,26 @@
 import os, sys
 sys.path.append("/home/nauen/PycharmProjects/tn_source_code")
-
-import argparse
-
-from drl_negotiation.env import SCMLEnv
 from drl_negotiation.a2c.policy import InteractivePolicy
-import drl_negotiation.scenarios as scenarios
-import ipdb
 import time
+from drl_negotiation.utils import make_env
+from drl_negotiation.hyperparameters import *
 
 if __name__ == '__main__':
     # parse parameters
-    parser = argparse.ArgumentParser(description=None)
-    parser.add_argument('-s', '--scenario', default='scml.py', help="Path of the scenario Python script.")
-    args = parser.parse_args()
-
-    # load scenario from script
-    scenario = scenarios.load(args.scenario).Scenario()
-    
-    # create world
-    world = scenario.make_world()
-    
-    # create scml  environment
-    env = SCMLEnv(
-            world, 
-            scenario.reset_world, 
-            scenario.reward, 
-            scenario.observation, 
-            info_callback=None, 
-            done_callback=scenario.done, 
-            shared_viewer=False
-            )
+    env = make_env("scml")
     
     # render call to create window
     env.render()
     # create interactive policies for each agent
     policies = [InteractivePolicy(env, i) for i in range(env.n)]
-    
+    if not ONLY_SELLER:
+        policies = policies * 2
+
     # execution loop
     obs_n = env.reset()
+    if not ONLY_SELLER:
+        obs_n = obs_n * 2
+
     done = False
     print(f'{env.world.n_steps}')
     #while not done:
