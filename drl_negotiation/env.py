@@ -28,10 +28,7 @@ __all__ = [
     "NegotiationEnv",
     "SCMLEnv",
     "DRLNegotiationEnv",
-    "DRLSCMLEnv",
     "MyNegotiationEnv",
-    "MySCMLEnv",
-
 ]
 
 ####################################################################################################
@@ -573,6 +570,9 @@ class SCMLEnv(gym.Env):
         # policy agents
         for i, agent in enumerate(self.agents):
             self._set_action(action_n[i], agent, self.action_space[i])
+            if not ONLY_SELLER:
+                # buyer action, the same action_space as the seller
+                self._set_buyer_action(action_n[i+len(self.observation_space)], agent, self.action_space[i])
 
         self.world.step()
         for agent in self.agents:
@@ -582,9 +582,17 @@ class SCMLEnv(gym.Env):
 
             info_n['n'].append(self._get_info(agent))
 
+        if not ONLY_SELLER:
+            obs_n = obs_n * 2
+            reward_n = reward_n * 2
+            done_n = done_n * 2
+            info_n = info_n * 2
+
         reward = np.sum(reward_n)
         if self.shared_reward:
             reward_n = [reward] * self.n
+            if not ONLY_SELLER:
+                reward_n = reward_n * 2
 
         return obs_n, reward_n, done_n, info_n
 
@@ -710,45 +718,56 @@ class SCMLEnv(gym.Env):
             return 0.0
         return self.reward_callback(agent, self.world)
 
-    def _set_action(self, action, agent, action_space, time=None):
-        agent.action.m = np.zeros(self.world.dim_m)
-        agent.action.c = np.zeros(self.world.dim_c)
-       
-        # process action
+    def _preprocess_action(self, action, action_space):
         if isinstance(action_space, spaces.MultiDiscrete):
             act = []
             index = 0
             for s in action_space.nvec:
-                act.append(action[index:(index+s)])
+                act.append(act[index:(index+s)])
                 index +=s
             action = act
         else:
             action = [action]
+        return action
 
-        import ipdb
-        #ipdb.set_trace()
+    def _process_manager_action(self, agent, action, seller=True):
         if agent.manageable:
             #TODO: negotiation management action, both seller and buyer
             if self.discrete_action_input:
-                agent.action.m = np.zeros(self.world.dim_m)
-                #process discrete action
-                for i in range(self.world.dim_m):
-                    if action[0] % 2 == 1: agent.action.m[i] = 1.0
-                    if action[0] % 2 == 0: agent.action.m[i] = -1.0
+                if seller:
+                    agent.action.m = np.zeros(self.world.dim_m)
+                    #process discrete action
+                    for i in range(self.world.dim_m):
+                        if action[0] % 2 == 1: agent.action.m[i] = 1.0
+                        if action[0] % 2 == 0: agent.action.m[i] = -1.0
+                else:
+                    agent.action.b = np.zeros(self.world.dim_b)
+                    #process discrete action
+                    for i in range(self.world.dim_b):
+                        if action[0] % 2 == 1: agent.action.b[i] = 1.0
+                        if action[0] % 2 == 0: agent.action.b[i] = -1.0
             else:
                 if self.force_discrete_action:
                     d = np.argmax(action[0])
                     action[0][:] = 0.0
                     action[0][d] = 1.0
                 if self.discrete_action_space:
-                    for i in range(self.world.dim_m):
-                        agent.action.m[i] +=action[0][2*i+1] - action[0][2*(i+1)]
+                    if seller:
+                        for i in range(self.world.dim_m):
+                            agent.action.m[i] +=action[0][2*i+1] - action[0][2*(i+1)]
+                    else:
+                        for i in range(self.world.dim_b):
+                            agent.action.b[i] +=action[0][2*i+1] - action[0][2*(i+1)]
                 else:
-                    agent.action.m = action[0]
+                    if seller:
+                        agent.action.m = action[0]
+                    else:
+                        agent.action.b = action[0]
             #ipdb.set_trace()
             action = action[1:]
-        #import ipdb
-        #ipdb.set_trace()
+        return action
+
+    def _process_communication_action(self, agent, action):
         if not agent.silent:
             # communication action
             if self.discrete_action_input:
@@ -758,42 +777,23 @@ class SCMLEnv(gym.Env):
                 agent.action.c = action[0]
 
             action = action[1:]
-        #print(f'{agent}\'management action is {agent.action.m}, communication action is {agent.action.c}')
+        return action
 
-class DRLSCMLEnv(SCMLEnv):
+    def _set_buyer_action(self, action, agent, action_space, time=None):
+        # set the action of buyer
+        agent.action.b = np.zeros(self.world.dim_b)
 
-    def __init__(
-        self,
-        name: str="DRLSCMLEnv",
-        game: Optional[DRLSCMLGame] = None,
-        observation_space: Optional[gym.spaces.Box] = None,
-        action_space: Optional[gym.spaces.Discrete] = None,
-        mechanism_state: "negmas.MechanismState" = None,
-    ):
-        super().__init__(
-            name=name,
-            game=game,
-            mechanism_state=mechanism_state
-        )
-        self.set_observation_space(observation_space=observation_space)
-        self.set_action_space(action_space=action_space)
-    
-    def get_obs(self):
-        pass
-    
+        action = self._preprocess_action(action, action_space)
+        self._process_manager_action(agent, action, seller=False)
 
-class MySCMLEnv(DRLSCMLEnv):
+    def _set_action(self, action, agent, action_space, time=None):
+        # set the action of seller and communication
+        agent.action.m = np.zeros(self.world.dim_m)
+        agent.action.c = np.zeros(self.world.dim_c)
+       
+        # process action
+        action = self._preprocess_action(action, action_space)
+        action = self._process_manager_action(agent, action, seller=True)
+        self._process_communication_action(agent, action)
 
-    def __init__(
-        self,
-        name: str = "MySCMLEnv",
-        game: Optional[Game] = MyDRLSCMLGame,
-    ):
-        super().__init__(
-            name=name,
-            game=game,
-        )
-    
-    def __str__(self):
-        return f"The name of MySCMLEnv is {self.name}"
 

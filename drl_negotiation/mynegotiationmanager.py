@@ -164,9 +164,9 @@ class MyNegotiationManager(IndependentNegotiationsManager):
 
                     uvalues = tuple(np.array(uvalues) + (np.array(self.action.m)*self.action.m_vel).astype("int32"))
             else:
-                #TODO: for buyer, not implemented
+                # for buyer
                 if self.action.b is not None:
-                    uvalues = tuple(np.array(uvalues) + np.array(self.action.b))
+                    uvalues = tuple(np.array(uvalues) + (np.array(self.action.b) * self.action.b_vel).astype("int32"))
 
         #import ipdb
         #ipdb.set_trace()

@@ -1,9 +1,10 @@
 from drl_negotiation.a2c.a2c import MADDPGModel
 from drl_negotiation.utils import make_env
+import logging
 
 env = make_env('scml')
 
-model = MADDPGModel(env=env)
+model = MADDPGModel(env=env, verbose=0, logging_level=logging.DEBUG)
 model.learn(train_episodes=100)
 
 obs_n = env.reset()

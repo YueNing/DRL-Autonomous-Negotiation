@@ -152,6 +152,7 @@ class MADDPGAgentTrainer(AgentTrainer):
         self.args = args
         obs_ph_n = []
 
+        assert len(act_space_n) == len(obs_shape_n), "Error, length of act_space_n and obs_space_n are not equal!"
         # n-observation placeholder, observation of all policy agents
         for i in range(self.n):
             obs_ph_n.append(U.BatchInput(obs_shape_n[i], name="observation"+str(i)).get())

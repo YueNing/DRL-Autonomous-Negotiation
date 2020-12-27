@@ -1,8 +1,15 @@
 ################################################
 # Global
 ###############################################
+import logging
+
 TRAIN = True
 LOAD_MODEL = False
+LOGGING_LEVEL = logging.INFO
+FILENAME = "my.log"
+
+# Train only the seller component of agent
+ONLY_SELLER = False # train seller and buyer together
 
 ################################################
 # agent
@@ -29,7 +36,15 @@ NEG_BUY_PATH = None
 ################################################
 DIM_M = 2
 DIM_B = 2
-TRAINING_AGENT_TYPES = ["MyComponentsBasedAgent", "DecentralizingAgent"]
+TRAINING_AGENT_TYPES = ["drl_negotiation.myagent.MyComponentsBasedAgent", "scml.scml2020.DecentralizingAgent"]
+REW_FACTOR = 0.2
+
+################################################
+# scml scenario
+################################################
+
+# used in SCML2020World, considered as days
+N_STEPS = 10
 
 ################################################
 # running world

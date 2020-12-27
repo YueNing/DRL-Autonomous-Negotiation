@@ -1,6 +1,8 @@
 from drl_negotiation.scenario import BaseScenario
 from drl_negotiation.core import TrainWorld, MySCML2020Agent
 from drl_negotiation.myagent import MyComponentsBasedAgent
+from drl_negotiation.hyperparameters import *
+from negmas.helpers import get_class
 from scml.scml2020 import (
             DecentralizingAgent,
             BuyCheapSellExpensiveAgent,
@@ -9,16 +11,13 @@ from scml.scml2020 import (
 from typing import Union
 import numpy as np
 
-REW_FACTOR = 0.2
+
 
 class Scenario(BaseScenario):
 
     def make_world(self):
-        agent_types = [
-                MyComponentsBasedAgent,
-                DecentralizingAgent,
-                ]
-        n_steps = 10
+        agent_types = [get_class(agent_type, ) for agent_type in TRAINING_AGENT_TYPES]
+        n_steps = N_STEPS
 
         # configuration, for Scenario scml
         world_configuration = SCML2020World.generate(

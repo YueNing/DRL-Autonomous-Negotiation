@@ -57,7 +57,7 @@ class Action:
         self.m_vel = 5
         # buyer, used in training
         self.b = None
-        self.b_vel = None
+        self.b_vel = 3
 
         # agent communication action, communication channel
         self.c = None
@@ -174,7 +174,9 @@ class TrainWorld(SCML2020World):
         # communication channel dimensionality
         self.dim_c = 2
         # negotiation management dimensionality
-        self.dim_m = DIM_M
+        self.dim_m = DIM_M # seller
+        self.dim_b = DIM_B # buyer
+
         # simulation timestep
         self.dt = 0.1
        
