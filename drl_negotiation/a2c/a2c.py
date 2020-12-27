@@ -10,12 +10,15 @@ import drl_negotiation.utils as U
 import numpy as np
 import pickle
 from tqdm import tqdm
+from drl_negotiation.hyperparameters import *
+import logging
 
 class MADDPGModel:
     def __init__(self,
                  env: SCMLEnv = None,
                  policy=None,
-
+                 only_seller=ONLY_SELLER,
+                 logging_level = LOGGING_LEVEL,
                  # training
                  n_steps=2,
                  lr=1e-2,
@@ -47,6 +50,8 @@ class MADDPGModel:
         ):
         self.policy = policy
         self.env = env
+        self.only_seller = only_seller
+        self.logging_level = logging_level
 
         # training
         self.n_steps = n_steps
@@ -79,6 +84,7 @@ class MADDPGModel:
 
         self.trainers = None
 
+        U.logging_setup()
 
         if _init_setup_model:
             self.setup_model()
@@ -115,25 +121,29 @@ class MADDPGModel:
                        "gamma": self.gamma,
                         "n_steps": self.n_steps
                        })
-            self.trainers = U.get_trainers(self.env, num_adversaries, obs_shape_n, arglist)
-            print(f"Using good policy {self.good_policy} and adv policy {self.adv_policy}")
+            self.trainers = U.get_trainers(self.env, num_adversaries, obs_shape_n, arglist, only_seller=ONLY_SELLER)
+            logging.info(f"Using good policy {self.good_policy} and adv policy {self.adv_policy}")
 
             U.initialize()
             if self.load_dir == '':
                 self.load_dir = self.save_dir
 
             if self.display or self.restore or self.benchmark:
-                print("Loading previous state...")
+                logging.info("Loading previous state...")
                 U.load_state(self.load_dir)
 
             episode_rewards = [0.0]
             agent_rewards = [[0.0] for _ in range(self.env.n)]
+            if not self.only_seller:
+                agent_rewards = agent_rewards * 2
 
             final_ep_rewards = []
             final_ep_ag_rewards = []
             agent_info = [[[]]]
             saver = U.get_saver()
             obs_n = self.env.reset()
+            if not self.only_seller:
+                obs_n = obs_n * 2
 
             episode_step = 0
             current_episode = 0
@@ -178,7 +188,7 @@ class MADDPGModel:
 
                     if train_step > self.benchmark_iters and (done or terminal):
                         file_name = self.benchmark_dir + self.exp_name + '.pkl'
-                        print("Finished benchmarking, now saving....")
+                        logging.info("Finished benchmarking, now saving....")
                         with open(file_name, 'wb') as fp:
                             pickle.dump(agent_info[:-1], fp)
                         break
@@ -197,8 +207,7 @@ class MADDPGModel:
                 for agent in self.trainers:
                     loss = agent.update(self.trainers, train_step)
                     if loss is not None:
-                        pass
-                        #print(f"{agent}'s loss is {loss}")
+                        logging.debug(f"{agent}'s loss is {loss}")
 
                 ##############################################################################
                 # save model
@@ -207,7 +216,7 @@ class MADDPGModel:
                 if terminal and (len(episode_rewards) % self.save_rate == 0):
                     U.save_state(self.save_dir + "model", saver=saver)
                     if num_adversaries == 0:
-                        print(f"steps: {train_step}, episodes: {len(episode_rewards)}, "
+                        logging.info(f"steps: {train_step}, episodes: {len(episode_rewards)}, "
                               f"mean episode reward: {np.mean(episode_rewards[-self.save_rate:])}, "
                               f"time: {round(time.time() - t_start, 3)}")
                     t_start = time.time()
@@ -227,7 +236,7 @@ class MADDPGModel:
                     agrew_file_name = self.plots_dir + self.exp_name + '_agrewards.pkl'
                     with open(agrew_file_name, 'wb') as fp:
                         pickle.dump(final_ep_ag_rewards, fp)
-                    print(f'...Finished total of {len(episode_rewards)} episodes')
+                    logging.info(f'...Finished total of {len(episode_rewards)} episodes')
                     break
 
     def predict(self, obs_n):
