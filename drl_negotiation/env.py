@@ -583,6 +583,9 @@ class SCMLEnv(gym.Env):
 
             info_n['n'].append(self._get_info(agent))
 
+        if RENDER_INFO:
+            self.info_n = info_n
+
         if not ONLY_SELLER:
             obs_n = obs_n * 2
             reward_n = reward_n * 2
@@ -621,19 +624,30 @@ class SCMLEnv(gym.Env):
                 self.viewers[i] = Viewer(700, 700, self.agents[i])
 
         # add infos
-        self.infos = {}
+        if self.infos is None:
+            self.infos = {}
+
         for agent in self.agents:
             # TODO: visible information
-            self.infos[agent] = f"{agent}, test {time.time()}"
+            if not agent in self.infos:
+                self.infos[agent] = f"{agent}, test {time.time()}"
+            else:
+                if RENDER_INFO:
+                    infos = self.info_n['n'][self.agents.index(agent)]
+                    for key, value in infos.items():
+                        self.infos[agent] = key + '\n'
+                        strings_value = [str(_) for _ in value]
+                        self.infos[agent] += '\n'.join(strings_value)
 
         # write infos into the files
-        for agent in self.agents:
-            filename = f'{agent}.log'
-            try:
-                with open(filename, "a+") as fp:
-                    fp.write(self.infos[agent]+"\n")
-            except:
-                logging.error("Error, write the info into files when rendering!")
+        if RENDER_INFO:
+            for agent in self.agents:
+                filename = f'{agent}.log'
+                try:
+                    with open(filename, "a+") as fp:
+                        fp.write(self.infos[agent]+"\n")
+                except:
+                    logging.error("Error, write the info into files when rendering!")
 
         # results
         results = []
@@ -646,8 +660,9 @@ class SCMLEnv(gym.Env):
         self.infos = None
 
     def _get_info(self, agent):
-        pass
-
+        if self.info_callback is None:
+            return {}
+        return self.info_callback(agent, self.world)
 
     def _get_obs(self, agent):
         if self.observation_callback is None:

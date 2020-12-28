@@ -397,7 +397,7 @@ def make_env(scenario_name, arglist=None):
         reset_callback=scenario.reset_world,
         reward_callback=scenario.reward,
         observation_callback=scenario.observation,
-        info_callback=None,
+        info_callback=scenario.benchmark_data,
         done_callback=scenario.done,
         shared_viewer=False
     )

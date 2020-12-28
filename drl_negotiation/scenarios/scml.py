@@ -7,11 +7,10 @@ from scml.scml2020 import (
             DecentralizingAgent,
             BuyCheapSellExpensiveAgent,
             SCML2020World,
+            is_system_agent,
        )
 from typing import Union
 import numpy as np
-
-
 
 class Scenario(BaseScenario):
 
@@ -48,6 +47,40 @@ class Scenario(BaseScenario):
         )
 
         world.__init__(configuration=reset_configuration)
+
+    def benchmark_data(self, agent, world):
+        #TODO: data for benchmarkign purposes, info_callabck,
+        # will be rendered when display is true
+        # how to compare different companies, Ratio Analysis
+        # https://www.investopedia.com/ask/answers/032315/how-does-ratio-analysis-make-it-easier-compare-different-companies.asp
+        # price-to-earnings ratio and net profit margin
+        # Margin Ratios and  Return Ratios
+        # https://corporatefinanceinstitute.com/resources/knowledge/finance/profitability-ratios/
+        profitability = []
+        initial_balances = []
+        factories = [_ for _ in world.factories if not is_system_agent(_.agent_id)]
+        for i, factory in enumerate(factories):
+            initial_balances.append(factory.initial_balance)
+        normalize = all(_ != 0 for _ in initial_balances)
+
+        for _ in world.agents:
+            if world.agents[_].action_callback == "system": continue
+            if world.agents[_] in world.heuristic_agents:
+                if normalize:
+                    profitability.append(
+                    (agent.state.f[2] - agent.state.f[0]) / agent.state.f[0] -
+                    ([f.current_balance for f in factories if f.agent_id == world.agents[_].id][0] -
+                     [f.initial_balance for f in factories if f.agent_id == world.agents[_].id][0]) /
+                    [f.initial_balance for f in factories if f.agent_id == world.agents[_].id][0]
+                )
+                else:
+                    profitability.append(
+                        (agent.state.f[2] - agent.state.f[0]) -
+                        ([f.current_balance for f in factories if f.agent_id == world.agents[_].id][0] -
+                         [f.initial_balance for f in factories if f.agent_id == world.agents[_].id][0])
+                    )
+
+        return {"profitability": profitability}
 
     def good_agents(self, world):
         return [agent for agent in world.agents if not agent.adversary]

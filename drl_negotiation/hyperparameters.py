@@ -24,6 +24,7 @@ BLIND = False
 # action is a number 0...N, otherwise action is a one-hot N-dimensional vector
 DISCRETE_ACTION_INPUT = False
 DISCRETE_ACTION_SPACE = True
+RENDER_INFO = True
 
 ################################################
 # negotiation mdoel
