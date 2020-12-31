@@ -4,5 +4,5 @@ class BaseScenario(object):
         raise NotImplementedError()
 
     # create initial condition of the world
-    def reset_world(self):
+    def reset_world(self, world):
         raise NotImplementedError()

@@ -4,20 +4,22 @@
    E-Mail: n1085633848@outlook.com
 '''
 from typing import List, Dict, Optional, Any
-
+import functools
 from scml import NegotiationManager
 ################ For Test #### will be removed #########
-from scml.scml2020 import IndependentNegotiationsManager
+from scml.scml2020 import IndependentNegotiationsManager, StepNegotiationManager
 ########################################################
 from negmas import AgentMechanismInterface, Negotiator, Issue, SAONegotiator
 import numpy as np
 from typing import Tuple, List
+from scml.scml2020.components.negotiation import ControllerInfo
 from .negotiator import MyDRLNegotiator
 from .core import NegotiationRequestAction
 from .controller import MyDRLSCMLSAOSyncController
 from .hyperparameters import *
 from drl_negotiation.utils import load_seller_neg_model
 from drl_negotiation.utils import load_buyer_neg_model
+from drl_negotiation.controller import MyDRLSCMLSAOSyncController
 
 class MyNegotiationManager(IndependentNegotiationsManager):
     """
@@ -189,10 +191,65 @@ class MyNegotiationManager(IndependentNegotiationsManager):
                     negotiator = self.negotiator(sell, issues=issues)
                     )
 
+class MyConcurrentNegotiationManager(StepNegotiationManager):
+
+    def __init__(self):
+        super().__init__()
 
 
-
-
+    def add_controller(
+        self,
+        is_seller: bool,
+        target,
+        urange: Tuple[int, int],
+        expected_quantity: int,
+        step: int,
+    ) -> MyDRLSCMLSAOSyncController:
+        if is_seller and self.sellers[step].controller is not None:
+            return self.sellers[step].controller
+        if not is_seller and self.buyers[step].controller is not None:
+            return self.buyers[step].controller
+        controller = MyDRLSCMLSAOSyncController(
+            is_seller=is_seller,
+            target_quantity=target,
+            negotiator_type=self.negotiator_type,
+            negotiator_params=self.negotiator_params,
+            step=step,
+            urange=urange,
+            product=self.awi.my_output_product
+            if is_seller
+            else self.awi.my_input_product,
+            partners=self.awi.my_consumers if is_seller else self.awi.my_suppliers,
+            horizon=self._horizon,
+            negotiations_concluded_callback=functools.partial(
+                self.__class__.all_negotiations_concluded, self
+            ),
+            parent_name=self.name,
+            awi=self.awi,
+        )
+        if is_seller:
+            assert self.sellers[step].controller is None
+            self.sellers[step] = ControllerInfo(
+                controller,
+                step,
+                is_seller,
+                self._trange(step, is_seller),
+                target,
+                expected_quantity,
+                False,
+            )
+        else:
+            assert self.buyers[step].controller is None
+            self.buyers[step] = ControllerInfo(
+                controller,
+                step,
+                is_seller,
+                self._trange(step, is_seller),
+                target,
+                expected_quantity,
+                False,
+            )
+        return controller
 
 
 
