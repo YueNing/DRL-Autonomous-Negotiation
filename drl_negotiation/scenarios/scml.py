@@ -88,7 +88,7 @@ class Scenario(BaseScenario):
     def adversaries(self, world):
         return [agent for agent in world.agents if agent.adversary]
 
-    def reward(self, agent, world):
+    def reward(self, agent, world, seller=True):
         # callback, reward
         # Delayed reward problem？？？？
         # Keep this in mind when writing reward functions: You get what you incentivize, not what you intend.
@@ -127,11 +127,11 @@ class Scenario(BaseScenario):
         rew = 0
         return rew
 
-    def observation(self, agent: Union[MyComponentsBasedAgent, MySCML2020Agent], world: Union[TrainWorld]):
+    def observation(self, agent: Union[MyComponentsBasedAgent, MySCML2020Agent], world: Union[TrainWorld], seller=True):
         # get all observation,
         # callback: obrvation
 
-        _obs = agent._get_obs()
+        _obs = agent._get_obs(seller=seller)
 
         #2. Economic gap with others, extra information
         economic_gaps = []
@@ -145,7 +145,7 @@ class Scenario(BaseScenario):
         #return np.concatenate(economic_gaps + o_m.flatten() + o_a + o_u_c + o_u_e + o_u_t + o_q_n.flatten() + o_t_c)
         return np.concatenate((economic_gaps.flatten(), _obs))
 
-    def done(self, agent, world):
+    def done(self, agent, world, seller=True):
         # callback of done
         
         # simulation is end

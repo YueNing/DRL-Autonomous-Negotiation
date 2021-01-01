@@ -520,11 +520,17 @@ class SCMLEnv(gym.Env):
             # negotiation management action space
             if self.discrete_action_space:
                 m_action_space = spaces.Discrete(world.dim_m*2 + 1)
+                if not ONLY_SELLER:
+                    b_action_space = spaces.Discrete(world.dim_b*2 + 1)
             else:
                 m_action_space = spaces.Box(low=-agent.m_range, high=+agent.m_range, shape=(world.dim_m, ), dtype=np.float32)
-
+                if not ONLY_SELLER:
+                    b_action_space = spaces.Box(low=-agent.b_range, high=+agent.b_range, shape=(world.dim_b,),
+                                                dtype=np.float32)
             if agent.manageable:
                 total_action_space.append(m_action_space)
+                if not ONLY_SELLER:
+                    total_action_space.append(b_action_space)
 
             # communication action space
             if self.discrete_action_space:
@@ -549,7 +555,10 @@ class SCMLEnv(gym.Env):
             # observation space
             obs_dim = len(observation_callback(agent, self.world))
             self.observation_space.append(spaces.Box(low=-np.inf, high=+np.inf, shape=(obs_dim, ), dtype=np.float32))
-            
+            if not ONLY_SELLER:
+                obs_dim = len(observation_callback(agent, self.world, seller=False))
+                self.observation_space.append(spaces.Box(low=-np.inf, high=+np.inf, shape=(obs_dim, ), dtype=np.float32))
+
             agent.action.c = np.zeros(self.world.dim_c)
         
         # rendering
@@ -573,30 +582,34 @@ class SCMLEnv(gym.Env):
             self._set_action(action_n[i], agent, self.action_space[i])
             if not ONLY_SELLER:
                 # buyer action, the same action_space as the seller
-                self._set_buyer_action(action_n[i+len(self.observation_space)], agent, self.action_space[i])
+                self._set_buyer_action(action_n[i+1], agent, self.action_space[i+1])
 
         self.world.step()
         for agent in self.agents:
-            obs_n.append(self._get_obs(agent))
-            reward_n.append(self._get_reward(agent))
-            done_n.append(self._get_done(agent))
+            obs_n.append(self._get_obs(agent, seller=True))
+            obs_n.append(self._get_obs(agent, seller=False))
+            reward_n.append(self._get_reward(agent, seller=True))
+            reward_n.append(self._get_reward(agent, seller=False))
+            done_n.append(self._get_done(agent, seller=True))
+            done_n.append(self._get_done(agent, seller=False))
 
-            info_n['n'].append(self._get_info(agent))
+            info_n['n'].append(self._get_info(agent, seller=True))
+            info_n['n'].append(self._get_info(agent, seller=False))
 
         if RENDER_INFO:
             self.info_n = info_n
 
-        if not ONLY_SELLER:
-            obs_n = obs_n * 2
-            reward_n = reward_n * 2
-            done_n = done_n * 2
-            info_n['n'] = info_n['n'] * 2
+        # if not ONLY_SELLER:
+        #     obs_n = obs_n * 2
+        #     reward_n = reward_n * 2
+        #     done_n = done_n * 2
+        #     info_n['n'] = info_n['n'] * 2
 
         reward = np.sum(reward_n)
         if self.shared_reward:
             reward_n = [reward] * self.n
-            if not ONLY_SELLER:
-                reward_n = reward_n * 2
+            # if not ONLY_SELLER:
+            #     reward_n = reward_n * 2
 
         return obs_n, reward_n, done_n, info_n
 
@@ -613,7 +626,9 @@ class SCMLEnv(gym.Env):
 
         # and get the initial obs
         for agent in self.agents:
-            obs_n.append(self._get_obs(agent))
+            obs_n.append(self._get_obs(agent, seller=True))
+            if not ONLY_SELLER:
+                obs_n.append(self._get_obs(agent, seller=False))
 
         return obs_n
 
@@ -664,20 +679,20 @@ class SCMLEnv(gym.Env):
             return {}
         return self.info_callback(agent, self.world)
 
-    def _get_obs(self, agent):
+    def _get_obs(self, agent, seller=True):
         if self.observation_callback is None:
             return np.zeros(0)
-        return self.observation_callback(agent, self.world)
+        return self.observation_callback(agent, self.world, seller=seller)
 
-    def _get_done(self, agent):
+    def _get_done(self, agent, seller=True):
         if self.done_callback is None:
             return False
-        return self.done_callback(agent, self.world)
+        return self.done_callback(agent, self.world, seller=seller)
 
-    def _get_reward(self, agent):
+    def _get_reward(self, agent, seller=True):
         if self.reward_callback is None:
             return 0.0
-        return self.reward_callback(agent, self.world)
+        return self.reward_callback(agent, self.world, seller=seller)
 
     def _preprocess_action(self, action, action_space):
         if isinstance(action_space, spaces.MultiDiscrete):

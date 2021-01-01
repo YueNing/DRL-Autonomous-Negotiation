@@ -84,6 +84,10 @@ class MySCML2020Agent(SCML2020Agent):
         self.m_nois = None
         # communication noise amount
         self.c_nois = None
+        # manageable range
+        self.m_range = 1.0
+        self.b_range = 1.0
+
         # state
         self.state = AgentState()
         # action
@@ -128,8 +132,9 @@ class MySCML2020Agent(SCML2020Agent):
                 buy +=1
         return sell, buy
 
-    def _get_obs(self):
+    def _get_obs(self, seller=True):
         # local observation
+        # TODO: different observation of buyer and seller, will be implemented here
 
         o_m = self.awi.profile.costs
         o_m = o_m[:, self.awi.profile.processes]

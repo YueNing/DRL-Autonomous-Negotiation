@@ -110,7 +110,14 @@ class MADDPGModel:
             self.num_episodes = train_episodes
 
         with U.single_threaded_session():
-            obs_shape_n = [self.env.observation_space[i].shape for i in range(self.env.n)]
+            if not ONLY_SELLER:
+                obs_shape_n = []
+                for i in range(self.env.n):
+                    obs_shape_n.append(self.env.observation_space[i].shape)
+                    obs_shape_n.append(self.env.observation_space[i+1].shape)
+            else:
+                obs_shape_n = [self.env.observation_space[i].shape for i in range(self.env.n)]
+
             num_adversaries = min(self.env.n, self.num_adversaries)
             arglist = argparse.Namespace(**{"good_policy":self.good_policy,
                        "adv_policy": self.adv_policy,
@@ -121,7 +128,7 @@ class MADDPGModel:
                        "gamma": self.gamma,
                         "n_steps": self.n_steps
                        })
-            self.trainers = U.get_trainers(self.env, num_adversaries, obs_shape_n, arglist, only_seller=ONLY_SELLER)
+            self.trainers = U.get_trainers(self.env, num_adversaries, obs_shape_n, arglist)
             logging.info(f"Using good policy {self.good_policy} and adv policy {self.adv_policy}")
 
             U.initialize()
@@ -133,17 +140,16 @@ class MADDPGModel:
                 U.load_state(self.load_dir)
 
             episode_rewards = [0.0]
-            agent_rewards = [[0.0] for _ in range(self.env.n)]
             if not self.only_seller:
-                agent_rewards = agent_rewards * 2
+                agent_rewards = [[0.0] * 2 for _ in range(self.env.n)]
+            else:
+                agent_rewards = [[0.0] for _ in range(self.env.n)]
 
             final_ep_rewards = []
             final_ep_ag_rewards = []
             agent_info = [[[]]]
             saver = U.get_saver()
             obs_n = self.env.reset()
-            if not self.only_seller:
-                obs_n = obs_n * 2
 
             episode_step = 0
             current_episode = 0
