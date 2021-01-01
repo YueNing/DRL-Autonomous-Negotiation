@@ -48,7 +48,7 @@ class Scenario(BaseScenario):
 
         world.__init__(configuration=reset_configuration)
 
-    def benchmark_data(self, agent, world):
+    def benchmark_data(self, agent, world, seller=True):
         #TODO: data for benchmarkign purposes, info_callabck,
         # will be rendered when display is true
         # how to compare different companies, Ratio Analysis
@@ -105,7 +105,6 @@ class Scenario(BaseScenario):
         # means in this world step, the agent starts a sell negotiation except initial state
         if agent.state.o_negotiation_step == agent.awi.current_step:
             rew = (agent.state.f[2]- agent.state.f[1]) / (agent.state.f[0]) * REW_FACTOR
-            agent.state.f[1] = agent.state.f[2]
 
         gap = []
         for entity in world.entities:

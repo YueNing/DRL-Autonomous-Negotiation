@@ -140,10 +140,7 @@ class MADDPGModel:
                 U.load_state(self.load_dir)
 
             episode_rewards = [0.0]
-            if not self.only_seller:
-                agent_rewards = [[0.0] * 2 for _ in range(self.env.n)]
-            else:
-                agent_rewards = [[0.0] for _ in range(self.env.n)]
+            agent_rewards = [[0.0] for _ in range(self.env.n)]
 
             final_ep_rewards = []
             final_ep_ag_rewards = []
@@ -173,8 +170,11 @@ class MADDPGModel:
                 obs_n = new_obs_n
 
                 for i, rew in enumerate(rew_n):
-                    episode_rewards[-1] +=rew
-                    agent_rewards[i][-1] +=rew
+                    episode_rewards[-1] += rew
+                    if not ONLY_SELLER:
+                        agent_rewards[int(i / 2)][-1] += rew
+                    else:
+                        agent_rewards[i][-1] += rew
 
                 if done or terminal:
                     obs_n = self.env.reset()
