@@ -14,7 +14,7 @@ import numpy as np
 
 class Scenario(BaseScenario):
 
-    def make_world(self):
+    def make_world(self, config=None) -> TrainWorld:
         agent_types = [get_class(agent_type, ) for agent_type in TRAINING_AGENT_TYPES]
         n_steps = N_STEPS
 

@@ -381,15 +381,19 @@ def load_buyer_neg_model(path="NEG_BUY_PATH"):
 ###########################################################
 # env
 ###########################################################
-def make_env(scenario_name, arglist=None):
+def make_env(scenario_name, arglist=None, save_config=False, load_config=False, save_dir=None, load_dir=None):
     from drl_negotiation.env import SCMLEnv
     import drl_negotiation.scenarios as scenarios
 
     # load scenario from script
     scenario = scenarios.load(scenario_name + '.py').Scenario()
 
+
     # create world/game
     world = scenario.make_world()
+
+    if save_config:
+        world.save_config(file_name=save_dir)
 
     # create multi-agent supply chain management environment
     env = SCMLEnv(

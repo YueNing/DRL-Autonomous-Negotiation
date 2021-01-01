@@ -4,6 +4,7 @@ A2C model
 import os
 import time
 import argparse
+import tensorflow as tf
 from drl_negotiation.a2c.policy import Policy
 from drl_negotiation.env import SCMLEnv
 import drl_negotiation.utils as U
@@ -14,6 +15,8 @@ from drl_negotiation.hyperparameters import *
 import logging
 
 class MADDPGModel:
+    trained_model = None
+
     def __init__(self,
                  env: SCMLEnv = None,
                  policy=None,
@@ -23,7 +26,8 @@ class MADDPGModel:
                  n_steps=2,
                  lr=1e-2,
                  gamma=0.95,
-                 save_dir="/tmp/policy/",
+                 save_dir=SAVE_DIR,
+                 model_name=MODEL_NAME,
                  save_rate=5,
                  load_dir='',
                  exp_name="",
@@ -45,7 +49,7 @@ class MADDPGModel:
                  display=False,
                  plots_dir="./learning_curves/",
 
-                 _init_setup_model=True,
+                 _init_setup_model=False,
                  **kwargs,
         ):
         self.policy = policy
@@ -59,6 +63,7 @@ class MADDPGModel:
         self.gamma = gamma
         self.save_dir = save_dir
         self.save_rate = save_rate
+        self.model_name = model_name
         self.load_dir = load_dir
         self.exp_name = exp_name
         self.batch_size = batch_size
@@ -67,7 +72,7 @@ class MADDPGModel:
         # env
         self.n_envs = n_envs
         self.num_episodes = num_episodes
-        self.max_eipsode_len = max_episode_len
+        self.max_episode_len = max_episode_len
         self.num_adversaries = num_adversaries
         self.good_policy = good_policy
         self.adv_policy = adv_policy
@@ -90,9 +95,37 @@ class MADDPGModel:
             self.setup_model()
 
     def setup_model(self):
-        return
-        assert issubclass(self.policy, Policy), "Error: the input policy for the maddpg model must be an" \
-                                                "instance of a2c.policy.Policy"
+        with U.single_threaded_session():
+            if not ONLY_SELLER:
+                obs_shape_n = []
+                for i in range(self.env.n):
+                    obs_shape_n.append(self.env.observation_space[i].shape)
+                    obs_shape_n.append(self.env.observation_space[i+1].shape)
+            else:
+                obs_shape_n = [self.env.observation_space[i].shape for i in range(self.env.n)]
+
+            num_adversaries = min(self.env.n, self.num_adversaries)
+            arglist = argparse.Namespace(**{"good_policy": self.good_policy,
+                                            "adv_policy": self.adv_policy,
+                                            "lr": self.lr,
+                                            "num_units": self.num_units,
+                                            "batch_size": self.batch_size,
+                                            "max_episode_len": self.max_episode_len,
+                                            "gamma": self.gamma,
+                                            "n_steps": self.n_steps
+                                            })
+            self.trainers = U.get_trainers(self.env, num_adversaries, obs_shape_n, arglist)
+            logging.info(f"Using good policy {self.good_policy} and adv policy {self.adv_policy}")
+
+            U.initialize()
+            if self.load_dir == '':
+                self.load_dir = self.save_dir
+            
+            logging.info("loading model")
+            saver = U.load_state(self.load_dir)
+
+        # assert issubclass(self.policy, Policy), "Error: the input policy for the maddpg model must be an" \
+        #                                         "instance of a2c.policy.Policy"
 
         # self.graph = tf.Graph()
 
@@ -124,7 +157,7 @@ class MADDPGModel:
                        "lr": self.lr,
                        "num_units": self.num_units,
                        "batch_size": self.batch_size,
-                       "max_episode_len": self.max_eipsode_len,
+                       "max_episode_len": self.max_episode_len,
                        "gamma": self.gamma,
                         "n_steps": self.n_steps
                        })
@@ -161,7 +194,7 @@ class MADDPGModel:
 
                 episode_step +=1
                 done = all(done_n)
-                terminal = (episode_step > self.max_eipsode_len)
+                terminal = (episode_step > self.max_episode_len)
 
                 # experience
                 for i, agent in enumerate(self.trainers):
@@ -220,7 +253,7 @@ class MADDPGModel:
                 # display training output
                 ##############################################################################
                 if terminal and (len(episode_rewards) % self.save_rate == 0):
-                    U.save_state(self.save_dir + "model", saver=saver)
+                    U.save_state(self.save_dir + self.model_name, saver=saver)
                     if num_adversaries == 0:
                         logging.info(f"steps: {train_step}, episodes: {len(episode_rewards)}, "
                               f"mean episode reward: {np.mean(episode_rewards[-self.save_rate:])}, "
@@ -245,6 +278,11 @@ class MADDPGModel:
                     logging.info(f'...Finished total of {len(episode_rewards)} episodes')
                     break
 
-    def predict(self, obs_n):
-        action_n = [agent.action(obs) for agent, obs in zip(self.trainers, obs_n)]
-        return action_n
+    def predict(self, obs_n, train=True):
+        if train:
+            action_n = [agent.action(obs) for agent, obs in zip(self.trainers, obs_n)]
+            return action_n
+        else:
+            with U.single_threaded_session() as sess:
+                action_n = [agent.action(obs) for agent, obs in zip(self.trainers, obs_n)]
+                return action_n

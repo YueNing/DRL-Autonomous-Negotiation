@@ -10,6 +10,8 @@ FILENAME = "my.log"
 
 # Train only the seller component of agent
 ONLY_SELLER = False # train seller and buyer together
+SAVE_DIR = "/tmp/policy/"
+MODEL_NAME = "model"
 
 ################################################
 # agent
