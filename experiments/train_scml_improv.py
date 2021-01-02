@@ -4,8 +4,8 @@ import logging
 
 TRAIN = False
 EVALUATION = not TRAIN
-SAVE_WORLD_CONFIG = True
-LOAD_WORLD_CONFIG = False
+SAVE_WORLD_CONFIG = False
+LOAD_WORLD_CONFIG = not SAVE_WORLD_CONFIG
 SAVE_DIR = "./world.config"
 LOAD_DIR = " "
 

@@ -321,9 +321,9 @@ class TrainWorld(SCML2020World):
 
     def save_config(self, file_name: str):
         dump_data = {
-            "agent_types": [str(_) for _ in self.configuration['agent_types']],
+            "agent_types": [_._type_name() for _ in self.configuration['agent_types']],
             'agent_params': self.configuration['agent_params'],
-            "n_step": self.n_steps
+            "n_steps": self.n_steps
         }
         with open(file_name+'.yaml', "w") as file:
             yaml.safe_dump(dump_data, file)

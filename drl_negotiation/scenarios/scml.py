@@ -15,18 +15,25 @@ import numpy as np
 class Scenario(BaseScenario):
 
     def make_world(self, config=None) -> TrainWorld:
-        agent_types = [get_class(agent_type, ) for agent_type in TRAINING_AGENT_TYPES]
-        n_steps = N_STEPS
-
         # configuration, for Scenario scml
-        world_configuration = SCML2020World.generate(
-            agent_types=agent_types,
-            n_steps=n_steps
-        )
+        if config is None:
+            agent_types = [get_class(agent_type, ) for agent_type in TRAINING_AGENT_TYPES]
+            n_steps = N_STEPS
+            world_configuration = SCML2020World.generate(
+                agent_types=agent_types,
+                n_steps=n_steps
+            )
+        else:
+            world_configuration = SCML2020World.generate(
+                agent_types=config['agent_types'],
+                agent_params=config['agent_params'][:-2],
+                n_steps=config['n_steps']
+            )
 
         world = TrainWorld(configuration=world_configuration)
 
-        self.reset_world(world)
+        if config is None:
+            self.reset_world(world)
 
         return world
 

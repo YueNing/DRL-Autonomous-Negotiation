@@ -4,7 +4,9 @@ import collections
 import random
 import tensorflow as tf
 from gym import spaces
+import pickle
 from  negmas import Issue
+from negmas.helpers import get_class
 from typing import List, Tuple
 from drl_negotiation.hyperparameters import *
 
@@ -388,9 +390,18 @@ def make_env(scenario_name, arglist=None, save_config=False, load_config=False, 
     # load scenario from script
     scenario = scenarios.load(scenario_name + '.py').Scenario()
 
-
     # create world/game
-    world = scenario.make_world()
+    if load_config:
+        with open(load_dir+'.pkl', 'rb') as file:
+            config = pickle.load(file)
+        agent_types = config['agent_types']
+        config['agent_types'] = []
+        for _ in agent_types:
+            config['agent_types'].append(get_class(_))
+    else:
+        config = None
+
+    world = scenario.make_world(config)
 
     if save_config:
         world.save_config(file_name=save_dir)
