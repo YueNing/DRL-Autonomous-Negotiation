@@ -6,7 +6,7 @@ import logging
 # Training from checkpoints: set TRAIN as True, SAVE_WORLD_CONFIG as False
 # Evaluation from trained model: set TRAIN, SAVE_WORLD_CONFIG as False
 
-TRAIN = True
+TRAIN = False
 # train from checkpoints
 RESTORE = True
 EVALUATION = not TRAIN
@@ -43,9 +43,9 @@ obs_n = env.reset()
 if EVALUATION:
     # if evaluation, set the _init_setup_model as True, will initial the model and load trained parameters
     model = MADDPGModel(env=env, verbose=0, logging_level=logging.INFO, _init_setup_model=True)
-
-    for i in range(1000):
-        action_n = model.predict(obs_n, train=False)
+    for i in range(100):
+        action_n = model.predict(obs_n, train=TRAIN)
+        print(f"{i}:{action_n}")
         obs_n, rew_n, done_n, info_n = env.step(action_n)
         env.render()
 

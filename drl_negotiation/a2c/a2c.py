@@ -132,13 +132,6 @@ class MADDPGModel:
             self.trainers = U.get_trainers(self.env, num_adversaries, obs_shape_n, arglist)
             logging.info(f"Using good policy {self.good_policy} and adv policy {self.adv_policy}")
 
-            U.initialize()
-            if self.load_dir == '':
-                self.load_dir = self.save_dir
-            
-            logging.info("loading model")
-            saver = U.load_state(self.load_dir)
-
         # assert issubclass(self.policy, Policy), "Error: the input policy for the maddpg model must be an" \
         #                                         "instance of a2c.policy.Policy"
 
@@ -302,6 +295,14 @@ class MADDPGModel:
             action_n = [agent.action(obs) for agent, obs in zip(self.trainers, obs_n)]
             return action_n
         else:
-            with U.single_threaded_session() as sess:
+            with U.single_threaded_session():
+                U.initialize()
+                if self.load_dir == '':
+                    self.load_dir = self.save_dir
+
+                logging.info("loading model...")
+                saver = tf.train.import_meta_graph(self.save_dir + self.model_name + ".meta")
+                U.load_state(tf.train.latest_checkpoint(self.save_dir), saver=saver)
+
                 action_n = [agent.action(obs) for agent, obs in zip(self.trainers, obs_n)]
                 return action_n
