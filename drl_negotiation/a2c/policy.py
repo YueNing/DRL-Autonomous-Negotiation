@@ -26,11 +26,13 @@ class InteractivePolicy(Policy):
         self.env = env
         self.agent_index = agent_index
         # hard-coded keyboard events
-        self.management = [False for i in range(12)]
+        # self.management = [False for i in range(12)]
+        # manage the uvalues of buyer and seller, seller 4, buyer 4
+        self.management = [False for i in range(8)]
         self.comm = [False for i in range(env.world.dim_c)]
         # register keyboard events with this environment's window
-        env.viewers[agent_index].on_key_press = self.key_press
-        env.viewers[agent_index].on_key_release = self.key_release
+        env.viewers[int(agent_index % env.n)].on_key_press = self.key_press
+        env.viewers[int(agent_index % env.n)].on_key_release = self.key_release
         self.pressed = False
 
     def action(self, obs):
@@ -42,8 +44,10 @@ class InteractivePolicy(Policy):
             if self.management[3]: m = 4
             if self.management[4]: m = 5
             if self.management[5]: m = 6
+            if self.management[6]: m = 7
+            if self.management[7]: m = 8
         else:
-            m = np.zeros(13)  # 7-d because of no-change action
+            m = np.zeros(9)  # 7-d because of no-change action
             if self.management[0]: m[1] += 1.0
             if self.management[1]: m[2] += 1.0
             if self.management[2]: m[3] += 1.0
@@ -52,10 +56,6 @@ class InteractivePolicy(Policy):
             if self.management[5]: m[6] += 1.0
             if self.management[6]: m[7] += 1.0
             if self.management[7]: m[8] += 1.0
-            if self.management[8]: m[9] += 1.0
-            if self.management[9]: m[10] += 1.0
-            if self.management[10]: m[11] += 1.0
-            if self.management[11]: m[12] += 1.0
             if True not in self.management:
                 m[0] += 1.0
             else:
@@ -70,9 +70,8 @@ class InteractivePolicy(Policy):
         if k == key._4: self.management[3] = True
         if k == key._5: self.management[4] = True
         if k == key._6: self.management[5] = True
-
-        if k == key.O: self.management[0] == True
-        if k == key.P: self.management[1] == True
+        if k == key._7: self.management[6] = True
+        if k == key._8: self.management[7] = True
 
     def key_release(self, k, mod):
         if k == key._1: self.management[0] = False
@@ -81,9 +80,8 @@ class InteractivePolicy(Policy):
         if k == key._4: self.management[3] = False
         if k == key._5: self.management[4] = False
         if k == key._6: self.management[5] = False
-
-        if k == key.O: self.management[0] = False
-        if k == key.P: self.management[1] = False
+        if k == key._7: self.management[6] = False
+        if k == key._8: self.management[7] = False
 
 ##########################################################
 # a2c trainer policy network

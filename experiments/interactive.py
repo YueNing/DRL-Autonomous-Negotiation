@@ -12,14 +12,20 @@ if __name__ == '__main__':
     # render call to create window
     env.render()
     # create interactive policies for each agent
-    policies = [InteractivePolicy(env, i) for i in range(env.n)]
     if not ONLY_SELLER:
-        policies = policies * 2
+        policies = []
+        for i in range(env.n):
+            policies.append(InteractivePolicy(env, i))
+            policies.append(InteractivePolicy(env, i+1))
+    else:
+        policies = [InteractivePolicy(env, i) for i in range(env.n)]
+    # if not ONLY_SELLER:
+    #     policies = policies * 2
 
     # execution loop
     obs_n = env.reset()
-    if not ONLY_SELLER:
-        obs_n = obs_n * 2
+    # if not ONLY_SELLER:
+    #     obs_n = obs_n * 2
 
     done = False
     print(f'{env.world.n_steps}')

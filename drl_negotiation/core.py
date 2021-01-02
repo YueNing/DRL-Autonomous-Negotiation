@@ -7,8 +7,9 @@ import numpy as np
 from scml.scml2020 import SCML2020World, SCML2020Agent, is_system_agent
 from typing import Optional
 from drl_negotiation.hyperparameters import *
-
+import yaml
 import  copy
+import pickle
 
 class AgentState:
     '''
@@ -84,6 +85,10 @@ class MySCML2020Agent(SCML2020Agent):
         self.m_nois = None
         # communication noise amount
         self.c_nois = None
+        # manageable range
+        self.m_range = 1.0
+        self.b_range = 1.0
+
         # state
         self.state = AgentState()
         # action
@@ -128,8 +133,9 @@ class MySCML2020Agent(SCML2020Agent):
                 buy +=1
         return sell, buy
 
-    def _get_obs(self):
+    def _get_obs(self, seller=True):
         # local observation
+        # TODO: different observation of buyer and seller, will be implemented here
 
         o_m = self.awi.profile.costs
         o_m = o_m[:, self.awi.profile.processes]
@@ -313,3 +319,15 @@ class TrainWorld(SCML2020World):
                 noise = np.random.randn(*agent.action.c.shape) * agent.c_nois if agent.c_nois else 0.0
                 agent.state.c = agent.action.c + noise
 
+    def save_config(self, file_name: str):
+        dump_data = {
+            "agent_types": [_._type_name() for _ in self.configuration['agent_types']],
+            'agent_params': self.configuration['agent_params'],
+            "n_steps": self.n_steps
+        }
+        with open(file_name+'.yaml', "w") as file:
+            yaml.safe_dump(dump_data, file)
+
+        with open(file_name+'.pkl', 'wb') as file:
+            pickle.dump(dump_data, file)
+        # super().save_config(file_name=file_name)
