@@ -1,35 +1,10 @@
 from drl_negotiation.a2c.a2c import MADDPGModel
 from drl_negotiation.utils import make_env
+from drl_negotiation.hyperparameters import *
 import logging
 
-# Training from scratch: set TRAIN, SAVE_WORLD_CONFIG as True
-# Training from checkpoints: set TRAIN as True, SAVE_WORLD_CONFIG as False
-# Evaluation from trained model: set TRAIN, SAVE_WORLD_CONFIG as False
-
-TRAIN = False
-# train from checkpoints
-RESTORE = True
-EVALUATION = not TRAIN
-
-# if train, not restore, train from scratch
-SAVE_WORLD_CONFIG = True
-
-if RESTORE and TRAIN:
-    SAVE_WORLD_CONFIG = False
-if EVALUATION:
-    SAVE_WORLD_CONFIG = False
-
-LOAD_WORLD_CONFIG = not SAVE_WORLD_CONFIG
-
-SAVE_DIR = "./world.config"
-LOAD_DIR = " "
-TRAIN_EPISODES = 10
-
-if LOAD_DIR == " ":
-    LOAD_DIR = SAVE_DIR
-
 # make environment
-env = make_env('scml', save_config=SAVE_WORLD_CONFIG, load_config=LOAD_WORLD_CONFIG, save_dir=SAVE_DIR, load_dir=LOAD_DIR)
+env = make_env('scml', save_config=SAVE_WORLD_CONFIG, load_config=LOAD_WORLD_CONFIG, save_dir=SAVE_WORLD_CONFIG_DIR, load_dir=LOAD_WORLD_CONFIG_DIR)
 
 # train model
 if TRAIN:

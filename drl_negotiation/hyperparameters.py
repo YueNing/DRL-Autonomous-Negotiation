@@ -3,10 +3,33 @@
 ###############################################
 import logging
 
+# Training from scratch: set TRAIN, SAVE_WORLD_CONFIG as True
+# Training from checkpoints: set TRAIN as True, SAVE_WORLD_CONFIG as False
+# Evaluation from trained model: set TRAIN, SAVE_WORLD_CONFIG as False
 TRAIN = True
+# train from checkpoints
+RESTORE = True
+
 LOAD_MODEL = False
 LOGGING_LEVEL = logging.INFO
 FILENAME = "my.log"
+EVALUATION = not TRAIN
+# if train, not restore, train from scratch
+SAVE_WORLD_CONFIG = True
+
+if RESTORE and TRAIN:
+    SAVE_WORLD_CONFIG = False
+if EVALUATION:
+    SAVE_WORLD_CONFIG = False
+
+LOAD_WORLD_CONFIG = not SAVE_WORLD_CONFIG
+
+SAVE_WORLD_CONFIG_DIR = "./world.config"
+LOAD_WORLD_CONFIG_DIR = " "
+TRAIN_EPISODES = 10
+
+if LOAD_WORLD_CONFIG_DIR == " ":
+    LOAD_WORLD_CONFIG_DIR = SAVE_WORLD_CONFIG_DIR
 
 # Train only the seller component of agent
 ONLY_SELLER = False # train seller and buyer together
