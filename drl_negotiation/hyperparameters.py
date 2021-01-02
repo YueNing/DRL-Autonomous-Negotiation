@@ -12,6 +12,7 @@ FILENAME = "my.log"
 ONLY_SELLER = False # train seller and buyer together
 SAVE_DIR = "/tmp/policy/"
 MODEL_NAME = "model"
+SAVE_RATE = 1
 
 ################################################
 # agent

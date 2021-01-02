@@ -22,23 +22,38 @@ class MADDPGModel:
                  policy=None,
                  only_seller=ONLY_SELLER,
                  logging_level = LOGGING_LEVEL,
+
                  # training
+                 # trainer update steps
                  n_steps=2,
+                 # learning rate
                  lr=1e-2,
+                 # discount factor
                  gamma=0.95,
+                 # model save dir
                  save_dir=SAVE_DIR,
+                 # model name
                  model_name=MODEL_NAME,
-                 save_rate=5,
+                 # model save rate
+                 save_rate=SAVE_RATE,
+                 # model load dir
                  load_dir='',
+                 # experiment name
                  exp_name="",
+                 # batch size * max_episode_len = replay buffer
                  batch_size=1,
                  num_units=64,
                  # env
                  n_envs=1,
+                 # number of training episodes
                  num_episodes=60,
+                 # max length of every episode
                  max_episode_len=10,
+                 # number of adversaries
                  num_adversaries=0,
+                 # policy of good agent
                  good_policy="maddpg",
+                 # policy of adversary agent
                  adv_policy="heuristic",
 
                  # evaluation
@@ -48,7 +63,7 @@ class MADDPGModel:
                  restore=False,
                  display=False,
                  plots_dir="./learning_curves/",
-
+                 # init the model, used for evaluation
                  _init_setup_model=False,
                  **kwargs,
         ):
@@ -168,9 +183,14 @@ class MADDPGModel:
             if self.load_dir == '':
                 self.load_dir = self.save_dir
 
+            saver = None
             if self.display or self.restore or self.benchmark:
                 logging.info("Loading previous state...")
-                U.load_state(self.load_dir)
+                saver = tf.train.import_meta_graph(self.load_dir+self.model_name+'.meta')
+                U.load_state(tf.train.latest_checkpoint(self.load_dir), saver=saver)
+
+            if saver is None:
+                saver = U.get_saver()
 
             episode_rewards = [0.0]
             agent_rewards = [[0.0] for _ in range(self.env.n)]
@@ -178,7 +198,6 @@ class MADDPGModel:
             final_ep_rewards = []
             final_ep_ag_rewards = []
             agent_info = [[[]]]
-            saver = U.get_saver()
             obs_n = self.env.reset()
 
             episode_step = 0
