@@ -7,8 +7,9 @@ import numpy as np
 from scml.scml2020 import SCML2020World, SCML2020Agent, is_system_agent
 from typing import Optional
 from drl_negotiation.hyperparameters import *
-
+import yaml
 import  copy
+import pickle
 
 class AgentState:
     '''
@@ -84,6 +85,10 @@ class MySCML2020Agent(SCML2020Agent):
         self.m_nois = None
         # communication noise amount
         self.c_nois = None
+        # manageable range
+        self.m_range = 1.0
+        self.b_range = 1.0
+
         # state
         self.state = AgentState()
         # action
@@ -127,11 +132,12 @@ class MySCML2020Agent(SCML2020Agent):
             elif n.annotation["buyer"] == self.id:
                 buy +=1
         return sell, buy
-
-    def _get_obs(self, scenario="scml"):
+      
+    def _get_obs(self, seller=True, scenario="scml"):
+        # local observation
+        # TODO: different observation of buyer and seller, will be implemented here
         if scenario == "scml":
-            # local observation
-
+          
             o_m = self.awi.profile.costs
             o_m = o_m[:, self.awi.profile.processes]
 
@@ -161,6 +167,14 @@ class MySCML2020Agent(SCML2020Agent):
             # return np.concatenate(economic_gaps + o_m.flatten() + o_a + o_u_c + o_u_e + o_u_t + o_q_n.flatten() + o_t_c)
 
             return np.concatenate((economic_gaps.flatten(), o_m.flatten(), o_a, o_u_c, o_q_n.flatten(), o_t_c))
+
+    def init(self):
+        super(MySCML2020Agent, self).init()
+        if RUNNING_IN_SCML2020World:
+            if not self.train:
+                self._setup_model()
+
+
 
 class TrainWorld(SCML2020World):
     """
@@ -314,3 +328,15 @@ class TrainWorld(SCML2020World):
                 noise = np.random.randn(*agent.action.c.shape) * agent.c_nois if agent.c_nois else 0.0
                 agent.state.c = agent.action.c + noise
 
+    def save_config(self, file_name: str):
+        dump_data = {
+            "agent_types": [_._type_name() for _ in self.configuration['agent_types']],
+            'agent_params': self.configuration['agent_params'],
+            "n_steps": self.n_steps
+        }
+        with open(file_name+'.yaml', "w") as file:
+            yaml.safe_dump(dump_data, file)
+
+        with open(file_name+'.pkl', 'wb') as file:
+            pickle.dump(dump_data, file)
+        # super().save_config(file_name=file_name)

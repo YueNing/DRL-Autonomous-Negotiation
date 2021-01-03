@@ -4,7 +4,9 @@ import collections
 import random
 import tensorflow as tf
 from gym import spaces
+import pickle
 from  negmas import Issue
+from negmas.helpers import get_class
 from typing import List, Tuple
 from drl_negotiation.hyperparameters import *
 
@@ -123,6 +125,30 @@ def reverse_normalize_action(action: Tuple=None, negotiator:"DRLNegotiator" = No
         _action.append(result)
 
     return _action
+
+def reverse_normalize(action: Tuple=None, source_rng: Tuple=None, rng=(-1, 1)):
+    """
+    used for SCMLAgent,
+    action: (-1, 1)
+    Args:
+        action:
+        agent:
+        source_rng: ((cprice, 3/2 * cprice), (3/2 * cprice, 2 * cprice))
+        rng:
+
+    Returns: true action
+
+    >>> reverse_normalize((-1, 1), ((10, 15), (15, 20)), rng=(-1, 1))
+    (10, 20)
+    """
+    _action = []
+    for index, _ in enumerate(action):
+        x_min = source_rng[index][0]
+        x_max = source_rng[index][1]
+        result = ((_ - rng[0]) / (rng[1] - rng[0]))*(x_max - x_min) + x_min
+        _action.append(int(result))
+
+    return tuple(_action)
 
 # Global session
 def get_session():
@@ -316,6 +342,32 @@ def load_state(fname, saver=None):
     saver.restore(get_session(), fname)
     return saver
 
+def traversalDir_FirstDir(path):
+    list = []
+    if (os.path.exists(path)):
+        files = os.listdir(path)
+        for file in files:
+            m = os.path.join(path,file)
+            if (os.path.isdir(m)):
+                list.append(m)
+    else:
+        os.mkdir(path)
+
+    return list
+
+def save_as_scope(scope_prefix: "MADDPGAgentTrainer", save_dir=None, model_name=None, extra="/p_func"):
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope_prefix+extra)[-6:])
+    # dirs = traversalDir_FirstDir(save_dir+scope_prefix)
+    # if not dirs:
+    #     sub_save_dir = '/'+'0001'+'/'
+    # else:
+    #     sub_save_dir = '/'+str(int(dirs[-1]) + 1).zfill(4)+'/'
+    if not os.path.exists(save_dir+scope_prefix):
+        os.mkdir(save_dir+scope_prefix)
+    saver.save(get_session(), save_dir+scope_prefix+'/'+model_name)
+    return saver
 
 def save_state(fname, saver=None, global_step=None):
     """Save all the variables in the current session to the location <fname>"""
@@ -377,11 +429,10 @@ def load_buyer_neg_model(path="NEG_BUY_PATH"):
     """
     pass
 
-
 ###########################################################
 # env
 ###########################################################
-def make_env(scenario_name, arglist=None):
+def make_env(scenario_name, arglist=None, save_config=False, load_config=False, save_dir=None, load_dir=None):
     from drl_negotiation.env import SCMLEnv
     import drl_negotiation.scenarios as scenarios
 
@@ -389,7 +440,20 @@ def make_env(scenario_name, arglist=None):
     scenario = scenarios.load(scenario_name + '.py').Scenario()
 
     # create world/game
-    world = scenario.make_world()
+    if load_config:
+        with open(load_dir+'.pkl', 'rb') as file:
+            config = pickle.load(file)
+        agent_types = config['agent_types']
+        config['agent_types'] = []
+        for _ in agent_types:
+            config['agent_types'].append(get_class(_))
+    else:
+        config = None
+
+    world = scenario.make_world(config)
+
+    if save_config:
+        world.save_config(file_name=save_dir)
 
     # create multi-agent supply chain management environment
     env = SCMLEnv(
@@ -410,7 +474,7 @@ def make_env(scenario_name, arglist=None):
 #####################################################################
 from drl_negotiation.a2c.policy import mlp_model
 
-def get_trainers(env, num_adversaries=0, obs_shape_n=None, arglist=None, only_seller=True):
+def get_trainers(env, num_adversaries=0, obs_shape_n=None, arglist=None):
     #TODO: train seller and buyer together, env.action_space?
 
     trainers = []
@@ -419,11 +483,11 @@ def get_trainers(env, num_adversaries=0, obs_shape_n=None, arglist=None, only_se
 
     action_space = env.action_space
 
-    if not only_seller:
-        obs_shape_n = obs_shape_n * 2
-        action_space = action_space * 2
-        assert len(obs_shape_n)==env.n * 2, "Error, length of obs_shape_n is not same as 2*policy agents"
-        assert len(action_space)==len(obs_shape_n), "Error, length of act_space_n and obs_space_n are not equal!"
+    # if not only_seller:
+    #     obs_shape_n = obs_shape_n * 2
+    #     action_space = action_space * 2
+    #     assert len(obs_shape_n)==env.n * 2, "Error, length of obs_shape_n is not same as 2*policy agents"
+    #     assert len(action_space)==len(obs_shape_n), "Error, length of act_space_n and obs_space_n are not equal!"
 
     # first set up the adversaries, default num_adversaries is 0
     for i in range(num_adversaries):
@@ -431,15 +495,22 @@ def get_trainers(env, num_adversaries=0, obs_shape_n=None, arglist=None, only_se
             env.agents[i].name.replace("@", '-')+"_seller", model, obs_shape_n, action_space, i, arglist,
             local_q_func=(arglist.adv_policy == 'ddpg')
         ))
-
-    if not only_seller:
-        for i in range(num_adversaries):
+        if not ONLY_SELLER:
             trainers.append(
                 trainer(
-                    env.agents[i].name.replace("@", '-')+"_buyer", model, obs_shape_n, action_space, i+ int(len(obs_shape_n) / 2), arglist,
+                    env.agents[i].name.replace("@", '-') + "_buyer", model, obs_shape_n, action_space,
+                    i + 1, arglist,
                     local_q_func=(arglist.adv_policy == 'ddpg')
                 )
             )
+    # if not only_seller:
+    #     for i in range(num_adversaries):
+    #         trainers.append(
+    #             trainer(
+    #                 env.agents[i].name.replace("@", '-')+"_buyer", model, obs_shape_n, action_space, i+ int(len(obs_shape_n) / 2), arglist,
+    #                 local_q_func=(arglist.adv_policy == 'ddpg')
+    #             )
+    #         )
 
     # set up the good agent
     for i in range(num_adversaries, env.n):
@@ -448,13 +519,19 @@ def get_trainers(env, num_adversaries=0, obs_shape_n=None, arglist=None, only_se
             local_q_func=(arglist.good_policy == "ddpg")
         )
         )
-
-    if not only_seller:
-        for i in range(num_adversaries, env.n):
+        if not ONLY_SELLER:
             trainers.append(trainer(
-                env.agents[i].name.replace("@", '-')+"_buyer", model, obs_shape_n, action_space, i+int(len(obs_shape_n) / 2), arglist,
+                env.agents[i].name.replace("@", '-') + "_buyer", model, obs_shape_n, action_space,
+                i + 1, arglist,
                 local_q_func=(arglist.good_policy == 'ddpg')
             ))
+
+    # if not only_seller:
+    #     for i in range(num_adversaries, env.n):
+    #         trainers.append(trainer(
+    #             env.agents[i].name.replace("@", '-')+"_buyer", model, obs_shape_n, action_space, i+int(len(obs_shape_n) / 2), arglist,
+    #             local_q_func=(arglist.good_policy == 'ddpg')
+    #         ))
 
     return trainers
 

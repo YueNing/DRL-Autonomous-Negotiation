@@ -13,8 +13,28 @@ def make_update_exp(vals, target_vals):
     expression = tf.group(*expression)
     return U.function([], [], updates=[expression])
 
-def p_train(
-        make_obs_ph_n,
+def p_predict(
+        make_obs_ph,
+        act_space,
+        p_func,
+        num_units = 64,
+        scope = 'trainer',
+        reuse = None
+):
+    with tf.compat.v1.variable_scope(scope, reuse=reuse):
+        act_pdtype = make_pd_type(act_space)
+
+        obs_ph = make_obs_ph
+
+        p_input = obs_ph
+        p = p_func(p_input, int(act_pdtype.param_shape()[0]), scope="p_func", num_units=num_units)
+
+        act_pd = act_pdtype.proba_distribution_from_flat(p)
+        act_sample = act_pd.sample()
+        act = U.function(inputs=[obs_ph], outputs=act_sample)
+        return act
+
+def p_train(make_obs_ph_n,
         act_space_n,
         p_index,
         p_func,
@@ -25,7 +45,7 @@ def p_train(
         num_units=64,
         scope="trainer",
         reuse=None
-        ):
+    ):
     with tf.compat.v1.variable_scope(scope, reuse=reuse):
         # distributions of actions
         import ipdb
@@ -145,7 +165,28 @@ class AgentTrainer(object):
 
 class MADDPGAgentTrainer(AgentTrainer):
 
-    def __init__(self, name, model, obs_shape_n, act_space_n, agent_index, args, local_q_func=False):
+    def __init__(self,
+                 name,
+                 model,
+                 obs_shape_n,
+                act_space_n,
+                 agent_index,
+                 args,
+                 local_q_func=False,
+                 independent=False
+                 ):
+        """
+
+        Args:
+            name:
+            model: mlpmodel
+            obs_shape_n: all obs_shape
+            act_space_n:
+            agent_index:
+            args:
+            local_q_func:
+            independent: use the learned policy in SCML2020World, otherwise in SCMLEnv
+        """
         self.name = name
         self.n = len(obs_shape_n)
         self.agent_index = agent_index
