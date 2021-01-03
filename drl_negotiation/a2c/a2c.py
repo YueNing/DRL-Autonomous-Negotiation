@@ -5,7 +5,7 @@ import os
 import time
 import argparse
 import tensorflow as tf
-from drl_negotiation.a2c.policy import Policy
+import gym
 from drl_negotiation.env import SCMLEnv
 import drl_negotiation.utils as U
 import numpy as np
@@ -202,7 +202,14 @@ class MADDPGModel:
             while True:
                 #print(f'episodes: {len(episode_rewards)}, train steps: {train_step}')
                 action_n = self.predict(obs_n)
-                new_obs_n, rew_n, done_n, info_n = self.env.step(action_n)
+
+                clipped_action_n = action_n
+                for i, _ in enumerate(self.env.action_space):
+                    if isinstance(_ , gym.spaces.Box):
+                        clipped_action_n[i] = np.clip(action_n[i], self.env.action_space[i].low, self.env.action_space[i].high)
+
+                #print(f"action_n: {action_n}")
+                new_obs_n, rew_n, done_n, info_n = self.env.step(clipped_action_n)
 
                 episode_step +=1
                 done = all(done_n)

@@ -126,6 +126,30 @@ def reverse_normalize_action(action: Tuple=None, negotiator:"DRLNegotiator" = No
 
     return _action
 
+def reverse_normalize(action: Tuple=None, source_rng: Tuple=None, rng=(-1, 1)):
+    """
+    used for SCMLAgent,
+    action: (-1, 1)
+    Args:
+        action:
+        agent:
+        source_rng: ((cprice, 3/2 * cprice), (3/2 * cprice, 2 * cprice))
+        rng:
+
+    Returns: true action
+
+    >>> reverse_normalize((-1, 1), ((10, 15), (15, 20)), rng=(-1, 1))
+    (10, 20)
+    """
+    _action = []
+    for index, _ in enumerate(action):
+        x_min = source_rng[index][0]
+        x_max = source_rng[index][1]
+        result = ((_ - rng[0]) / (rng[1] - rng[0]))*(x_max - x_min) + x_min
+        _action.append(int(result))
+
+    return tuple(_action)
+
 # Global session
 def get_session():
     '''
@@ -378,7 +402,6 @@ def load_buyer_neg_model(path="NEG_BUY_PATH"):
         model of buyer, to decide the next step buyer's action
     """
     pass
-
 
 ###########################################################
 # env

@@ -2,13 +2,14 @@
 # Global
 ###############################################
 import logging
+RUNNING_IN_SCML2020World = True
 
 # Training from scratch: set TRAIN, SAVE_WORLD_CONFIG as True
 # Training from checkpoints: set TRAIN as True, SAVE_WORLD_CONFIG as False
 # Evaluation from trained model: set TRAIN, SAVE_WORLD_CONFIG as False
-TRAIN = True
+TRAIN = False
 # train from checkpoints
-RESTORE = True
+RESTORE = False
 
 LOAD_MODEL = False
 LOGGING_LEVEL = logging.INFO
@@ -49,6 +50,8 @@ BLIND = False
 ###############################################
 # action is a number 0...N, otherwise action is a one-hot N-dimensional vector
 DISCRETE_ACTION_INPUT = False
+# TODO: continuous action space, the range of action based on catalog prices
+# TODO: fixed catalog prices or ?
 DISCRETE_ACTION_SPACE = True
 RENDER_INFO = True
 

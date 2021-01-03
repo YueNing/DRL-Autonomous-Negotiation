@@ -167,6 +167,14 @@ class MySCML2020Agent(SCML2020Agent):
 
         return np.concatenate((economic_gaps.flatten(), o_m.flatten(), o_a, o_u_c, o_q_n.flatten(), o_t_c))
 
+    def init(self):
+        super(MySCML2020Agent, self).init()
+        if RUNNING_IN_SCML2020World:
+            if not self.train:
+                self._setup_model()
+
+
+
 class TrainWorld(SCML2020World):
     """
     Multi-Agent, SCML world, used for training
