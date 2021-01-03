@@ -78,6 +78,9 @@ REW_FACTOR = 0.2
 # used in SCML2020World, considered as days
 N_STEPS = 10
 
+# scml scenario, concurrent
+TRAINING_AGENT_TYPES_CONCURRENT = ["drl_negotiation.myagent.MyConcurrentBasedAgent", "scml.scml2020.DecentralizingAgent"]
+
 ################################################
 # running world
 ################################################
