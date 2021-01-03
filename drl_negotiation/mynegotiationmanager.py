@@ -23,6 +23,7 @@ from drl_negotiation.utils import reverse_normalize
 from drl_negotiation.a2c.policy import create_actor
 import drl_negotiation.utils as U
 from gym import spaces
+import tensorflow as tf
 
 class MyNegotiationManager(IndependentNegotiationsManager):
     """
@@ -41,8 +42,8 @@ class MyNegotiationManager(IndependentNegotiationsManager):
     ):
         super(MyNegotiationManager, self).__init__(*args, **kwargs)
         self.train = train
-        self.seller_model = None
-        self.buyer_model = None
+        self.seller_model = '/tmp/policy/'
+        self.buyer_model = '/tmp/policy/'
 
         self.load_model = load_model
         self.train = train
@@ -92,14 +93,17 @@ class MyNegotiationManager(IndependentNegotiationsManager):
 
         for index in range(len(scopes)):
             self.models.append(
-                create_actor(
+                (create_actor(
                     make_obs_ph=make_obs_ph[index],
                     act_space=act_space[index],
                     scope=scopes[index]
-                ))
+                ), scopes[index]))
 
-    def _load_state(self):
+        self.scopes = scopes
+
+    def _load_state(self, model):
         """
+        TODO
         restore the model
         Args:
             sell:
@@ -107,12 +111,7 @@ class MyNegotiationManager(IndependentNegotiationsManager):
         Returns:
 
         """
-        if self.load_model:
-            if self.seller_model_path is not None:
-                self.seller_model = load_seller_neg_model(self.seller_model_path)
-
-            if self.buyer_model_path is not None:
-                self.buyer_model = load_buyer_neg_model(self.buyer_model_path)
+        pass
 
     def respond_to_negotiation_request(
             self,
@@ -231,58 +230,63 @@ class MyNegotiationManager(IndependentNegotiationsManager):
                                             qvalues, uvalues, tvalues, step, sell
                             action: range of issues
         """
-        #using model to predict the action
-        _model = None
-        if sell and self.seller_model is not None:
-            _model = self.seller_model
+        if DISCRETE_ACTION_SPACE:
+            _model = None
+            if not self.train and RUNNING_IN_SCML2020World:
+                if sell:
+                    _model = self.models[0]
 
-        if not sell and self.buyer_model is not None:
-            _model = self.buyer_model
+                if not sell:
+                    _model = self.models[1]
 
-        if _model is not None:
-            #TODO: test period, get the action from model
-            _obs = self._get_obs()
-            _act = _model.action(_obs)
+            if _model is not None:
+                #TODO: test period, get the action from model
+                with U.single_threaded_session():
+                    U.initialize()
+                    self._load_state(_model)
 
-            self.action.s = np.zeros(DIM_S)
+                    _obs = self._get_obs()
+                    _act = _model[0](_obs[None])[0]
 
-            if MANAGEABLE:
-                if DISCRETE_ACTION_INPUT:
-                    if _act[0] == 1: self.action.s[0] = -1.0
-                    if _act[0] == 2: self.action.s[0] = +1.0
-                    if _act[0] == 3: self.action.s[1] = -1.0
-                    if _act[0] == 4: self.action.s[1] = +1.0
-                else:
-                    # one hot
-                    if DISCRETE_ACTION_SPACE:
-                        self.action.s[0] += _act[0][1] - _act[0][2]
-                        self.action.s[1] += _act[0][3] - _act[0][4]
-                    else:
-                        self.action.s = _act[0]
+                    self.action.s = np.zeros(DIM_S)
 
-                uvalues = tuple(np.array(uvalues) + np.array(self.action.s).astype("int32"))
-        else:
-            # training period, action has been set up in env
-            if sell:
-                if self.action.m is not None:
-                    # set up observation
-                    # self.state.o_role = sell
-                    self.state.o_negotiation_step = self.awi.current_step
-                    # for debug
-                    self.state.o_step = step
-                    self.state.o_is_sell = sell
+                    if MANAGEABLE:
+                        if DISCRETE_ACTION_INPUT:
+                            if _act[0] == 1: self.action.s[0] = -1.0
+                            if _act[0] == 2: self.action.s[0] = +1.0
+                            if _act[0] == 3: self.action.s[1] = -1.0
+                            if _act[0] == 4: self.action.s[1] = +1.0
+                        else:
+                            # one hot
+                            if DISCRETE_ACTION_SPACE:
+                                self.action.s[0] += _act[0][1] - _act[0][2]
+                                self.action.s[1] += _act[0][3] - _act[0][4]
+                            else:
+                                self.action.s = _act[0]
 
-                    self.state.o_q_values = qvalues
-                    self.state.o_u_values = uvalues
-                    self.state.o_t_values = tvalues
-
-                    if self.action.m is not None:
-                        uvalues = tuple(np.array(uvalues) + (np.array(self.action.m)*self.action.m_vel).astype("int32"))
-
+                        uvalues = tuple(np.array(uvalues) + np.array(self.action.s).astype("int32"))
             else:
-                # for buyer
-                if self.action.b is not None:
-                    uvalues = tuple(np.array(uvalues) + (np.array(self.action.b) * self.action.b_vel).astype("int32"))
+                # training period, action has been set up in env
+                if sell:
+                    if self.action.m is not None:
+                        # set up observation
+                        # self.state.o_role = sell
+                        self.state.o_negotiation_step = self.awi.current_step
+                        # for debug
+                        self.state.o_step = step
+                        self.state.o_is_sell = sell
+
+                        self.state.o_q_values = qvalues
+                        self.state.o_u_values = uvalues
+                        self.state.o_t_values = tvalues
+
+                        if self.action.m is not None:
+                            uvalues = tuple(np.array(uvalues) + (np.array(self.action.m)*self.action.m_vel).astype("int32"))
+
+                else:
+                    # for buyer
+                    if self.action.b is not None:
+                        uvalues = tuple(np.array(uvalues) + (np.array(self.action.b) * self.action.b_vel).astype("int32"))
 
         #import ipdb
         #ipdb.set_trace()

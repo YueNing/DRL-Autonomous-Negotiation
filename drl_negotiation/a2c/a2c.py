@@ -65,6 +65,7 @@ class MADDPGModel:
                  plots_dir="./learning_curves/",
                  # init the model, used for evaluation
                  _init_setup_model=False,
+                 save_trainers=SAVE_TRAINERS,
                  **kwargs,
         ):
         self.policy = policy
@@ -108,6 +109,8 @@ class MADDPGModel:
 
         if _init_setup_model:
             self.setup_model()
+
+        self.save_trainers = save_trainers
 
     def setup_model(self):
         with U.single_threaded_session():
@@ -272,7 +275,13 @@ class MADDPGModel:
                 # display training output
                 ##############################################################################
                 if terminal and (len(episode_rewards) % self.save_rate == 0):
+                    # save the model separately
+                    if self.save_trainers:
+                        for _ in self.trainers:
+                            U.save_as_scope(_.name, save_dir=self.save_dir, model_name=self.model_name)
+                    # save all model paramters
                     U.save_state(self.save_dir + self.model_name, saver=saver)
+
                     if num_adversaries == 0:
                         logging.info(f"steps: {train_step}, episodes: {len(episode_rewards)}, "
                               f"mean episode reward: {np.mean(episode_rewards[-self.save_rate:])}, "

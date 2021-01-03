@@ -2,14 +2,15 @@
 # Global
 ###############################################
 import logging
-RUNNING_IN_SCML2020World = True
+# control the negotiation manager
+RUNNING_IN_SCML2020World = False
 
 # Training from scratch: set TRAIN, SAVE_WORLD_CONFIG as True
 # Training from checkpoints: set TRAIN as True, SAVE_WORLD_CONFIG as False
 # Evaluation from trained model: set TRAIN, SAVE_WORLD_CONFIG as False
-TRAIN = False
+TRAIN = True
 # train from checkpoints
-RESTORE = False
+RESTORE = True
 
 LOAD_MODEL = False
 LOGGING_LEVEL = logging.INFO
@@ -37,6 +38,7 @@ ONLY_SELLER = False # train seller and buyer together
 SAVE_DIR = "/tmp/policy/"
 MODEL_NAME = "model"
 SAVE_RATE = 1
+SAVE_TRAINERS = True
 
 ################################################
 # agent
