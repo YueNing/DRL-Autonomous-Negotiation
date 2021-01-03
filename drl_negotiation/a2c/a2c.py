@@ -5,7 +5,7 @@ import os
 import time
 import argparse
 import tensorflow as tf
-from drl_negotiation.a2c.policy import Policy
+import gym
 from drl_negotiation.env import SCMLEnv
 import drl_negotiation.utils as U
 import numpy as np
@@ -65,6 +65,7 @@ class MADDPGModel:
                  plots_dir="./learning_curves/",
                  # init the model, used for evaluation
                  _init_setup_model=False,
+                 save_trainers=SAVE_TRAINERS,
                  **kwargs,
         ):
         self.policy = policy
@@ -108,6 +109,8 @@ class MADDPGModel:
 
         if _init_setup_model:
             self.setup_model()
+
+        self.save_trainers = save_trainers
 
     def setup_model(self):
         with U.single_threaded_session():
@@ -202,7 +205,14 @@ class MADDPGModel:
             while True:
                 #print(f'episodes: {len(episode_rewards)}, train steps: {train_step}')
                 action_n = self.predict(obs_n)
-                new_obs_n, rew_n, done_n, info_n = self.env.step(action_n)
+
+                clipped_action_n = action_n
+                for i, _ in enumerate(self.env.action_space):
+                    if isinstance(_ , gym.spaces.Box):
+                        clipped_action_n[i] = np.clip(action_n[i], self.env.action_space[i].low, self.env.action_space[i].high)
+
+                #print(f"action_n: {action_n}")
+                new_obs_n, rew_n, done_n, info_n = self.env.step(clipped_action_n)
 
                 episode_step +=1
                 done = all(done_n)
@@ -265,7 +275,13 @@ class MADDPGModel:
                 # display training output
                 ##############################################################################
                 if terminal and (len(episode_rewards) % self.save_rate == 0):
+                    # save the model separately
+                    if self.save_trainers:
+                        for _ in self.trainers:
+                            U.save_as_scope(_.name, save_dir=self.save_dir, model_name=self.model_name)
+                    # save all model paramters
                     U.save_state(self.save_dir + self.model_name, saver=saver)
+
                     if num_adversaries == 0:
                         logging.info(f"steps: {train_step}, episodes: {len(episode_rewards)}, "
                               f"mean episode reward: {np.mean(episode_rewards[-self.save_rate:])}, "

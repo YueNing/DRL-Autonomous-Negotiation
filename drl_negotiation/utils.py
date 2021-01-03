@@ -126,6 +126,30 @@ def reverse_normalize_action(action: Tuple=None, negotiator:"DRLNegotiator" = No
 
     return _action
 
+def reverse_normalize(action: Tuple=None, source_rng: Tuple=None, rng=(-1, 1)):
+    """
+    used for SCMLAgent,
+    action: (-1, 1)
+    Args:
+        action:
+        agent:
+        source_rng: ((cprice, 3/2 * cprice), (3/2 * cprice, 2 * cprice))
+        rng:
+
+    Returns: true action
+
+    >>> reverse_normalize((-1, 1), ((10, 15), (15, 20)), rng=(-1, 1))
+    (10, 20)
+    """
+    _action = []
+    for index, _ in enumerate(action):
+        x_min = source_rng[index][0]
+        x_max = source_rng[index][1]
+        result = ((_ - rng[0]) / (rng[1] - rng[0]))*(x_max - x_min) + x_min
+        _action.append(int(result))
+
+    return tuple(_action)
+
 # Global session
 def get_session():
     '''
@@ -318,6 +342,32 @@ def load_state(fname, saver=None):
     saver.restore(get_session(), fname)
     return saver
 
+def traversalDir_FirstDir(path):
+    list = []
+    if (os.path.exists(path)):
+        files = os.listdir(path)
+        for file in files:
+            m = os.path.join(path,file)
+            if (os.path.isdir(m)):
+                list.append(m)
+    else:
+        os.mkdir(path)
+
+    return list
+
+def save_as_scope(scope_prefix: "MADDPGAgentTrainer", save_dir=None, model_name=None, extra="/p_func"):
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope_prefix+extra)[-6:])
+    # dirs = traversalDir_FirstDir(save_dir+scope_prefix)
+    # if not dirs:
+    #     sub_save_dir = '/'+'0001'+'/'
+    # else:
+    #     sub_save_dir = '/'+str(int(dirs[-1]) + 1).zfill(4)+'/'
+    if not os.path.exists(save_dir+scope_prefix):
+        os.mkdir(save_dir+scope_prefix)
+    saver.save(get_session(), save_dir+scope_prefix+'/'+model_name)
+    return saver
 
 def save_state(fname, saver=None, global_step=None):
     """Save all the variables in the current session to the location <fname>"""
@@ -378,7 +428,6 @@ def load_buyer_neg_model(path="NEG_BUY_PATH"):
         model of buyer, to decide the next step buyer's action
     """
     pass
-
 
 ###########################################################
 # env
