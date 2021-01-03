@@ -3,6 +3,7 @@
    Author: naodongbanana
    E-Mail: n1085633848@outlook.com
 '''
+import os
 from typing import List, Dict, Optional, Any
 
 from scml import NegotiationManager
@@ -11,6 +12,7 @@ from scml.scml2020 import IndependentNegotiationsManager
 ########################################################
 from negmas import AgentMechanismInterface, Negotiator, Issue, SAONegotiator
 import numpy as np
+import logging
 from typing import Tuple, List
 from .negotiator import MyDRLNegotiator
 from .core import NegotiationRequestAction
@@ -42,6 +44,7 @@ class MyNegotiationManager(IndependentNegotiationsManager):
     ):
         super(MyNegotiationManager, self).__init__(*args, **kwargs)
         self.train = train
+        self.model_path = '/tmp/policy/'
         self.seller_model = '/tmp/policy/'
         self.buyer_model = '/tmp/policy/'
 
@@ -103,7 +106,6 @@ class MyNegotiationManager(IndependentNegotiationsManager):
 
     def _load_state(self, model):
         """
-        TODO
         restore the model
         Args:
             sell:
@@ -111,7 +113,13 @@ class MyNegotiationManager(IndependentNegotiationsManager):
         Returns:
 
         """
-        pass
+        logging.info("loading model")
+        if os.path.exists(self.model_path+model[1]):
+            saver = tf.train.import_meta_graph(self.model_path+model[1]+'/'+MODEL_NAME+'.meta')
+            U.load_state(tf.train.latest_checkpoint(self.model_path+model[1]), saver=saver)
+            return True
+
+        return False
 
     def respond_to_negotiation_request(
             self,
@@ -243,28 +251,28 @@ class MyNegotiationManager(IndependentNegotiationsManager):
                 #TODO: test period, get the action from model
                 with U.single_threaded_session():
                     U.initialize()
-                    self._load_state(_model)
+                    tag = self._load_state(_model)
+                    if tag:
+                        _obs = self._get_obs()
+                        _act = _model[0](_obs[None])
 
-                    _obs = self._get_obs()
-                    _act = _model[0](_obs[None])[0]
+                        self.action.s = np.zeros(DIM_S)
 
-                    self.action.s = np.zeros(DIM_S)
-
-                    if MANAGEABLE:
-                        if DISCRETE_ACTION_INPUT:
-                            if _act[0] == 1: self.action.s[0] = -1.0
-                            if _act[0] == 2: self.action.s[0] = +1.0
-                            if _act[0] == 3: self.action.s[1] = -1.0
-                            if _act[0] == 4: self.action.s[1] = +1.0
-                        else:
-                            # one hot
-                            if DISCRETE_ACTION_SPACE:
-                                self.action.s[0] += _act[0][1] - _act[0][2]
-                                self.action.s[1] += _act[0][3] - _act[0][4]
+                        if MANAGEABLE:
+                            if DISCRETE_ACTION_INPUT:
+                                if _act[0] == 1: self.action.s[0] = -1.0
+                                if _act[0] == 2: self.action.s[0] = +1.0
+                                if _act[0] == 3: self.action.s[1] = -1.0
+                                if _act[0] == 4: self.action.s[1] = +1.0
                             else:
-                                self.action.s = _act[0]
+                                # one hot
+                                if DISCRETE_ACTION_SPACE:
+                                    self.action.s[0] += _act[0][1] - _act[0][2]
+                                    self.action.s[1] += _act[0][3] - _act[0][4]
+                                else:
+                                    self.action.s = _act[0]
 
-                        uvalues = tuple(np.array(uvalues) + np.array(self.action.s).astype("int32"))
+                            uvalues = tuple(np.array(uvalues) + np.array(self.action.s).astype("int32"))
             else:
                 # training period, action has been set up in env
                 if sell:
