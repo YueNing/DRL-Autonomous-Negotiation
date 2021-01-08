@@ -4,7 +4,7 @@ A2C model
 import os
 import time
 import argparse
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import gym
 from drl_negotiation.env import SCMLEnv
 import drl_negotiation.utils as U
@@ -317,8 +317,12 @@ class MADDPGModel:
                     self.load_dir = self.save_dir
 
                 logging.info("loading model...")
-                saver = tf.train.import_meta_graph(self.save_dir + self.model_name + ".meta")
-                U.load_state(tf.train.latest_checkpoint(self.save_dir), saver=saver)
+                try:
+                    saver = tf.train.import_meta_graph(self.save_dir + self.model_name + ".meta")
+                    U.load_state(tf.train.latest_checkpoint(self.save_dir), saver=saver)
 
-                action_n = [agent.action(obs) for agent, obs in zip(self.trainers, obs_n)]
-                return action_n
+                    action_n = [agent.action(obs) for agent, obs in zip(self.trainers, obs_n)]
+                    return action_n
+                except IOError:
+                    logging.error(f"Loading model error when not Train, please check path: "
+                                  f"{self.save_dir + self.model_name} whether model is exist.")

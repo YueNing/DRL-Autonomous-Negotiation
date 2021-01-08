@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import numpy as np
 from stable_baselines.common.input import observation_input
 from stable_baselines.common.distributions import make_proba_dist_type, CategoricalProbabilityDistribution, \
@@ -100,9 +100,9 @@ def mlp_model(input, num_outputs, scope, reuse=False, num_units=64, rnn_cell=Non
     Returns:
 
     """
-    with tf.compat.v1.variable_scope(scope, reuse=reuse):
+    with tf.variable_scope(scope, reuse=reuse):
         out = input
-        output = tf.layers.dense(out, num_units, activation=tf.nn.relu)
+        out = tf.layers.dense(out, num_units, activation=tf.nn.relu)
         out = tf.layers.dense(out, num_units, activation=tf.nn.relu)
         out = tf.layers.dense(out, num_outputs, activation=None)
         return out

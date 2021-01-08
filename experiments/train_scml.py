@@ -10,7 +10,7 @@ sys.path.append("/home/nauen/PycharmProjects/tn_source_code")
 
 import time
 import drl_negotiation.utils as U
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import pickle
 
 def train(arglist):
