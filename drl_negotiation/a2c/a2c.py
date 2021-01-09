@@ -1,7 +1,7 @@
 """
 A2C model
 """
-import os
+import os, sys
 import time
 import argparse
 import tensorflow.compat.v1 as tf
@@ -105,8 +105,6 @@ class MADDPGModel:
 
         self.trainers = None
 
-        U.logging_setup()
-
         if _init_setup_model:
             self.setup_model()
 
@@ -179,10 +177,10 @@ class MADDPGModel:
             if self.load_dir == '':
                 self.load_dir = self.save_dir
 
-            saver = None
+            saver = tf.train.Saver()
             if self.display or self.restore or self.benchmark:
                 logging.info("Loading previous state...")
-                saver = tf.train.import_meta_graph(self.load_dir+self.model_name+'.meta')
+                #saver = tf.train.import_meta_graph(self.load_dir+self.model_name+'.meta')
                 U.load_state(tf.train.latest_checkpoint(self.load_dir), saver=saver)
 
             if saver is None:
@@ -323,6 +321,10 @@ class MADDPGModel:
 
                     action_n = [agent.action(obs) for agent, obs in zip(self.trainers, obs_n)]
                     return action_n
-                except IOError:
+                except IOError as e:
                     logging.error(f"Loading model error when not Train, please check path: "
                                   f"{self.save_dir + self.model_name} whether model is exist.")
+                    logging.error(str(e))
+                    logging.error("Please change the path of model or retrain the model, "
+                                  "retrain model: set the hyperparamter TRAIN as True in drl_negotiation/hyperparamters.py!")
+                    sys.exit()

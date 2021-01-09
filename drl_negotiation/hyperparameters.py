@@ -3,6 +3,7 @@
 ###############################################
 import logging
 # control the negotiation manager
+# now running in scml2020world could just under condition, not train
 RUNNING_IN_SCML2020World = True
 
 # Training from scratch: set TRAIN, SAVE_WORLD_CONFIG as True
@@ -10,35 +11,37 @@ RUNNING_IN_SCML2020World = True
 # Evaluation from trained model: set TRAIN, SAVE_WORLD_CONFIG as False
 TRAIN = False
 # train from checkpoints
-RESTORE = True
+RESTORE = False
+# Train only the seller component of agent
+ONLY_SELLER = False # train seller and buyer together
+# root dir, save all policies here
+ROOT_DIR = "/" + "tmp" + "/"
+# save dir, single policy
+SAVE_DIR = ROOT_DIR+"policy" + "/"
+# model name
+MODEL_NAME = "model"
+# train episode save rate
+SAVE_RATE = 1
+# save the model of trainers separately
+SAVE_TRAINERS = True
 
-LOAD_MODEL = False
+LOAD_MODEL = True
 LOGGING_LEVEL = logging.INFO
-FILENAME = "my.log"
+FILENAME = SAVE_DIR+"my.log"
 EVALUATION = not TRAIN
+
 # if train, not restore, train from scratch
-SAVE_WORLD_CONFIG = True
+SAVE_WORLD_CONFIG = False
+LOAD_WORLD_CONFIG = True
 
-if RESTORE and TRAIN:
-    SAVE_WORLD_CONFIG = False
-if EVALUATION:
-    SAVE_WORLD_CONFIG = False
-
-LOAD_WORLD_CONFIG = not SAVE_WORLD_CONFIG
-
-SAVE_WORLD_CONFIG_DIR = "./world.config"
+SAVE_WORLD_CONFIG_DIR = SAVE_DIR + "world.config"
 LOAD_WORLD_CONFIG_DIR = " "
 TRAIN_EPISODES = 10
 
 if LOAD_WORLD_CONFIG_DIR == " ":
     LOAD_WORLD_CONFIG_DIR = SAVE_WORLD_CONFIG_DIR
 
-# Train only the seller component of agent
-ONLY_SELLER = False # train seller and buyer together
-SAVE_DIR = "/tmp/policy/"
-MODEL_NAME = "model"
-SAVE_RATE = 1
-SAVE_TRAINERS = True
+
 
 ################################################
 # agent

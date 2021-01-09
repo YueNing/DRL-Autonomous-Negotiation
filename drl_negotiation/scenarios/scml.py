@@ -140,16 +140,17 @@ class Scenario(BaseScenario):
         _obs = agent._get_obs(seller=seller)
 
         #2. Economic gap with others, extra information
-        economic_gaps = []
-
-        for entity in world.entities:
-            if entity is agent: continue
-            economic_gaps.append(entity.state.f - agent.state.f)
-
-        economic_gaps = np.array(economic_gaps)
+        # economic_gaps = []
+        #
+        # for entity in world.entities:
+        #     if entity is agent: continue
+        #     economic_gaps.append(entity.state.f - agent.state.f)
+        #
+        # economic_gaps = np.array(economic_gaps)
 
         #return np.concatenate(economic_gaps + o_m.flatten() + o_a + o_u_c + o_u_e + o_u_t + o_q_n.flatten() + o_t_c)
-        return np.concatenate((economic_gaps.flatten(), _obs))
+        # return np.concatenate((economic_gaps.flatten(), _obs))
+        return _obs
 
     def done(self, agent, world, seller=True):
         # callback of done

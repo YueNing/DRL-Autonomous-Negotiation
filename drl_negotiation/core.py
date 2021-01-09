@@ -3,6 +3,7 @@
     Author: naodongbanana
     E-Mail: n1085633848@outlook.com
 '''
+import os, sys
 import numpy as np
 from scml.scml2020 import SCML2020World, SCML2020Agent, is_system_agent
 from typing import Optional
@@ -334,8 +335,23 @@ class TrainWorld(SCML2020World):
             'agent_params': self.configuration['agent_params'],
             "n_steps": self.n_steps
         }
-        with open(file_name+'.yaml', "w") as file:
-            yaml.safe_dump(dump_data, file)
+        try:
+            with open(file_name+'.yaml', "w") as file:
+                yaml.safe_dump(dump_data, file)
+        except FileNotFoundError as e:
+            logging.info(f"not find file {file_name}")
+            logging.error(str(e))
+            os.makedirs('/'.join(file_name.split('/')[0:-1]))
+            try:
+                with open(file_name + '.yaml', "w") as file:
+                    yaml.safe_dump(dump_data, file)
+            except FileNotFoundError as e:
+                logging.info(f"not find file {file_name}!")
+                logging.error(str(e))
+            except Exception as e:
+                logging.info(f"other errors when open file {file_name}!")
+                logging.error(str(e))
+                sys.exit(1)
 
         with open(file_name+'.pkl', 'wb') as file:
             pickle.dump(dump_data, file)

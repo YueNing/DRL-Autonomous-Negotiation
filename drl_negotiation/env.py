@@ -585,7 +585,12 @@ class SCMLEnv(gym.Env):
             self.viewers = [None] * self.n
         self._reset_render()
     
-    def step(self, action_n):
+    def step(self, action_n: list):
+        if not ONLY_SELLER:
+            assert len(action_n) == 2 * len(self.agents)
+        else:
+            assert len(action_n) == len(self.agents)
+
         obs_n = []
         reward_n = []
         done_n = []

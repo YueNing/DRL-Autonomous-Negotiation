@@ -3,6 +3,7 @@ import numpy as np
 import collections
 import random
 import tensorflow.compat.v1 as tf
+from tensorflow.python import pywrap_tensorflow
 from gym import spaces
 import pickle
 from  negmas import Issue
@@ -175,7 +176,7 @@ def single_threaded_session():
 
 ALREADY_INITIALIZED = set()
 
-def initialize():
+def  initialize():
     """
         Initialize all uninitalized variables in the global scope
     """
@@ -342,7 +343,13 @@ def load_state(fname, saver=None):
     saver.restore(get_session(), fname)
     return saver
 
-def traversalDir_FirstDir(path):
+def load_states(fnames, saver=None):
+    if saver is None:
+        saver = tf.train.Saver()
+
+    saver.restore(get_session(), )
+
+def traversal_dir_first_dir(path):
     list = []
     if (os.path.exists(path)):
         files = os.listdir(path)
@@ -354,6 +361,16 @@ def traversalDir_FirstDir(path):
         os.mkdir(path)
 
     return list
+
+def load_weights(ckpt_path, prefix_list):
+    vars_weights = {}
+    reader = pywrap_tensorflow.NewCheckpointReader(ckpt_path)
+    var_to_shape_map = reader.get_variable_to_shape_map()
+    for key in sorted(var_to_shape_map):
+        for _pref in prefix_list:
+            if key.startswith(_pref):
+                vars_weights[key+':0'] = reader.get_tensor(key)
+    return vars_weights
 
 def save_as_scope(scope_prefix: "MADDPGAgentTrainer", save_dir=None, model_name=None, extra="/p_func"):
     if not os.path.exists(save_dir):
@@ -376,6 +393,13 @@ def save_state(fname, saver=None, global_step=None):
         saver = tf.train.Saver()
     saver.save(get_session(), fname, global_step=global_step)
     return saver
+
+def summary(filename):
+    g = tf.Graph()
+    with g.as_default() as g:
+        tf.train.import_meta_graph(filename)
+    with tf.Session(graph=g) as sess:
+        tf.summary.FileWriter(logdir=SAVE_DIR, graph=g)
 
 # operations
 
@@ -441,12 +465,20 @@ def make_env(scenario_name, arglist=None, save_config=False, load_config=False, 
 
     # create world/game
     if load_config:
-        with open(load_dir+'.pkl', 'rb') as file:
-            config = pickle.load(file)
-        agent_types = config['agent_types']
-        config['agent_types'] = []
-        for _ in agent_types:
-            config['agent_types'].append(get_class(_))
+        try:
+            with open(load_dir+'.pkl', 'rb') as file:
+                config = pickle.load(file)
+                agent_types = config['agent_types']
+                config['agent_types'] = []
+                for _ in agent_types:
+                    config['agent_types'].append(get_class(_))
+                logging.info(f"load world config successfully from {load_dir}")
+        except FileNotFoundError as e:
+            logging.error(f"Error when Try to load the file from {load_dir}, "
+                          f"please ensure world config file in the path {load_dir}")
+            logging.error(str(e))
+            logging.info("Finished, will not load world config!")
+            config = None
     else:
         config = None
 
@@ -578,8 +610,12 @@ def parse_args():
 #####################################################################################
 # logging
 #####################################################################################
+def init_setup():
+    if TRAIN and not RESTORE:
+        os.makedirs(SAVE_DIR)
+
 def logging_setup():
-    logging.basicConfig(level=LOGGING_LEVEL,
-                        format='%(asctime)s  %(message)s',
-                        datefmt='%a, %d %b %Y %H:%M:%S +0000',
-                        filename=FILENAME if FILENAME != '' else None)
+        logging.basicConfig(level=LOGGING_LEVEL,
+                            format='%(asctime)s  %(message)s',
+                            datefmt='%a, %d %b %Y %H:%M:%S +0000',
+                            filename=FILENAME if FILENAME != '' and TRAIN else './my.log')
