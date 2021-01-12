@@ -56,10 +56,10 @@ class Action:
 
         # seller, used in training
         self.m = None
-        self.m_vel = 5
+        self.m_vel = 10
         # buyer, used in training
         self.b = None
-        self.b_vel = 3
+        self.b_vel = 10
 
         # agent communication action, communication channel
         self.c = None

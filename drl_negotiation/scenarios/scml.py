@@ -109,7 +109,7 @@ class Scenario(BaseScenario):
         # 2. Difference of balance with the other agents
         rew = 0
 
-        # means in this world step, the agent starts a sell negotiation except initial state
+        # means in this world step, the agent starts a negotiation except initial state
         if agent.state.o_negotiation_step == agent.awi.current_step:
             rew = (agent.state.f[2]- agent.state.f[1]) / (agent.state.f[0]) * REW_FACTOR
 

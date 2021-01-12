@@ -79,7 +79,7 @@ class MyNegotiationManager(IndependentNegotiationsManager):
 
         """
         print(f"setup model called!{self}")
-        dirs = ['/tmp/policy/', '/tmp/policy3/', '/tmp/policy4/']
+        dirs = POLICIES
         policies = self._search_policies(dirs)
 
         scope_prefix = self.name.replace("@", '-')
@@ -308,7 +308,14 @@ class MyNegotiationManager(IndependentNegotiationsManager):
                             else:
                                 self.action.s = _act[0]
 
-                        uvalues = tuple(np.array(uvalues) + np.array(self.action.s).astype("int32"))
+                        #uvalues = tuple(np.array(uvalues) + (np.array(self.action.s)*).astype("int32"))
+                        # uvalues = (((uvalues[0] - 0) / 2, (uvalues[1] - uvalues[0]) / 2) * self.action.s +np.array(uvalues)).astype("int32")
+
+                        vel = self.action.m_vel if sell else self.action.b_vel
+                        print(f"uvalues {uvalues} to")
+                        uvalues = tuple(np.array(uvalues) + (np.array(self.action.s) * vel).astype("int32"))
+                        print(f"uvalues {uvalues}")
+
             else:
                 # training period, action has been set up in env
                 if sell:
@@ -341,15 +348,20 @@ class MyNegotiationManager(IndependentNegotiationsManager):
                 ]
 
         for partner in partners:
-            self.awi.request_negotiation(
-                    is_buy = not sell,
-                    product = product,
-                    quantity = qvalues,
-                    unit_price = uvalues,
-                    time = tvalues,
-                    partner = partner,
-                    negotiator = self.negotiator(sell, issues=issues)
-                    )
+            try:
+                self.awi.request_negotiation(
+                        is_buy = not sell,
+                        product = product,
+                        quantity = qvalues,
+                        unit_price = uvalues,
+                        time = tvalues,
+                        partner = partner,
+                        negotiator = self.negotiator(sell, issues=issues)
+                        )
+            except Exception as e:
+                logging.info(f"request negotiation with {partner} falsh, issues are {issues}, return None!")
+                logging.info(str(e))
+                return None
 
 class MyConcurrentNegotiationManager(StepNegotiationManager):
 

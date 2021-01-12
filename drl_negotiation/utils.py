@@ -619,3 +619,15 @@ def logging_setup():
                             format='%(asctime)s  %(message)s',
                             datefmt='%a, %d %b %Y %H:%M:%S +0000',
                             filename=FILENAME if FILENAME != '' and TRAIN else './my.log')
+
+#######################################################################################
+# Visualize
+#######################################################################################
+import plotly.express as px
+
+def show(filename, labels=None):
+    with open(filename, 'rb') as fb:
+        data = pickle.load(fb)
+
+    fig = px.line(data, labels=labels)
+    fig.show()

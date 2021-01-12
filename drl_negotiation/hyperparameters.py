@@ -4,12 +4,12 @@
 import logging
 # control the negotiation manager
 # now running in scml2020world could just under condition, not train
-RUNNING_IN_SCML2020World = True
-
+RUNNING_IN_SCML2020World = False
+POLICIES = ['/tmp/policy2/', '/tmp/policy3/']
 # Training from scratch: set TRAIN, SAVE_WORLD_CONFIG as True
 # Training from checkpoints: set TRAIN as True, SAVE_WORLD_CONFIG as False
 # Evaluation from trained model: set TRAIN, SAVE_WORLD_CONFIG as False
-TRAIN = False
+TRAIN = True
 # train from checkpoints
 RESTORE = False
 # Train only the seller component of agent
@@ -17,26 +17,30 @@ ONLY_SELLER = False # train seller and buyer together
 # root dir, save all policies here
 ROOT_DIR = "/" + "tmp" + "/"
 # save dir, single policy
-SAVE_DIR = ROOT_DIR+"policy" + "/"
+SAVE_DIR = ROOT_DIR+"policy4" + "/"
 # model name
 MODEL_NAME = "model"
+# train episode
+TRAIN_EPISODES = 1000
 # train episode save rate
-SAVE_RATE = 1
+SAVE_RATE = 5
+# max length of single episode
+MAX_EPISODE_LEN = 10
 # save the model of trainers separately
 SAVE_TRAINERS = True
 
-LOAD_MODEL = True
+LOAD_MODEL = False
 LOGGING_LEVEL = logging.INFO
 FILENAME = SAVE_DIR+"my.log"
 EVALUATION = not TRAIN
 
 # if train, not restore, train from scratch
-SAVE_WORLD_CONFIG = False
-LOAD_WORLD_CONFIG = True
+SAVE_WORLD_CONFIG = True
+LOAD_WORLD_CONFIG = False
 
 SAVE_WORLD_CONFIG_DIR = SAVE_DIR + "world.config"
 LOAD_WORLD_CONFIG_DIR = " "
-TRAIN_EPISODES = 10
+
 
 if LOAD_WORLD_CONFIG_DIR == " ":
     LOAD_WORLD_CONFIG_DIR = SAVE_WORLD_CONFIG_DIR
@@ -71,7 +75,7 @@ NEG_BUY_PATH = None
 ################################################
 DIM_M = 2
 DIM_B = 2
-TRAINING_AGENT_TYPES = ["drl_negotiation.myagent.MyComponentsBasedAgent", "scml.scml2020.DecentralizingAgent"]
+TRAINING_AGENT_TYPES = ["drl_negotiation.myagent.MyComponentsBasedAgent", "scml.scml2020.IndDecentralizingAgent"]
 REW_FACTOR = 0.2
 
 ################################################
@@ -79,7 +83,7 @@ REW_FACTOR = 0.2
 ################################################
 
 # used in SCML2020World, considered as days
-N_STEPS = 10
+N_STEPS = MAX_EPISODE_LEN
 
 # scml scenario, concurrent
 TRAINING_AGENT_TYPES_CONCURRENT = ["drl_negotiation.myagent.MyConcurrentBasedAgent", "scml.scml2020.DecentralizingAgent"]

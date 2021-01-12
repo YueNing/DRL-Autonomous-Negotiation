@@ -25,7 +25,7 @@ class MADDPGModel:
 
                  # training
                  # trainer update steps
-                 n_steps=2,
+                 n_steps=15,
                  # learning rate
                  lr=1e-2,
                  # discount factor
@@ -73,7 +73,7 @@ class MADDPGModel:
         self.only_seller = only_seller
         self.logging_level = logging_level
 
-        # training
+        # update trainer rate, belongs to training step
         self.n_steps = n_steps
         self.lr = lr
         self.gamma = gamma
