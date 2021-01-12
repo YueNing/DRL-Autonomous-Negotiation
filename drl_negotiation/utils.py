@@ -6,9 +6,11 @@ import tensorflow as tf
 from gym import spaces
 import pickle
 from  negmas import Issue
-from negmas.helpers import get_class
 from typing import List, Tuple
 from drl_negotiation.hyperparameters import *
+from drl_negotiation.core import TrainWorld
+from negmas.helpers import get_class
+from scml.scml2020 import SCML2020World
 
 # from scml_env import NegotiationEnv
 # from mynegotiator import DRLNegotiator
@@ -506,6 +508,26 @@ def make_env(scenario_name, arglist=None, save_config=False, load_config=False, 
     logging.info(f"Make {env} successfully!")
     return env
 
+def make_world(config=None):
+    if config is None:
+        agent_types = [get_class(agent_type, ) for agent_type in TRAINING_AGENT_TYPES_CONCURRENT]
+        n_steps = N_STEPS
+        world_configuration = SCML2020World.generate(
+            agent_types=agent_types,
+            n_steps=n_steps
+        )
+        world_configuration['negotiation_speed'] = NEGOTIATION_SPEED
+    else:
+        world_configuration = SCML2020World.generate(
+            agent_types=config['agent_types'],
+            agent_params=config['agent_params'][:-2],
+            n_steps=config['n_steps']
+        )
+        world_configuration['negotiation_speed'] = config['negotiation_speed'] if \
+            "negotiation_speed" in config else NEGOTIATION_SPEED
+
+    world = TrainWorld(configuration=world_configuration)
+    return world
 
 #####################################################################
 # trainer
@@ -618,6 +640,15 @@ def parse_args():
 # logging
 #####################################################################################
 def logging_setup(level=None, filename=None):
+    """
+    logging setup
+    Args:
+        level: logging level for stream handler, When None load it from hyperparamters.py
+        filename: logging saved path, When None, load it from hyperparamters.py
+
+    Returns:
+        None
+    """
     level = level if level is not None else LOGGING_LEVEL
     filename = filename if filename is not  None else FILENAME
 
@@ -629,7 +660,12 @@ def logging_setup(level=None, filename=None):
     )
 
     # FileHandler
-    fh = logging.FileHandler(filename=filename)
+    try:
+        fh = logging.FileHandler(filename=filename)
+    except FileNotFoundError:
+        path = '/'.join(filename.split("/")[:-1])
+        os.makedirs(path)
+        fh = logging.FileHandler(filename=filename)
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(formatter)
 
@@ -641,6 +677,7 @@ def logging_setup(level=None, filename=None):
     # add two handler
     logger.addHandler(ch)
     logger.addHandler(fh)
+    logger.info(f"log file saved in {filename}")
 
 if __name__ == "__main__":
     import doctest

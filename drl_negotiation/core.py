@@ -332,11 +332,16 @@ class TrainWorld(SCML2020World):
         dump_data = {
             "agent_types": [_._type_name() for _ in self.configuration['agent_types']],
             'agent_params': self.configuration['agent_params'],
-            "n_steps": self.n_steps
+            "n_steps": self.n_steps,
+            "negotiation_speed": self.negotiation_speed
         }
         with open(file_name+'.yaml', "w") as file:
             yaml.safe_dump(dump_data, file)
 
+        logging.info(f"{file_name}.yaml saved")
+
         with open(file_name+'.pkl', 'wb') as file:
             pickle.dump(dump_data, file)
+
+        logging.info(f"{file_name}.pkl saved")
         # super().save_config(file_name=file_name)
