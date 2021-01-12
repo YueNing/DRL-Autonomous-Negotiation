@@ -19,7 +19,6 @@ def generate_config(n_issues=1):
     For Anegma settings, generate random settings for game
     Returns:
         dict
-    >>> generate_config()
 
     """
     issues = []
@@ -411,9 +410,8 @@ def _softmax(x, axis=None):
 ########################################################
 # negotiation model
 ########################################################
-from drl_negotiation.a2c.trainer import MADDPGAgentTrainer
 
-def load_seller_neg_model(path="NEG_SELL_PATH") ->MADDPGAgentTrainer:
+def load_seller_neg_model(path="NEG_SELL_PATH") ->"MADDPGAgentTrainer":
     """
 
     Returns:
@@ -433,6 +431,28 @@ def load_buyer_neg_model(path="NEG_BUY_PATH"):
 # env
 ###########################################################
 def make_env(scenario_name, arglist=None, save_config=False, load_config=False, save_dir=None, load_dir=None):
+    """
+
+    Args:
+        scenario_name: the name of scenario, e.g. scml
+        arglist:
+        save_config: bool, save config or not
+        load_config: bool, load config or not
+        save_dir: pass into save dir, or use default dir which set up in hyperparameters.py
+        load_dir: pass into load dir, or use default dir which set up in hyperparamters.py
+
+    Returns:
+        SCMLEnv, gym.env
+
+    >>> isinstance(make_env('scml',
+    ...         save_config=True,
+    ...         load_config=True,
+    ...         save_dir="/tmp/drl_negotiation/doctest/world.config",
+    ...         load_dir="/tmp/drl_negotiation/doctest/world.config"
+    ...     ), (drl_negotiation.env.SCMLEnv))
+    True
+    """
+
     from drl_negotiation.env import SCMLEnv
     import drl_negotiation.scenarios as scenarios
 
@@ -441,19 +461,37 @@ def make_env(scenario_name, arglist=None, save_config=False, load_config=False, 
 
     # create world/game
     if load_config:
-        with open(load_dir+'.pkl', 'rb') as file:
-            config = pickle.load(file)
-        agent_types = config['agent_types']
-        config['agent_types'] = []
-        for _ in agent_types:
-            config['agent_types'].append(get_class(_))
+        try:
+            load_dir = load_dir if load_dir is not None else LOAD_WORLD_CONFIG_DIR
+            with open(load_dir+'.pkl', 'rb') as file:
+                config = pickle.load(file)
+                agent_types = config['agent_types']
+                config['agent_types'] = []
+                for _ in agent_types:
+                    config['agent_types'].append(get_class(_))
+                logging.info(f"load world config successfully from {load_dir}")
+        except FileNotFoundError as e:
+            logging.error(f"Error when Try to load the file from {load_dir}, "
+                          f"please ensure world config file in the path {load_dir}")
+            logging.debug(str(e))
+            logging.info("will not load world config!")
+            config = None
     else:
         config = None
 
     world = scenario.make_world(config)
 
     if save_config:
-        world.save_config(file_name=save_dir)
+        save_dir = save_dir if save_dir is not None else SAVE_WORLD_CONFIG_DIR
+        try:
+            world.save_config(file_name=save_dir)
+        except FileNotFoundError:
+            path = '/'.join(save_dir.split("/")[:-1])
+            os.makedirs(path)
+            logging.info(f"Creates dirs, {path}")
+
+            world.save_config(file_name=save_dir)
+            logging.info(f"save {world} into {save_dir}")
 
     # create multi-agent supply chain management environment
     env = SCMLEnv(
@@ -465,13 +503,14 @@ def make_env(scenario_name, arglist=None, save_config=False, load_config=False, 
         done_callback=scenario.done,
         shared_viewer=False
     )
-
+    logging.info(f"Make {env} successfully!")
     return env
 
 
 #####################################################################
 # trainer
 #####################################################################
+import drl_negotiation
 from drl_negotiation.a2c.policy import mlp_model
 
 def get_trainers(env, num_adversaries=0, obs_shape_n=None, arglist=None):
@@ -479,7 +518,7 @@ def get_trainers(env, num_adversaries=0, obs_shape_n=None, arglist=None):
 
     trainers = []
     model = mlp_model
-    trainer = MADDPGAgentTrainer
+    trainer = drl_negotiation.a2c.trainer.MADDPGAgentTrainer
 
     action_space = env.action_space
 
@@ -578,8 +617,31 @@ def parse_args():
 #####################################################################################
 # logging
 #####################################################################################
-def logging_setup():
-    logging.basicConfig(level=LOGGING_LEVEL,
-                        format='%(asctime)s  %(message)s',
-                        datefmt='%a, %d %b %Y %H:%M:%S +0000',
-                        filename=FILENAME if FILENAME != '' else None)
+def logging_setup(level=None, filename=None):
+    level = level if level is not None else LOGGING_LEVEL
+    filename = filename if filename is not  None else FILENAME
+
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(
+        fmt='%(asctime)s  %(message)s',
+        datefmt='%a, %d %b %Y %H:%M:%S +0000',
+    )
+
+    # FileHandler
+    fh = logging.FileHandler(filename=filename)
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
+
+    # StreamHandler
+    ch = logging.StreamHandler()
+    ch.setLevel(level)
+    ch.setFormatter(formatter)
+
+    # add two handler
+    logger.addHandler(ch)
+    logger.addHandler(fh)
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

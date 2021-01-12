@@ -17,3 +17,18 @@ name = "drl_negotiation"
 author = "naodongbanana"
 email = "n1085633848@outlook.com"
 license = "MIT License"
+
+
+import time
+from drl_negotiation.utils import logging_setup
+
+print("#################################### \n"
+      "Welcome to drl negotiation, enjoy it!\n "
+      "if you have any questions, redirect to\n"
+      "uqveo@student.kit.edu\n"
+      "####################################")
+
+current_time = time.strftime('%a %d %b %Y %H:%M:%S +0000', time.localtime())
+print(f"{current_time} Initial drl negotiation!")
+logging_setup()
+print("setup logging as ")
