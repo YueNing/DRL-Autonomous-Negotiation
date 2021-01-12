@@ -3,8 +3,11 @@ from scml.scml2020 import (
         TradeDrivenProductionStrategy,
         PredictionBasedTradingStrategy,
         )
+from scml.scml2020.agents.decentralizing import _NegotiationCallbacks
+from scml.scml2020 import (SupplyDrivenProductionStrategy)
+
 from negmas import LinearUtilityFunction
-from .mynegotiationmanager import MyNegotiationManager
+from .mynegotiationmanager import MyNegotiationManager, MyConcurrentNegotiationManager
 
 class MyComponentsBasedAgent(
         TradeDrivenProductionStrategy,
@@ -22,4 +25,14 @@ class MyComponentsBasedAgent(
             return LinearUtilityFunction((0, 0.25, 1))
         return LinearUtilityFunction((0, -0.5, -0.8))
 
-
+class MyConcurrentBasedAgent(
+    _NegotiationCallbacks,
+    MyConcurrentNegotiationManager,
+    PredictionBasedTradingStrategy,
+    SupplyDrivenProductionStrategy,
+    MySCML2020Agent
+    ):
+    """
+        my concurrent based agent,
+    """
+    pass

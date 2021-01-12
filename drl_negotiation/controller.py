@@ -12,14 +12,16 @@ from scml import (IndependentNegotiationsManager,
                                 SCML2020Agent)
 import matplotlib.pyplot as plt
 ############################
-from typing import Union, Optional, Dict
+from typing import Union, Optional, Dict, Tuple
 from negmas import (SAOSyncController,
                     MechanismState, 
                     SAONegotiator,
                     AspirationNegotiator,
+                    Outcome,
                     SAOResponse,
                     SAOState)
 
+from scml.scml2020.services import StepController, SyncController
 from scml import SCML2020World, NegotiationManager
 
 
@@ -29,7 +31,7 @@ from scml import SCML2020World, NegotiationManager
 # Author naodongbanana
 # Datum 25.12.2020
 ##########################################################################################################
-class MyDRLSCMLSAOSyncController(SAOSyncController):
+class MyDRLSCMLSAOSyncController(SyncController):
     """
     TODO:
     A Controller that used by Deep Reinforcement learning method, can manage multiple negotiators synchronously
@@ -45,16 +47,19 @@ class MyDRLSCMLSAOSyncController(SAOSyncController):
                  **kwargs
         ):
         kwargs['default_negotiator_type'] = default_negotiator_type
-        super().__init__(*args, **kwargs)
+        super().__init__(is_seller=is_seller, *args, **kwargs)
         self._is_seller = is_seller
         self.__parent = parent
         self.ufun = None
 
+    def best_proposal(self, nid: str) -> Tuple[Optional[Outcome], float]:
+        # TODO: proposal
+        return  super().best_proposal(nid=nid)
 
     def counter_all(
         self, offers: Dict[str, "Outcome"], states: Dict[str, SAOState]
     ) -> Dict[str, SAOResponse]:
-        """Calculate a response to all offers from all negotiators (negotiator ID is the key).
+        """TODO: Calculate a response to all offers from all negotiators (negotiator ID is the key).
 
             Args:
                 offers: Maps negotiator IDs to offers
@@ -70,13 +75,4 @@ class MyDRLSCMLSAOSyncController(SAOSyncController):
 
 
 if __name__ == "__main__":
-    ComparisonAgent = DecentralizingAgent
-    world = SCML2020World(
-        **SCML2020World.generate([ComparisonAgent, MyAgent, RandomAgent], n_steps=10),
-        construct_graphs=True,
-    )
-    world.run()
-    world.draw(steps=(0, world.n_steps), together=False, ncols=2, figsize=(20, 20))
-    plt.show()
-
-    show_agent_scores(world)
+    pass

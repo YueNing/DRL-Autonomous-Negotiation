@@ -3,17 +3,19 @@
    Author: naodongbanana
    E-Mail: n1085633848@outlook.com
 '''
-import os
+import os, sys
+import random
 from typing import List, Dict, Optional, Any
-
+import functools
 from scml import NegotiationManager
 ################ For Test #### will be removed #########
-from scml.scml2020 import IndependentNegotiationsManager
+from scml.scml2020 import IndependentNegotiationsManager, StepNegotiationManager
 ########################################################
 from negmas import AgentMechanismInterface, Negotiator, Issue, SAONegotiator
 import numpy as np
 import logging
 from typing import Tuple, List
+from scml.scml2020.components.negotiation import ControllerInfo
 from .negotiator import MyDRLNegotiator
 from .core import NegotiationRequestAction
 from .controller import MyDRLSCMLSAOSyncController
@@ -26,6 +28,7 @@ from drl_negotiation.a2c.policy import create_actor
 import drl_negotiation.utils as U
 from gym import spaces
 import tensorflow as tf
+from drl_negotiation.controller import MyDRLSCMLSAOSyncController
 
 class MyNegotiationManager(IndependentNegotiationsManager):
     """
@@ -44,12 +47,12 @@ class MyNegotiationManager(IndependentNegotiationsManager):
     ):
         super(MyNegotiationManager, self).__init__(*args, **kwargs)
         self.train = train
-        self.model_path = '/tmp/policy/'
-        self.seller_model = '/tmp/policy/'
-        self.buyer_model = '/tmp/policy/'
-
+        self.model_path = None
         self.load_model = load_model
         self.train = train
+        self.saver = {}
+        self.already_loaded = []
+        self.initalize = []
 
         if load_model:
             self.seller_model_path = seller_model_path
@@ -61,6 +64,13 @@ class MyNegotiationManager(IndependentNegotiationsManager):
         # if not train:
         #     self._setup_model()
 
+    @staticmethod
+    def _search_policies(dirs):
+        policies = []
+        for _ in dirs:
+            policies.append(U.traversal_dir_first_dir(_))
+        return policies
+
     def _setup_model(self):
         """
         get the buyer and seller trainer/model,
@@ -68,7 +78,23 @@ class MyNegotiationManager(IndependentNegotiationsManager):
         Returns:
 
         """
-        scopes = [self.name.replace("@", '-') + "_seller", self.name.replace('@', '-') + "_buyer"]
+        print(f"setup model called!{self}")
+        dirs = POLICIES
+        policies = self._search_policies(dirs)
+
+        scope_prefix = self.name.replace("@", '-')
+        scopes = [scope_prefix + "_seller", scope_prefix + "_buyer"]
+        _tmp_index = []
+        for index, policy in enumerate(policies):
+            if dirs[index]+scopes[0] in policy and dirs[index] + scopes[1] in policy:
+                _tmp_index.append(index)
+        if not _tmp_index:
+            logging.info(f"Do not load trained model for {self}, use default logic!")
+            print(f"Do not load trained model for {self}, use default logic!")
+            return
+        else:
+            self.model_path = dirs[random.choice(_tmp_index)]
+
         obs_ph = []
 
         # observation space
@@ -115,11 +141,15 @@ class MyNegotiationManager(IndependentNegotiationsManager):
         """
         logging.info("loading model")
         if os.path.exists(self.model_path+model[1]):
-            saver = tf.train.import_meta_graph(self.model_path+model[1]+'/'+MODEL_NAME+'.meta')
-            U.load_state(tf.train.latest_checkpoint(self.model_path+model[1]), saver=saver)
-            return True
+            if self.name+model[1] not in self.saver:
+                var = tf.global_variables()
+                var_flow_restore = [val for val in var if model[1] in val.name]
+                #self.saver[self.name] = tf.train.import_meta_graph(self.model_path+model[1]+'/'+MODEL_NAME+'.meta')
+                self.saver[self.name] = tf.train.Saver(var_flow_restore)
 
-        return False
+            # if self.name+model[1] not in self.already_loaded:
+            U.load_state(tf.train.latest_checkpoint(self.model_path+model[1]), saver=self.saver[self.name])
+            self.already_loaded.append(self.name+model[1])
 
     def respond_to_negotiation_request(
             self,
@@ -186,10 +216,10 @@ class MyNegotiationManager(IndependentNegotiationsManager):
         else:
             _model = None
             _obs = None
-            if is_seller and self.seller_model is not None:
+            if is_seller and self.model_path is not None:
                 _model = 'seller'
 
-            if not is_seller and self.buyer_model is not None:
+            if not is_seller and self.model_path is not None:
                 _model = "buyer"
 
             if _model is not None:
@@ -241,38 +271,51 @@ class MyNegotiationManager(IndependentNegotiationsManager):
         if DISCRETE_ACTION_SPACE:
             _model = None
             if not self.train and RUNNING_IN_SCML2020World:
-                if sell:
+                if sell and self.model_path is not None:
                     _model = self.models[0]
 
-                if not sell:
+                if not sell and self.model_path is not None:
                     _model = self.models[1]
 
             if _model is not None:
                 #TODO: test period, get the action from model
                 with U.single_threaded_session():
-                    U.initialize()
-                    tag = self._load_state(_model)
-                    if tag:
-                        _obs = self._get_obs()
+                    if self.name+_model[1] not in self.already_loaded:
+                        if self.name+_model[1] not in self.initalize:
+                            U.initialize()
+                            self.initalize.append(self.name+_model[1])
+                        self._load_state(_model)
+
+                    _obs = self._get_obs()
+                    try:
+                        _act = _model[0](_obs[None])
+                    except Exception as e:
+                        self._load_state(_model)
                         _act = _model[0](_obs[None])
 
+                    if MANAGEABLE:
                         self.action.s = np.zeros(DIM_S)
-
-                        if MANAGEABLE:
-                            if DISCRETE_ACTION_INPUT:
-                                if _act[0] == 1: self.action.s[0] = -1.0
-                                if _act[0] == 2: self.action.s[0] = +1.0
-                                if _act[0] == 3: self.action.s[1] = -1.0
-                                if _act[0] == 4: self.action.s[1] = +1.0
+                        if DISCRETE_ACTION_INPUT:
+                            if _act[0] == 1: self.action.s[0] = -1.0
+                            if _act[0] == 2: self.action.s[0] = +1.0
+                            if _act[0] == 3: self.action.s[1] = -1.0
+                            if _act[0] == 4: self.action.s[1] = +1.0
+                        else:
+                            # one hot
+                            if DISCRETE_ACTION_SPACE:
+                                self.action.s[0] += _act[0][1] - _act[0][2]
+                                self.action.s[1] += _act[0][3] - _act[0][4]
                             else:
-                                # one hot
-                                if DISCRETE_ACTION_SPACE:
-                                    self.action.s[0] += _act[0][1] - _act[0][2]
-                                    self.action.s[1] += _act[0][3] - _act[0][4]
-                                else:
-                                    self.action.s = _act[0]
+                                self.action.s = _act[0]
 
-                            uvalues = tuple(np.array(uvalues) + np.array(self.action.s).astype("int32"))
+                        #uvalues = tuple(np.array(uvalues) + (np.array(self.action.s)*).astype("int32"))
+                        # uvalues = (((uvalues[0] - 0) / 2, (uvalues[1] - uvalues[0]) / 2) * self.action.s +np.array(uvalues)).astype("int32")
+
+                        vel = self.action.m_vel if sell else self.action.b_vel
+                        print(f"uvalues {uvalues} to")
+                        uvalues = tuple(np.array(uvalues) + (np.array(self.action.s) * vel).astype("int32"))
+                        print(f"uvalues {uvalues}")
+
             else:
                 # training period, action has been set up in env
                 if sell:
@@ -287,9 +330,7 @@ class MyNegotiationManager(IndependentNegotiationsManager):
                         self.state.o_q_values = qvalues
                         self.state.o_u_values = uvalues
                         self.state.o_t_values = tvalues
-
-                        if self.action.m is not None:
-                            uvalues = tuple(np.array(uvalues) + (np.array(self.action.m)*self.action.m_vel).astype("int32"))
+                        uvalues = tuple(np.array(uvalues) + (np.array(self.action.m)*self.action.m_vel).astype("int32"))
 
                 else:
                     # for buyer
@@ -307,20 +348,80 @@ class MyNegotiationManager(IndependentNegotiationsManager):
                 ]
 
         for partner in partners:
-            self.awi.request_negotiation(
-                    is_buy = not sell,
-                    product = product,
-                    quantity = qvalues,
-                    unit_price = uvalues,
-                    time = tvalues,
-                    partner = partner,
-                    negotiator = self.negotiator(sell, issues=issues)
-                    )
+            try:
+                self.awi.request_negotiation(
+                        is_buy = not sell,
+                        product = product,
+                        quantity = qvalues,
+                        unit_price = uvalues,
+                        time = tvalues,
+                        partner = partner,
+                        negotiator = self.negotiator(sell, issues=issues)
+                        )
+            except Exception as e:
+                logging.info(f"request negotiation with {partner} falsh, issues are {issues}, return None!")
+                logging.info(str(e))
+                return None
+
+class MyConcurrentNegotiationManager(StepNegotiationManager):
+
+    def __init__(self):
+        super().__init__()
 
 
-
-
-
+    def add_controller(
+        self,
+        is_seller: bool,
+        target,
+        urange: Tuple[int, int],
+        expected_quantity: int,
+        step: int,
+    ) -> MyDRLSCMLSAOSyncController:
+        if is_seller and self.sellers[step].controller is not None:
+            return self.sellers[step].controller
+        if not is_seller and self.buyers[step].controller is not None:
+            return self.buyers[step].controller
+        controller = MyDRLSCMLSAOSyncController(
+            is_seller=is_seller,
+            target_quantity=target,
+            negotiator_type=self.negotiator_type,
+            negotiator_params=self.negotiator_params,
+            step=step,
+            urange=urange,
+            product=self.awi.my_output_product
+            if is_seller
+            else self.awi.my_input_product,
+            partners=self.awi.my_consumers if is_seller else self.awi.my_suppliers,
+            horizon=self._horizon,
+            negotiations_concluded_callback=functools.partial(
+                self.__class__.all_negotiations_concluded, self
+            ),
+            parent_name=self.name,
+            awi=self.awi,
+        )
+        if is_seller:
+            assert self.sellers[step].controller is None
+            self.sellers[step] = ControllerInfo(
+                controller,
+                step,
+                is_seller,
+                self._trange(step, is_seller),
+                target,
+                expected_quantity,
+                False,
+            )
+        else:
+            assert self.buyers[step].controller is None
+            self.buyers[step] = ControllerInfo(
+                controller,
+                step,
+                is_seller,
+                self._trange(step, is_seller),
+                target,
+                expected_quantity,
+                False,
+            )
+        return controller
 
 
 

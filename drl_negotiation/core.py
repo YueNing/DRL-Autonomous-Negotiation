@@ -3,6 +3,7 @@
     Author: naodongbanana
     E-Mail: n1085633848@outlook.com
 '''
+import os, sys
 import numpy as np
 from scml.scml2020 import SCML2020World, SCML2020Agent, is_system_agent
 from typing import Optional
@@ -55,10 +56,10 @@ class Action:
 
         # seller, used in training
         self.m = None
-        self.m_vel = 5
+        self.m_vel = 10
         # buyer, used in training
         self.b = None
-        self.b_vel = 3
+        self.b_vel = 10
 
         # agent communication action, communication channel
         self.c = None
@@ -132,40 +133,41 @@ class MySCML2020Agent(SCML2020Agent):
             elif n.annotation["buyer"] == self.id:
                 buy +=1
         return sell, buy
-
-    def _get_obs(self, seller=True):
+      
+    def _get_obs(self, seller=True, scenario="scml"):
         # local observation
         # TODO: different observation of buyer and seller, will be implemented here
+        if scenario == "scml":
+          
+            o_m = self.awi.profile.costs
+            o_m = o_m[:, self.awi.profile.processes]
 
-        o_m = self.awi.profile.costs
-        o_m = o_m[:, self.awi.profile.processes]
+            # agent information, agent's
+            o_a = np.array([self._horizon])
 
-        # agent information, agent's
-        o_a = np.array([self._horizon])
+            # catalog prices of products
+            o_u_c = self.awi.catalog_prices
+            # TODO: excepted value after predict
+            o_u_e = np.array([self.expected_inputs, self.expected_outputs, self.input_cost, self.output_price])
+            # TODO: trading strategy, needed and secured
+            o_u_t = np.array([self.outputs_needed, self.outputs_secured, self.inputs_needed, self.inputs_secured])
 
-        # catalog prices of products
-        o_u_c = self.awi.catalog_prices
-        # TODO: excepted value after predict
-        o_u_e = np.array([self.expected_inputs, self.expected_outputs, self.input_cost, self.output_price])
-        # TODO: trading strategy, needed and secured
-        o_u_t = np.array([self.outputs_needed, self.outputs_secured, self.inputs_needed, self.inputs_secured])
+            # running negotiation and negotiation request of agent
+            o_q_n = np.array([
+                self.running_negotiations,
+                self.negotiation_requests,
+            ])
 
-        # running negotiation and negotiation request of agent
-        o_q_n = np.array([
-            self.running_negotiations,
-            self.negotiation_requests,
-        ])
+            o_t_c = np.array([self.awi.current_step / self.awi.n_steps])
 
-        o_t_c = np.array([self.awi.current_step / self.awi.n_steps])
+            # 2. Economic gap
+            economic_gaps = []
+            economic_gaps.append(self.state.f[2] - self.state.f[1])
+            economic_gaps = np.array(economic_gaps)
 
-        # 2. Economic gap
-        economic_gaps = []
-        economic_gaps.append(self.state.f[2] - self.state.f[1])
-        economic_gaps = np.array(economic_gaps)
+            # return np.concatenate(economic_gaps + o_m.flatten() + o_a + o_u_c + o_u_e + o_u_t + o_q_n.flatten() + o_t_c)
 
-        # return np.concatenate(economic_gaps + o_m.flatten() + o_a + o_u_c + o_u_e + o_u_t + o_q_n.flatten() + o_t_c)
-
-        return np.concatenate((economic_gaps.flatten(), o_m.flatten(), o_a, o_u_c, o_q_n.flatten(), o_t_c))
+            return np.concatenate((economic_gaps.flatten(), o_m.flatten(), o_a, o_u_c, o_q_n.flatten(), o_t_c))
 
     def init(self):
         super(MySCML2020Agent, self).init()
@@ -333,8 +335,23 @@ class TrainWorld(SCML2020World):
             'agent_params': self.configuration['agent_params'],
             "n_steps": self.n_steps
         }
-        with open(file_name+'.yaml', "w") as file:
-            yaml.safe_dump(dump_data, file)
+        try:
+            with open(file_name+'.yaml', "w") as file:
+                yaml.safe_dump(dump_data, file)
+        except FileNotFoundError as e:
+            logging.info(f"not find file {file_name}")
+            logging.error(str(e))
+            os.makedirs('/'.join(file_name.split('/')[0:-1]))
+            try:
+                with open(file_name + '.yaml', "w") as file:
+                    yaml.safe_dump(dump_data, file)
+            except FileNotFoundError as e:
+                logging.info(f"not find file {file_name}!")
+                logging.error(str(e))
+            except Exception as e:
+                logging.info(f"other errors when open file {file_name}!")
+                logging.error(str(e))
+                sys.exit(1)
 
         with open(file_name+'.pkl', 'wb') as file:
             pickle.dump(dump_data, file)

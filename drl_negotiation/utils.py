@@ -2,7 +2,8 @@ import os
 import numpy as np
 import collections
 import random
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+from tensorflow.python import pywrap_tensorflow
 from gym import spaces
 import pickle
 from  negmas import Issue
@@ -155,17 +156,17 @@ def get_session():
     '''
         get the default tensorflow session
     '''
-    return tf.compat.v1.get_default_session()
+    return tf.get_default_session()
 
 def make_session(num_cpu):
     """
         returns a session that will use num_cpu CPU's only
     """
-    tf_config = tf.compat.v1.ConfigProto(
+    tf_config = tf.ConfigProto(
             inter_op_parallelism_threads=num_cpu,
             intra_op_parallelism_threads=num_cpu,
             )
-    return tf.compat.v1.Session(config=tf_config)
+    return tf.Session(config=tf_config)
 
 def single_threaded_session():
     """
@@ -175,12 +176,12 @@ def single_threaded_session():
 
 ALREADY_INITIALIZED = set()
 
-def initialize():
+def  initialize():
     """
         Initialize all uninitalized variables in the global scope
     """
-    new_variables = set(tf.compat.v1.global_variables()) - ALREADY_INITIALIZED
-    get_session().run(tf.compat.v1.variables_initializer(new_variables))
+    new_variables = set(tf.global_variables()) - ALREADY_INITIALIZED
+    get_session().run(tf.variables_initializer(new_variables))
     ALREADY_INITIALIZED.update(new_variables)
 
 # tf utils
@@ -291,7 +292,7 @@ class PlaceholderTfInput(TfInput):
 
 class BatchInput(PlaceholderTfInput):
     def __init__(self, shape, dtype=tf.float32, name=None):
-        super().__init__(tf.compat.v1.placeholder(dtype, [None]+list(shape), name=name))
+        super().__init__(tf.placeholder(dtype, [None]+list(shape), name=name))
 
 class Unit8Input(PlaceholderTfInput):
     def __init__(self, shape, name=None):
@@ -305,14 +306,14 @@ class Unit8Input(PlaceholderTfInput):
 
 # scope
 def scope_name():
-    return tf.compat.v1.get_variable_scope().name
+    return tf.get_variable_scope().name
 
 def scope_vars(scope, trainable_only=False):
     """
         get the paramters inside a scope
     """
-    return tf.compat.v1.get_collection(
-            tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES if trainable_only else tf.compat.v1.GraphKeys.GLOBAL_VARIABLES,
+    return tf.get_collection(
+            tf.GraphKeys.TRAINABLE_VARIABLES if trainable_only else tf.GraphKeys.GLOBAL_VARIABLES,
             scope=scope if isinstance(scope, str) else scope.name
             )
 def absolute_scope_name(relative_scope_name):
@@ -333,7 +334,7 @@ def minimize_and_clip(optimizer, objective, var_list, clip_val=10):
 # Saving variables
 # ================================================================
 def get_saver():
-    return tf.compat.v1.train.Saver()
+    return tf.train.Saver()
 
 def load_state(fname, saver=None):
     """Load all the variables to the current session from the location <fname>"""
@@ -342,7 +343,13 @@ def load_state(fname, saver=None):
     saver.restore(get_session(), fname)
     return saver
 
-def traversalDir_FirstDir(path):
+def load_states(fnames, saver=None):
+    if saver is None:
+        saver = tf.train.Saver()
+
+    saver.restore(get_session(), )
+
+def traversal_dir_first_dir(path):
     list = []
     if (os.path.exists(path)):
         files = os.listdir(path)
@@ -354,6 +361,16 @@ def traversalDir_FirstDir(path):
         os.mkdir(path)
 
     return list
+
+def load_weights(ckpt_path, prefix_list):
+    vars_weights = {}
+    reader = pywrap_tensorflow.NewCheckpointReader(ckpt_path)
+    var_to_shape_map = reader.get_variable_to_shape_map()
+    for key in sorted(var_to_shape_map):
+        for _pref in prefix_list:
+            if key.startswith(_pref):
+                vars_weights[key+':0'] = reader.get_tensor(key)
+    return vars_weights
 
 def save_as_scope(scope_prefix: "MADDPGAgentTrainer", save_dir=None, model_name=None, extra="/p_func"):
     if not os.path.exists(save_dir):
@@ -376,6 +393,13 @@ def save_state(fname, saver=None, global_step=None):
         saver = tf.train.Saver()
     saver.save(get_session(), fname, global_step=global_step)
     return saver
+
+def summary(filename):
+    g = tf.Graph()
+    with g.as_default() as g:
+        tf.train.import_meta_graph(filename)
+    with tf.Session(graph=g) as sess:
+        tf.summary.FileWriter(logdir=SAVE_DIR, graph=g)
 
 # operations
 
@@ -441,12 +465,20 @@ def make_env(scenario_name, arglist=None, save_config=False, load_config=False, 
 
     # create world/game
     if load_config:
-        with open(load_dir+'.pkl', 'rb') as file:
-            config = pickle.load(file)
-        agent_types = config['agent_types']
-        config['agent_types'] = []
-        for _ in agent_types:
-            config['agent_types'].append(get_class(_))
+        try:
+            with open(load_dir+'.pkl', 'rb') as file:
+                config = pickle.load(file)
+                agent_types = config['agent_types']
+                config['agent_types'] = []
+                for _ in agent_types:
+                    config['agent_types'].append(get_class(_))
+                logging.info(f"load world config successfully from {load_dir}")
+        except FileNotFoundError as e:
+            logging.error(f"Error when Try to load the file from {load_dir}, "
+                          f"please ensure world config file in the path {load_dir}")
+            logging.error(str(e))
+            logging.info("Finished, will not load world config!")
+            config = None
     else:
         config = None
 
@@ -578,8 +610,24 @@ def parse_args():
 #####################################################################################
 # logging
 #####################################################################################
+def init_setup():
+    if TRAIN and not RESTORE:
+        os.makedirs(SAVE_DIR)
+
 def logging_setup():
-    logging.basicConfig(level=LOGGING_LEVEL,
-                        format='%(asctime)s  %(message)s',
-                        datefmt='%a, %d %b %Y %H:%M:%S +0000',
-                        filename=FILENAME if FILENAME != '' else None)
+        logging.basicConfig(level=LOGGING_LEVEL,
+                            format='%(asctime)s  %(message)s',
+                            datefmt='%a, %d %b %Y %H:%M:%S +0000',
+                            filename=FILENAME if FILENAME != '' and TRAIN else './my.log')
+
+#######################################################################################
+# Visualize
+#######################################################################################
+import plotly.express as px
+
+def show(filename, labels=None):
+    with open(filename, 'rb') as fb:
+        data = pickle.load(fb)
+
+    fig = px.line(data, labels=labels)
+    fig.show()
