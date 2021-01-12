@@ -28,6 +28,7 @@ import drl_negotiation.utils as U
 from gym import spaces
 import tensorflow as tf
 from drl_negotiation.controller import MyDRLSCMLSAOSyncController
+from scml.scml2020 import MovingRangeNegotiationManager
 
 class MyNegotiationManager(IndependentNegotiationsManager):
     """
@@ -319,66 +320,41 @@ class MyNegotiationManager(IndependentNegotiationsManager):
                     negotiator = self.negotiator(sell, issues=issues)
                     )
 
-class MyConcurrentNegotiationManager(StepNegotiationManager):
+class MyConcurrentNegotiationManager(MovingRangeNegotiationManager):
 
-    def __init__(self):
-        super().__init__()
-
-
-    def add_controller(
+    def __init__(
         self,
-        is_seller: bool,
-        target,
-        urange: Tuple[int, int],
-        expected_quantity: int,
-        step: int,
-    ) -> MyDRLSCMLSAOSyncController:
-        if is_seller and self.sellers[step].controller is not None:
-            return self.sellers[step].controller
-        if not is_seller and self.buyers[step].controller is not None:
-            return self.buyers[step].controller
-        controller = MyDRLSCMLSAOSyncController(
-            is_seller=is_seller,
-            target_quantity=target,
-            negotiator_type=self.negotiator_type,
-            negotiator_params=self.negotiator_params,
-            step=step,
-            urange=urange,
-            product=self.awi.my_output_product
-            if is_seller
-            else self.awi.my_input_product,
-            partners=self.awi.my_consumers if is_seller else self.awi.my_suppliers,
-            horizon=self._horizon,
-            negotiations_concluded_callback=functools.partial(
-                self.__class__.all_negotiations_concluded, self
+        *args,
+        price_weight=0.7,
+        utility_threshold=0.9,
+        time_threshold=0.9,
+        time_horizon=0.1,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.index: List[int] = None
+        self.time_horizon = time_horizon
+        self._time_threshold = time_threshold
+        self._price_weight = price_weight
+        self._utility_threshold = utility_threshold
+        self.controllers: Dict[bool, MyDRLSCMLSAOSyncController] = {
+            False: MyDRLSCMLSAOSyncController(
+                is_seller=False,
+                parent=self,
+                price_weight=self._price_weight,
+                time_threshold=self._time_threshold,
+                utility_threshold=self._utility_threshold,
             ),
-            parent_name=self.name,
-            awi=self.awi,
-        )
-        if is_seller:
-            assert self.sellers[step].controller is None
-            self.sellers[step] = ControllerInfo(
-                controller,
-                step,
-                is_seller,
-                self._trange(step, is_seller),
-                target,
-                expected_quantity,
-                False,
-            )
-        else:
-            assert self.buyers[step].controller is None
-            self.buyers[step] = ControllerInfo(
-                controller,
-                step,
-                is_seller,
-                self._trange(step, is_seller),
-                target,
-                expected_quantity,
-                False,
-            )
-        return controller
-
+            True: MyDRLSCMLSAOSyncController(
+                is_seller=True,
+                parent=self,
+                price_weight=self._price_weight,
+                time_threshold=self._time_threshold,
+                utility_threshold=self._utility_threshold,
+            ),
+        }
+        self._current_end = -1
+        self._current_start = -1
 
 
 

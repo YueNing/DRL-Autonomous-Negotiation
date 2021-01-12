@@ -22,6 +22,7 @@ from negmas import (SAOSyncController,
                     SAOState)
 
 from scml.scml2020.services import StepController, SyncController
+
 from scml import SCML2020World, NegotiationManager
 
 
@@ -35,7 +36,9 @@ class MyDRLSCMLSAOSyncController(SyncController):
     """
     TODO:
     A Controller that used by Deep Reinforcement learning method, can manage multiple negotiators synchronously
-
+    reward of current step,
+    reward of whole simulation step,
+    will try to let the factory/agent get the maximum profitability at the end
     Args:
     """
 
@@ -46,11 +49,16 @@ class MyDRLSCMLSAOSyncController(SyncController):
                  *args,
                  **kwargs
         ):
-        kwargs['default_negotiator_type'] = default_negotiator_type
-        super().__init__(is_seller=is_seller, *args, **kwargs)
-        self._is_seller = is_seller
-        self.__parent = parent
-        self.ufun = None
+        super().__init__(
+            is_seller=is_seller,
+            parent=parent,
+            price_weight = kwargs.pop('price_weight'),
+            utility_threshold = kwargs.pop('utility_threshold'),
+            time_threshold = kwargs.pop('time_threshold'),
+            **kwargs
+        )
+        # kwargs['default_negotiator_type'] = default_negotiator_type
+        # self.ufun = None
 
     def best_proposal(self, nid: str) -> Tuple[Optional[Outcome], float]:
         # TODO: proposal
@@ -72,7 +80,6 @@ class MyDRLSCMLSAOSyncController(SyncController):
 
         """
         pass
-
 
 if __name__ == "__main__":
     pass
