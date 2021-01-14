@@ -1,4 +1,5 @@
 import os
+import logging
 import numpy as np
 import collections
 import random
@@ -9,6 +10,7 @@ from  negmas import Issue
 from typing import List, Tuple
 from drl_negotiation.hyperparameters import *
 from drl_negotiation.core import TrainWorld
+from drl_negotiation.third_party.ansistrm.ansistrm import ColorizingStreamHandler
 from negmas.helpers import get_class
 from scml.scml2020 import SCML2020World
 
@@ -670,7 +672,10 @@ def logging_setup(level=None, filename=None):
     fh.setFormatter(formatter)
 
     # StreamHandler
-    ch = logging.StreamHandler()
+    if DISABLE_LOGGING_COLOR:
+        ch = logging.StreamHandler()
+    else:
+        ch = ColorizingStreamHandler()
     ch.setLevel(level)
     ch.setFormatter(formatter)
 
@@ -678,6 +683,7 @@ def logging_setup(level=None, filename=None):
     logger.addHandler(ch)
     logger.addHandler(fh)
     logger.info(f"log file saved in {filename}")
+
 
 if __name__ == "__main__":
     import doctest
