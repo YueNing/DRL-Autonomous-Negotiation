@@ -7,12 +7,13 @@ import argparse
 import tensorflow as tf
 import gym
 from drl_negotiation.core.env import SCMLEnv
-import drl_negotiation.utils as U
+import drl_negotiation.utils.utils as U
 import numpy as np
 import pickle
 from tqdm import tqdm
 from drl_negotiation.core.hyperparameters import *
 import logging
+
 
 class MADDPGModel:
     trained_model = None
@@ -21,7 +22,7 @@ class MADDPGModel:
                  env: SCMLEnv = None,
                  policy=None,
                  only_seller=ONLY_SELLER,
-                 logging_level = LOGGING_LEVEL,
+                 logging_level=LOGGING_LEVEL,
 
                  # training
                  # trainer update steps
@@ -67,7 +68,7 @@ class MADDPGModel:
                  _init_setup_model=False,
                  save_trainers=SAVE_TRAINERS,
                  **kwargs,
-        ):
+                 ):
         self.policy = policy
         self.env = env
         self.only_seller = only_seller
@@ -114,31 +115,33 @@ class MADDPGModel:
 
     def setup_model(self):
         with U.single_threaded_session():
-            if not ONLY_SELLER:
+            if ONLY_SELLER:
+                obs_shape_n = [self.env.observation_space[i].shape for i in range(self.env.n)]
+            else:
                 obs_shape_n = []
                 for i in range(self.env.n):
                     obs_shape_n.append(self.env.observation_space[i].shape)
-                    obs_shape_n.append(self.env.observation_space[i+1].shape)
-            else:
-                obs_shape_n = [self.env.observation_space[i].shape for i in range(self.env.n)]
+                    obs_shape_n.append(self.env.observation_space[i + 1].shape)
 
-            num_adversaries = min(self.env.n, self.num_adversaries)
-            arglist = argparse.Namespace(**{"good_policy": self.good_policy,
-                                            "adv_policy": self.adv_policy,
-                                            "lr": self.lr,
-                                            "num_units": self.num_units,
-                                            "batch_size": self.batch_size,
-                                            "max_episode_len": self.max_episode_len,
-                                            "gamma": self.gamma,
-                                            "n_steps": self.n_steps
-                                            })
-            self.trainers = U.get_trainers(self.env, num_adversaries, obs_shape_n, arglist)
-            logging.info(f"Using good policy {self.good_policy} and adv policy {self.adv_policy}")
-
+            num_adversaries: int = min(self.env.n, self.num_adversaries)
+            self._get_trainers(num_adversaries, obs_shape_n)
         # assert issubclass(self.policy, Policy), "Error: the input policy for the maddpg model must be an" \
         #                                         "instance of a2c.policy.Policy"
 
         # self.graph = tf.Graph()
+
+    def _get_trainers(self, num_adversaries, obs_shape_n):
+        arglist = argparse.Namespace(**{"good_policy": self.good_policy,
+                                        "adv_policy": self.adv_policy,
+                                        "lr": self.lr,
+                                        "num_units": self.num_units,
+                                        "batch_size": self.batch_size,
+                                        "max_episode_len": self.max_episode_len,
+                                        "gamma": self.gamma,
+                                        "n_steps": self.n_steps
+                                        })
+        self.trainers = U.get_trainers(self.env, num_adversaries, obs_shape_n, arglist)
+        logging.info(f"Using good policy {self.good_policy} and adv policy {self.adv_policy}")
 
     def _setup_learn(self):
         """
@@ -158,22 +161,12 @@ class MADDPGModel:
                 obs_shape_n = []
                 for i in range(self.env.n):
                     obs_shape_n.append(self.env.observation_space[i].shape)
-                    obs_shape_n.append(self.env.observation_space[i+1].shape)
+                    obs_shape_n.append(self.env.observation_space[i + 1].shape)
             else:
                 obs_shape_n = [self.env.observation_space[i].shape for i in range(self.env.n)]
 
             num_adversaries = min(self.env.n, self.num_adversaries)
-            arglist = argparse.Namespace(**{"good_policy":self.good_policy,
-                       "adv_policy": self.adv_policy,
-                       "lr": self.lr,
-                       "num_units": self.num_units,
-                       "batch_size": self.batch_size,
-                       "max_episode_len": self.max_episode_len,
-                       "gamma": self.gamma,
-                        "n_steps": self.n_steps
-                       })
-            self.trainers = U.get_trainers(self.env, num_adversaries, obs_shape_n, arglist)
-            logging.info(f"Using good policy {self.good_policy} and adv policy {self.adv_policy}")
+            self._get_trainers(num_adversaries, obs_shape_n)
 
             U.initialize()
             if self.load_dir == '':
@@ -182,7 +175,7 @@ class MADDPGModel:
             saver = None
             if self.display or self.restore or self.benchmark:
                 logging.info("Loading previous state...")
-                saver = tf.train.import_meta_graph(self.load_dir+self.model_name+'.meta')
+                saver = tf.train.import_meta_graph(self.load_dir + self.model_name + '.meta')
                 U.load_state(tf.train.latest_checkpoint(self.load_dir), saver=saver)
 
             if saver is None:
@@ -197,24 +190,24 @@ class MADDPGModel:
             obs_n = self.env.reset()
 
             episode_step = 0
-            current_episode = 0
             train_step = 0
             t_start = time.time()
             pbar = tqdm(total=self.num_episodes)
 
             while True:
-                #print(f'episodes: {len(episode_rewards)}, train steps: {train_step}')
+                # print(f'episodes: {len(episode_rewards)}, train steps: {train_step}')
                 action_n = self.predict(obs_n)
 
                 clipped_action_n = action_n
                 for i, _ in enumerate(self.env.action_space):
-                    if isinstance(_ , gym.spaces.Box):
-                        clipped_action_n[i] = np.clip(action_n[i], self.env.action_space[i].low, self.env.action_space[i].high)
+                    if isinstance(_, gym.spaces.Box):
+                        clipped_action_n[i] = np.clip(action_n[i], self.env.action_space[i].low,
+                                                      self.env.action_space[i].high)
 
-                #print(f"action_n: {action_n}")
+                # print(f"action_n: {action_n}")
                 new_obs_n, rew_n, done_n, info_n = self.env.step(clipped_action_n)
 
-                episode_step +=1
+                episode_step += 1
                 done = all(done_n)
                 terminal = (episode_step > self.max_episode_len)
 
@@ -262,7 +255,6 @@ class MADDPGModel:
                     continue
 
                 # learn, update all policies in trainers, if not in display or benchmark mode
-                loss = None
                 for agent in self.trainers:
                     agent.preupdate()
                 for agent in self.trainers:
@@ -284,8 +276,8 @@ class MADDPGModel:
 
                     if num_adversaries == 0:
                         logging.info(f"steps: {train_step}, episodes: {len(episode_rewards)}, "
-                              f"mean episode reward: {np.mean(episode_rewards[-self.save_rate:])}, "
-                              f"time: {round(time.time() - t_start, 3)}")
+                                     f"mean episode reward: {np.mean(episode_rewards[-self.save_rate:])}, "
+                                     f"time: {round(time.time() - t_start, 3)}")
                     t_start = time.time()
                     final_ep_rewards.append(np.mean(episode_rewards[-self.save_rate:]))
                     for rew in agent_rewards:

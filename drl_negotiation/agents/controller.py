@@ -1,30 +1,16 @@
-'''
+"""
 DRL Controller
-'''
+"""
 ############################
 # Packages used for Test
-from negmas import LinearUtilityFunction
-from scml import (IndependentNegotiationsManager, 
-                    PredictionBasedTradingStrategy, 
-                        DemandDrivenProductionStrategy, 
-                            RandomAgent,
-                            DecentralizingAgent,
-                                SCML2020Agent)
-import matplotlib.pyplot as plt
 ############################
-from typing import Union, Optional, Dict, Tuple
-from negmas import (SAOSyncController,
-                    MechanismState, 
-                    SAONegotiator,
-                    AspirationNegotiator,
-                    Outcome,
+from typing import Optional, Dict, Tuple
+from negmas import (Outcome,
                     SAOResponse,
-                    SAOState)
+                    SAOState
+                    )
 
-from scml.scml2020.services import StepController, SyncController
-
-from scml import SCML2020World, NegotiationManager
-
+from scml.scml2020.services import SyncController
 
 
 ##########################################################################################################
@@ -41,20 +27,17 @@ class MyDRLSCMLSAOSyncController(SyncController):
     will try to let the factory/agent get the maximum profitability at the end
     Args:
     """
-
     def __init__(self,
-                 parent:str = "PredictionBasedTradingStrategy",
+                 parent:"PredictionBasedTradingStrategy",
                  is_seller: bool = None,
-                 default_negotiator_type ="MyDRLNegotiator",
-                 *args,
                  **kwargs
-        ):
+                 ):
         super().__init__(
             is_seller=is_seller,
             parent=parent,
-            price_weight = kwargs.pop('price_weight'),
-            utility_threshold = kwargs.pop('utility_threshold'),
-            time_threshold = kwargs.pop('time_threshold'),
+            price_weight=kwargs.pop('price_weight'),
+            utility_threshold=kwargs.pop('utility_threshold'),
+            time_threshold=kwargs.pop('time_threshold'),
             **kwargs
         )
         # kwargs['default_negotiator_type'] = default_negotiator_type
@@ -62,10 +45,10 @@ class MyDRLSCMLSAOSyncController(SyncController):
 
     def best_proposal(self, nid: str) -> Tuple[Optional[Outcome], float]:
         # TODO: proposal
-        return  super().best_proposal(nid=nid)
+        return super().best_proposal(nid=nid)
 
     def counter_all(
-        self, offers: Dict[str, "Outcome"], states: Dict[str, SAOState]
+            self, offers: Dict[str, "Outcome"], states: Dict[str, SAOState]
     ) -> Dict[str, SAOResponse]:
         """TODO: Calculate a response to all offers from all negotiators (negotiator ID is the key).
 
@@ -80,6 +63,7 @@ class MyDRLSCMLSAOSyncController(SyncController):
 
         """
         pass
+
 
 if __name__ == "__main__":
     pass

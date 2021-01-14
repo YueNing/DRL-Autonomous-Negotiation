@@ -1,6 +1,7 @@
 import numpy as np 
 import random 
 
+
 class ReplayBuffer(object):
 
     def __init__(self, size):
@@ -22,20 +23,20 @@ class ReplayBuffer(object):
     def add(self, obs_t, action, reward, obs_tp1, done):
         data = (obs_t, action, reward, obs_tp1, done)
         
-        if self._next_idx >=len(self._storage):
+        if self._next_idx >= len(self._storage):
             self._storage.append(data)
         else:
             self._storage[self._next_idx] = data
         self._next_idx = (self._next_idx + 1) % self._maxsize
 
     def make_index(self, batch_size):
-        return [random.randint(0, len(self._storage) -1) for _ in range(batch_size)]
+        return [random.randint(0, len(self._storage) - 1) for _ in range(batch_size)]
     
     def sample_index(self, idx):
         return self._encode_sample(idx)
     
     def sample(self, batch_size):
-        if batch_size >0:
+        if batch_size > 0:
             idxes = self.make_index(batch_size)
         else:
             idxes = range(0, len(self._storage))

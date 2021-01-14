@@ -1,24 +1,26 @@
-'''
+"""
    negotiation manager, for scml agent
    Author: naodongbanana
    E-Mail: n1085633848@outlook.com
-'''
+"""
 import os
-from typing import List, Dict, Optional, Any
-################ For Test #### will be removed #########
-from scml.scml2020 import IndependentNegotiationsManager, StepNegotiationManager
-########################################################
-from negmas import AgentMechanismInterface, Negotiator, Issue, SAONegotiator
+from typing import Dict, Optional, Any
+# ############### For Test #### will be removed #########
+from scml.scml2020 import IndependentNegotiationsManager
+# #######################################################
+
+from negmas import AgentMechanismInterface, Negotiator, Issue
 import numpy as np
 from typing import Tuple, List
 from drl_negotiation.core.hyperparameters import *
 from drl_negotiation.utils.utils import reverse_normalize
 from drl_negotiation.a2c.policy import create_actor
-import drl_negotiation.utils as U
+import drl_negotiation.utils.utils as U
 from gym import spaces
 import tensorflow as tf
 from drl_negotiation.agents.controller import MyDRLSCMLSAOSyncController
 from scml.scml2020 import MovingRangeNegotiationManager
+
 
 class MyNegotiationManager(IndependentNegotiationsManager):
     """
@@ -27,12 +29,11 @@ class MyNegotiationManager(IndependentNegotiationsManager):
 
     def __init__(
             self,
-            controller=MyDRLSCMLSAOSyncController,
             seller_model_path=NEG_SELL_PATH,
             buyer_model_path=NEG_BUY_PATH,
             load_model=LOAD_MODEL,
             train=TRAIN,
-            * args,
+            *args,
             **kwargs
     ):
         super(MyNegotiationManager, self).__init__(*args, **kwargs)
@@ -80,10 +81,10 @@ class MyNegotiationManager(IndependentNegotiationsManager):
 
         # action space
         if DISCRETE_ACTION_SPACE:
-            act_space = [spaces.Discrete(DIM_M*2 + 1), spaces.Discrete(DIM_B*2 + 1)]
+            act_space = [spaces.Discrete(DIM_M * 2 + 1), spaces.Discrete(DIM_B * 2 + 1)]
         else:
-            act_space = [spaces.Box(low=-self.m_range, high=+self.m_range, shape=(DIM_M, ), dtype=np.float32),
-                        spaces.Box(low=-self.m_range, high=+self.m_range, shape=(DIM_B, ), dtype=np.float32)]
+            act_space = [spaces.Box(low=-self.m_range, high=+self.m_range, shape=(DIM_M,), dtype=np.float32),
+                         spaces.Box(low=-self.m_range, high=+self.m_range, shape=(DIM_B,), dtype=np.float32)]
 
         self.models = []
 
@@ -100,16 +101,14 @@ class MyNegotiationManager(IndependentNegotiationsManager):
     def _load_state(self, model):
         """
         restore the model
-        Args:
-            sell:
 
         Returns:
 
         """
         logging.info("loading model")
-        if os.path.exists(self.model_path+model[1]):
-            saver = tf.train.import_meta_graph(self.model_path+model[1]+'/'+MODEL_NAME+'.meta')
-            U.load_state(tf.train.latest_checkpoint(self.model_path+model[1]), saver=saver)
+        if os.path.exists(self.model_path + model[1]):
+            saver = tf.train.import_meta_graph(self.model_path + model[1] + '/' + MODEL_NAME + '.meta')
+            U.load_state(tf.train.latest_checkpoint(self.model_path + model[1]), saver=saver)
             return True
 
         return False
@@ -120,28 +119,28 @@ class MyNegotiationManager(IndependentNegotiationsManager):
             issues: List[Issue],
             annotation: Dict[str, Any],
             mechanism: AgentMechanismInterface,
-            ) -> Optional[Negotiator]:
+    ) -> Optional[Negotiator]:
         """
             IDEA 4.2: TODO: observation: financial report of initiator
                             action: ACCEPT or REJECT to negotiate
         """
-        #import ipdb
-        #ipdb.set_trace()
-        
-        #print(f'{self}: negotiation manager {self.action.m}, issues{issues}')
-        #if self.action.m in ([NegotiationRequestAction.ACCEPT_REQUEST], 
+        # import ipdb
+        # ipdb.set_trace()
+
+        # print(f'{self}: negotiation manager {self.action.m}, issues{issues}')
+        # if self.action.m in ([NegotiationRequestAction.ACCEPT_REQUEST],
         #                        [NegotiationRequestAction.DEFAULT_REQUEST]):
         return self.negotiator(annotation["seller"] == self.id, issues=issues)
-        #return None
+        # return None
 
     def acceptable_unit_price(self, step: int, sell: bool) -> int:
-        
+
         production_cost = np.max(self.awi.profile.costs[:, self.awi.my_input_product])
         if sell:
             return production_cost + self.input_cost[step]
         return self.output_price[step] - production_cost
-    
-    def target_quantity(self, step: int, sell:bool) -> int:
+
+    def target_quantity(self, step: int, sell: bool) -> int:
         """
             Idea 4.1. TODO: observation: negotiations, negotiation_requests
                          action: target quantity, discrete action_space
@@ -192,14 +191,14 @@ class MyNegotiationManager(IndependentNegotiationsManager):
                 # _act =[-1, 1]
                 _act = self.trainers[tag].action(_obs)
                 if tag:
-                    mul_1 = (cprice, 3/2 * cprice)
+                    mul_1 = (cprice, 3 / 2 * cprice)
                     # (3/2 cprice, 2 cprice)
-                    mul_2 = (3/2 * cprice, 2 * cprice)
+                    mul_2 = (3 / 2 * cprice, 2 * cprice)
                 else:
 
-                    mul_1 = (1, 1/2 * cprice)
+                    mul_1 = (1, 1 / 2 * cprice)
                     # (1/2 cprice, cprice)
-                    mul_2 = (1/2 * cprice, cprice)
+                    mul_2 = (1 / 2 * cprice, cprice)
 
                 urange = reverse_normalize(tuple(_act), (mul_1, mul_2))
                 return urange
@@ -214,7 +213,6 @@ class MyNegotiationManager(IndependentNegotiationsManager):
 
                 return urange
 
-
     def _start_negotiations(
             self,
             product: int,
@@ -224,7 +222,7 @@ class MyNegotiationManager(IndependentNegotiationsManager):
             uvalues: Tuple[int, int],
             tvalues: Tuple[int, int],
             partners: List[str] = None,
-            ) -> None:
+    ) -> None:
         """
             IDEA 4.3: TODO: observation: market conditions, target_quantity, 
                                             acceptable_unit_price, negotiations, negotiation_requests,
@@ -241,7 +239,7 @@ class MyNegotiationManager(IndependentNegotiationsManager):
                     _model = self.models[1]
 
             if _model is not None:
-                #TODO: test period, get the action from model
+                # TODO: test period, get the action from model
                 with U.single_threaded_session():
                     U.initialize()
                     tag = self._load_state(_model)
@@ -253,10 +251,14 @@ class MyNegotiationManager(IndependentNegotiationsManager):
 
                         if MANAGEABLE:
                             if DISCRETE_ACTION_INPUT:
-                                if _act[0] == 1: self.action.s[0] = -1.0
-                                if _act[0] == 2: self.action.s[0] = +1.0
-                                if _act[0] == 3: self.action.s[1] = -1.0
-                                if _act[0] == 4: self.action.s[1] = +1.0
+                                if _act[0] == 1:
+                                    self.action.s[0] = -1.0
+                                if _act[0] == 2:
+                                    self.action.s[0] = +1.0
+                                if _act[0] == 3:
+                                    self.action.s[1] = -1.0
+                                if _act[0] == 4:
+                                    self.action.s[1] = +1.0
                             else:
                                 # one hot
                                 if DISCRETE_ACTION_SPACE:
@@ -282,44 +284,47 @@ class MyNegotiationManager(IndependentNegotiationsManager):
                         self.state.o_t_values = tvalues
 
                         if self.action.m is not None:
-                            uvalues = tuple(np.array(uvalues) + (np.array(self.action.m)*self.action.m_vel).astype("int32"))
+                            uvalues = tuple(
+                                np.array(uvalues) + (np.array(self.action.m) * self.action.m_vel).astype("int32"))
 
                 else:
                     # for buyer
                     if self.action.b is not None:
-                        uvalues = tuple(np.array(uvalues) + (np.array(self.action.b) * self.action.b_vel).astype("int32"))
+                        uvalues = tuple(
+                            np.array(uvalues) + (np.array(self.action.b) * self.action.b_vel).astype("int32"))
 
-        #import ipdb
-        #ipdb.set_trace()
-        #print(f"qvalues: {qvalues}, uvalues: {uvalues}, tvalues: {tvalues}")
+        # import ipdb
+        # ipdb.set_trace()
+        # print(f"qvalues: {qvalues}, uvalues: {uvalues}, tvalues: {tvalues}")
 
         issues = [
-                Issue(qvalues, name="quantity"),
-                Issue(tvalues, name="time"),
-                Issue(uvalues, name="uvalues")
-                ]
+            Issue(qvalues, name="quantity"),
+            Issue(tvalues, name="time"),
+            Issue(uvalues, name="uvalues")
+        ]
 
         for partner in partners:
             self.awi.request_negotiation(
-                    is_buy = not sell,
-                    product = product,
-                    quantity = qvalues,
-                    unit_price = uvalues,
-                    time = tvalues,
-                    partner = partner,
-                    negotiator = self.negotiator(sell, issues=issues)
-                    )
+                is_buy=not sell,
+                product=product,
+                quantity=qvalues,
+                unit_price=uvalues,
+                time=tvalues,
+                partner=partner,
+                negotiator=self.negotiator(sell, issues=issues)
+            )
+
 
 class MyConcurrentNegotiationManager(MovingRangeNegotiationManager):
 
     def __init__(
-        self,
-        *args,
-        price_weight=0.7,
-        utility_threshold=0.9,
-        time_threshold=0.9,
-        time_horizon=0.1,
-        **kwargs,
+            self,
+            *args,
+            price_weight=0.7,
+            utility_threshold=0.9,
+            time_threshold=0.9,
+            time_horizon=0.1,
+            **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.index: List[int] = None
@@ -345,9 +350,3 @@ class MyConcurrentNegotiationManager(MovingRangeNegotiationManager):
         }
         self._current_end = -1
         self._current_start = -1
-
-
-
-
-
-

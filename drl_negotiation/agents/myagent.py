@@ -1,23 +1,25 @@
 from drl_negotiation.core.core import MySCML2020Agent
 from scml.scml2020 import (
-        TradeDrivenProductionStrategy,
-        PredictionBasedTradingStrategy,
-        )
+    TradeDrivenProductionStrategy,
+    PredictionBasedTradingStrategy,
+)
 from scml.scml2020.agents.decentralizing import _NegotiationCallbacks
 from scml.scml2020 import (SupplyDrivenProductionStrategy)
 
 from negmas import LinearUtilityFunction
 from .mynegotiationmanager import MyNegotiationManager, MyConcurrentNegotiationManager
 
+
 class MyComponentsBasedAgent(
-        TradeDrivenProductionStrategy,
-        MyNegotiationManager,
-        PredictionBasedTradingStrategy,
-        MySCML2020Agent
-        ):
+    TradeDrivenProductionStrategy,
+    MyNegotiationManager,
+    PredictionBasedTradingStrategy,
+    MySCML2020Agent
+):
     """
         my components based agent
     """
+
     def create_ufun(self, is_seller: bool, issues=None, outcomes=None):
         """A utility function that penalizes high cost and late delivery 
                     for buying and and awards them for selling"""
@@ -25,13 +27,14 @@ class MyComponentsBasedAgent(
             return LinearUtilityFunction((0, 0.25, 1))
         return LinearUtilityFunction((0, -0.5, -0.8))
 
+
 class MyConcurrentBasedAgent(
     _NegotiationCallbacks,
     MyConcurrentNegotiationManager,
     PredictionBasedTradingStrategy,
     SupplyDrivenProductionStrategy,
     MySCML2020Agent
-    ):
+):
     """
         my concurrent based agent,
     """

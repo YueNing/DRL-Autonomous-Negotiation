@@ -457,7 +457,7 @@ def make_env(scenario_name, arglist=None, save_config=False, load_config=False, 
     True
     """
 
-    from drl_negotiation.env import SCMLEnv
+    from drl_negotiation.core.env import SCMLEnv
     import drl_negotiation.scenarios as scenarios
 
     # load scenario from script
