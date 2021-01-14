@@ -76,7 +76,7 @@ NEG_BUY_PATH = None
 ################################################
 DIM_M = 2
 DIM_B = 2
-TRAINING_AGENT_TYPES = ["drl_negotiation.myagent.MyComponentsBasedAgent", "scml.scml2020.IndDecentralizingAgent"]
+TRAINING_AGENT_TYPES = ["drl_negotiation.agents.myagent.MyComponentsBasedAgent", "scml.scml2020.IndDecentralizingAgent"]
 REW_FACTOR = 0.2
 NEGOTIATION_SPEED = 1
 
@@ -88,7 +88,7 @@ NEGOTIATION_SPEED = 1
 N_STEPS = MAX_EPISODE_LEN
 
 # scml scenario, concurrent
-TRAINING_AGENT_TYPES_CONCURRENT = ["drl_negotiation.myagent.MyConcurrentBasedAgent", "scml.scml2020.DecentralizingAgent"]
+TRAINING_AGENT_TYPES_CONCURRENT = ["drl_negotiation.agents.myagent.MyConcurrentBasedAgent", "scml.scml2020.DecentralizingAgent"]
 
 ################################################
 # running world

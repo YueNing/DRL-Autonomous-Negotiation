@@ -5,29 +5,19 @@
 '''
 import os
 from typing import List, Dict, Optional, Any
-import functools
-from scml import NegotiationManager
 ################ For Test #### will be removed #########
 from scml.scml2020 import IndependentNegotiationsManager, StepNegotiationManager
 ########################################################
 from negmas import AgentMechanismInterface, Negotiator, Issue, SAONegotiator
 import numpy as np
-import logging
 from typing import Tuple, List
-from scml.scml2020.components.negotiation import ControllerInfo
-from .negotiator import MyDRLNegotiator
-from .core import NegotiationRequestAction
-from .controller import MyDRLSCMLSAOSyncController
-from .hyperparameters import *
-from drl_negotiation.utils import load_seller_neg_model
-from drl_negotiation.utils import load_buyer_neg_model
-from drl_negotiation.utils import get_trainers
-from drl_negotiation.utils import reverse_normalize
+from drl_negotiation.core.hyperparameters import *
+from drl_negotiation.utils.utils import reverse_normalize
 from drl_negotiation.a2c.policy import create_actor
 import drl_negotiation.utils as U
 from gym import spaces
 import tensorflow as tf
-from drl_negotiation.controller import MyDRLSCMLSAOSyncController
+from drl_negotiation.agents.controller import MyDRLSCMLSAOSyncController
 from scml.scml2020 import MovingRangeNegotiationManager
 
 class MyNegotiationManager(IndependentNegotiationsManager):

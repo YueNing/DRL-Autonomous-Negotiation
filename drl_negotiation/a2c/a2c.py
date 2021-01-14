@@ -6,12 +6,12 @@ import time
 import argparse
 import tensorflow as tf
 import gym
-from drl_negotiation.env import SCMLEnv
+from drl_negotiation.core.env import SCMLEnv
 import drl_negotiation.utils as U
 import numpy as np
 import pickle
 from tqdm import tqdm
-from drl_negotiation.hyperparameters import *
+from drl_negotiation.core.hyperparameters import *
 import logging
 
 class MADDPGModel:

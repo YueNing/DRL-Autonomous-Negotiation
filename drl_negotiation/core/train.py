@@ -1,4 +1,4 @@
-from .env import NEnv
+from drl_negotiation.core.env import NEnv
 from datetime import datetime
 
 MODEL_NEGOTIATION = [

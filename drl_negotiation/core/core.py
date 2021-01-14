@@ -6,7 +6,7 @@
 import numpy as np
 from scml.scml2020 import SCML2020World, SCML2020Agent, is_system_agent
 from typing import Optional
-from drl_negotiation.hyperparameters import *
+from drl_negotiation.core.hyperparameters import *
 import yaml
 import  copy
 import pickle

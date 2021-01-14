@@ -8,8 +8,8 @@ from gym import spaces
 import pickle
 from  negmas import Issue
 from typing import List, Tuple
-from drl_negotiation.hyperparameters import *
-from drl_negotiation.core import TrainWorld
+from drl_negotiation.core.hyperparameters import *
+from drl_negotiation.core.core import TrainWorld
 from drl_negotiation.third_party.ansistrm.ansistrm import ColorizingStreamHandler
 from negmas.helpers import get_class
 from scml.scml2020 import SCML2020World

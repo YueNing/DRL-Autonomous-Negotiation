@@ -1,4 +1,4 @@
-from .core import MySCML2020Agent
+from drl_negotiation.core.core import MySCML2020Agent
 from scml.scml2020 import (
         TradeDrivenProductionStrategy,
         PredictionBasedTradingStrategy,

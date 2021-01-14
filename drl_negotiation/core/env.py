@@ -1,26 +1,15 @@
-import ipdb
-import os
 import gym
 import numpy as np
-import time
 from gym.utils import seeding
 from gym.spaces import Discrete, Box
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 from typing import Optional, Union, List, Tuple
 from .game import (Game,
-                                    DRLSCMLGame, 
-                                    SCMLGame, 
-                                    NegotiationGame, 
-                                    DRLNegotiationGame,
-                                    MyDRLNegotiationGame,
-                                    MyDRLSCMLGame)
+                   NegotiationGame,
+                   DRLNegotiationGame,
+                   MyDRLNegotiationGame,
+                   )
 
-from negmas import AgentMechanismInterface
-import drl_negotiation.rendering as rendering
-from drl_negotiation.rendering import Viewer
-from scml import (
-            is_system_agent
-        )
 __all__ = [
     "BaseEnv",
     "DRLEnvMixIn",
@@ -475,8 +464,8 @@ class MyNegotiationEnv(DRLNegotiationEnv):
 #
 ####################################################################################################
 from gym import spaces
-from drl_negotiation.core import TrainWorld
-from drl_negotiation.hyperparameters import *
+from drl_negotiation.core.core import TrainWorld
+from drl_negotiation.core.hyperparameters import *
 
 class SCMLEnv(gym.Env):
     metadata = {

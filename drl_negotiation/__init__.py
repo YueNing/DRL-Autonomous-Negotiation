@@ -18,9 +18,8 @@ author = "naodongbanana"
 email = "n1085633848@outlook.com"
 license = "MIT License"
 
-
 import time
-from drl_negotiation.utils import logging_setup
+from drl_negotiation.utils.utils import logging_setup
 
 print("#################################### \n"
       "Welcome to drl negotiation, enjoy it!\n "
