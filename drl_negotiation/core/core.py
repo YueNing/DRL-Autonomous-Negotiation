@@ -135,38 +135,7 @@ class MySCML2020Agent(SCML2020Agent):
       
     def _get_obs(self, seller=True, scenario="scml"):
         # local observation
-        # TODO: different observation of buyer and seller, will be implemented here
-        if scenario == "scml":
-          
-            o_m = self.awi.profile.costs
-            o_m = o_m[:, self.awi.profile.processes]
-
-            # agent information, agent's
-            o_a = np.array([self._horizon])
-
-            # catalog prices of products
-            o_u_c = self.awi.catalog_prices
-            # TODO: excepted value after predict
-            o_u_e = np.array([self.expected_inputs, self.expected_outputs, self.input_cost, self.output_price])
-            # TODO: trading strategy, needed and secured
-            o_u_t = np.array([self.outputs_needed, self.outputs_secured, self.inputs_needed, self.inputs_secured])
-
-            # running negotiation and negotiation request of agent
-            o_q_n = np.array([
-                self.running_negotiations,
-                self.negotiation_requests,
-            ])
-
-            o_t_c = np.array([self.awi.current_step / self.awi.n_steps])
-
-            # 2. Economic gap
-            economic_gaps = []
-            economic_gaps.append(self.state.f[2] - self.state.f[1])
-            economic_gaps = np.array(economic_gaps)
-
-            # return np.concatenate(economic_gaps + o_m.flatten() + o_a + o_u_c + o_u_e + o_u_t + o_q_n.flatten() + o_t_c)
-
-            return np.concatenate((economic_gaps.flatten(), o_m.flatten(), o_a, o_u_c, o_q_n.flatten(), o_t_c))
+        return
 
     def init(self):
         super(MySCML2020Agent, self).init()
