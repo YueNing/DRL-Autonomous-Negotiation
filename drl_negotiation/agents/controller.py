@@ -4,14 +4,18 @@ DRL Controller
 ############################
 # Packages used for Test
 ############################
+import logging
 from typing import Optional, Dict, Tuple
 from negmas import (Outcome,
                     SAOResponse,
-                    SAOState
+                    SAOState,
+                    MechanismState,
                     )
 
 from scml.scml2020.services import SyncController
-
+import numpy as np
+from scml.scml2020.common import UNIT_PRICE
+from negmas import ResponseType
 
 ##########################################################################################################
 # Controller for SCML, Used for training concurrent negotiation with DRL
@@ -43,9 +47,24 @@ class MyDRLSCMLSAOSyncController(SyncController):
         # kwargs['default_negotiator_type'] = default_negotiator_type
         # self.ufun = None
 
-    def best_proposal(self, nid: str) -> Tuple[Optional[Outcome], float]:
-        # TODO: proposal
-        return super().best_proposal(nid=nid)
+    def propose(self, negotiator_id: str, state: MechanismState) -> Optional["Outcome"]:
+        logging.debug(f"propose of {self} is called, negotiator_id is {negotiator_id}")
+        return super(MyDRLSCMLSAOSyncController, self).propose(negotiator_id, state)
+
+    def respond(
+        self, negotiator_id: str, state: MechanismState, offer: "Outcome"
+    ) -> "ResponseType":
+        """
+        TODO:
+        Args:
+            negotiator_id:
+            state:
+            offer:
+
+        Returns:
+
+        """
+        super(MyDRLSCMLSAOSyncController, self).respond(negotiator_id, state, offer)
 
     def counter_all(
             self, offers: Dict[str, "Outcome"], states: Dict[str, SAOState]
@@ -62,8 +81,7 @@ class MyDRLSCMLSAOSyncController(SyncController):
                   negotiations not all of them.
 
         """
-        pass
-
+        super(MyDRLSCMLSAOSyncController, self).counter_all(offers, states)
 
 if __name__ == "__main__":
     pass

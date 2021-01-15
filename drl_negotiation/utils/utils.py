@@ -453,7 +453,7 @@ def make_env(scenario_name, arglist=None, save_config=False, load_config=False, 
     ...         load_config=True,
     ...         save_dir="/tmp/drl_negotiation/doctest/world.config",
     ...         load_dir="/tmp/drl_negotiation/doctest/world.config"
-    ...     ), (drl_negotiation.env.SCMLEnv))
+    ...     ), drl_negotiation.core.env.SCMLEnv)
     True
     """
 

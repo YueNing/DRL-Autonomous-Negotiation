@@ -6,6 +6,8 @@ from drl_negotiation.core.hyperparameters import *
 from drl_negotiation.utils.utils import make_world
 from scml import SCML2020World
 from drl_negotiation.core.core import MySCML2020Agent, TrainWorld
+import numpy as np
+import random
 
 class Scenario(BaseScenario):
     def make_world(self, config):
@@ -31,24 +33,30 @@ class Scenario(BaseScenario):
 
     def observation(self, agent: MySCML2020Agent, world: TrainWorld, seller=True):
         _obs = []
+        current_time = agent.awi.current_step / agent.awi.n_steps
+
+        for controller in agent.controller:
+            if controller._is_seller:
+                numbers_buyer = len(controller.responses)
+            else:
+                numbers_seller = len(controller.responses)
+
         if seller:
-            numbers_buyer = None
             price_product = None
             numbers_contracts = None
         else:
-            numbers_seller = None
             price_product = None
             numbers_contracts = None
 
-        return _obs
+        return np.array(_obs)
 
-    def reward(self,gent: MySCML2020Agent, world: TrainWorld, seller=True):
+    def reward(self, agent: MySCML2020Agent, world: TrainWorld, seller=True):
         # sub-goal, best deal which is defined as being nearest to the agent needs with lowest price
         # main-goal, maximum profiability at the end of episode.
-        pass
+        return random.random()
 
-    def done(self):
-        pass
+    def done(self, agent: MySCML2020Agent, world: TrainWorld, seller=True):
+        return False
 
-    def benchmark_data(self):
-        pass
+    def benchmark_data(self, agent: MySCML2020Agent, world: TrainWorld, seller=True):
+        return {}

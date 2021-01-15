@@ -1,7 +1,6 @@
 from drl_negotiation.a2c.a2c import MADDPGModel
-from drl_negotiation.hyperparameters import *
-from drl_negotiation.utils import make_env
-import logging
+from drl_negotiation.core.hyperparameters import *
+from drl_negotiation.utils.utils import make_env
 
 env = make_env('scml_concurrent',
                save_config=SAVE_WORLD_CONFIG,
