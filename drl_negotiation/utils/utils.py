@@ -578,14 +578,14 @@ def get_trainers(env, num_adversaries=0, obs_shape_n=None, arglist=None):
     # set up the good agent
     for i in range(num_adversaries, env.n):
         trainers.append(trainer(
-            env.agents[i].name.replace("@", '-')+"_seller", model, obs_shape_n, action_space, i, arglist,
+            env.agents[i].name.replace("@", '-')+"_seller", model, obs_shape_n, action_space, i*2, arglist,
             local_q_func=(arglist.good_policy == "ddpg")
         )
         )
         if not ONLY_SELLER:
             trainers.append(trainer(
                 env.agents[i].name.replace("@", '-') + "_buyer", model, obs_shape_n, action_space,
-                i + 1, arglist,
+                i*2 + 1, arglist,
                 local_q_func=(arglist.good_policy == 'ddpg')
             ))
 

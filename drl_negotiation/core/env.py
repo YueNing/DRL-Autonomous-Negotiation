@@ -520,6 +520,7 @@ class SCMLEnv(gym.Env):
             if self.discrete_action_space:
                 # seller controller
                 for _ in range(consumers):
+                    # TODO: how to define the Discrete
                     m_action_space.append(spaces.Discrete(world.dim_m*2 + 1))
                 if not ONLY_SELLER:
                     # buyer controller
