@@ -324,7 +324,7 @@ class CategoricalProbabilityDistribution(ProbabilityDistribution):
         # Gumbel-max trick to sample
         # a categorical distribution (see http://amid.fish/humble-gumbel)
         uniform = tf.random_uniform(tf.shape(self.logits), dtype=self.logits.dtype)
-        return tf.argmax(self.logits - tf.log(-tf.log(uniform)), axis=-1)
+        return tf.cast(tf.argmax(self.logits - tf.log(-tf.log(uniform)), axis=-1), tf.float32)
 
     @classmethod
     def fromflat(cls, flat):
@@ -554,8 +554,8 @@ def make_pd_type(ac_space):
         assert len(ac_space.shape) == 1, "Error: the action space must be a vector"
         pd_type = DiagGaussianProbabilityDistributionType(ac_space.shape[0])
     elif isinstance(ac_space, spaces.Discrete):
-        # pd_type = CategoricalProbabilityDistributionType(ac_space.n)
-        pd_type = SoftCategoricalProbabilityDistributionType(ac_space.n)
+        pd_type = CategoricalProbabilityDistributionType(ac_space.n)
+        # pd_type = SoftCategoricalProbabilityDistributionType(ac_space.n)
     elif isinstance(ac_space, spaces.MultiDiscrete):
         pd_type = MultiCategoricalProbabilityDistributionType(ac_space.nvec)
     elif isinstance(ac_space, spaces.MultiBinary):

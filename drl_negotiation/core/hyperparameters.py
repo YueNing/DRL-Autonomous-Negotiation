@@ -59,7 +59,7 @@ BLIND = False
 # SCML environment
 ###############################################
 # action is a number 0...N, otherwise action is a one-hot N-dimensional vector
-DISCRETE_ACTION_INPUT = False
+DISCRETE_ACTION_INPUT = True
 # TODO: continuous action space, the range of action based on catalog prices
 # TODO: fixed catalog prices or ?
 DISCRETE_ACTION_SPACE = True

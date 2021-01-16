@@ -603,10 +603,10 @@ class SCMLEnv(gym.Env):
         
         # policy agents
         for i, agent in enumerate(self.agents):
-            self._set_action(action_n[i], agent, self.action_space[i])
+            self._set_action(action_n[i*2], agent, self.action_space[i*2])
             if not ONLY_SELLER:
                 # buyer action, the same action_space as the seller
-                self._set_buyer_action(action_n[i+1], agent, self.action_space[i+1])
+                self._set_buyer_action(action_n[i*2+1], agent, self.action_space[i*2+1])
 
         self.world.step()
         for agent in self.agents:
@@ -727,10 +727,13 @@ class SCMLEnv(gym.Env):
         if isinstance(action_space, spaces.MultiDiscrete):
             act = []
             index = 0
-            for s in action_space.nvec:
-                act.append(act[index:(index+s)])
-                index +=s
-            action = act
+            if self.discrete_action_input:
+                action = [action]
+            else:
+                for s in action_space.nvec:
+                    act.append(action[index:(index+s)])
+                    index +=s
+                action = act
         else:
             action = [action]
         return action
@@ -740,17 +743,14 @@ class SCMLEnv(gym.Env):
             #TODO: negotiation management action, both seller and buyer
             if self.discrete_action_input:
                 if seller:
-                    agent.action.m = np.zeros(self.world.dim_m)
-                    #process discrete action
-                    for i in range(self.world.dim_m):
-                        if action[0] % 2 == 1: agent.action.m[i] = 1.0
-                        if action[0] % 2 == 0: agent.action.m[i] = -1.0
+                    agent.action.m = np.zeros(self.world.dim_m * len(agent.awi.my_consumers))
+                    for i in range(self.world.dim_m * len(agent.awi.my_consumers)):
+                        agent.action.m[i] = action[0][i]
                 else:
-                    agent.action.b = np.zeros(self.world.dim_b)
+                    agent.action.b = np.zeros(self.world.dim_b * len(agent.awi.my_suppliers))
                     #process discrete action
-                    for i in range(self.world.dim_b):
-                        if action[0] % 2 == 1: agent.action.b[i] = 1.0
-                        if action[0] % 2 == 0: agent.action.b[i] = -1.0
+                    for i in range(self.world.dim_b * len(agent.awi.my_suppliers)):
+                        agent.action.b[i] = action[0][i]
             else:
                 if self.force_discrete_action:
                     d = np.argmax(action[0])
@@ -786,14 +786,14 @@ class SCMLEnv(gym.Env):
 
     def _set_buyer_action(self, action, agent, action_space, time=None):
         # set the action of buyer
-        agent.action.b = np.zeros(self.world.dim_b)
+        agent.action.b = np.zeros(self.world.dim_b * len(agent.awi.my_suppliers))
 
         action = self._preprocess_action(action, action_space)
         self._process_manager_action(agent, action, seller=False)
 
     def _set_action(self, action, agent, action_space, time=None):
         # set the action of seller and communication
-        agent.action.m = np.zeros(self.world.dim_m)
+        agent.action.m = np.zeros(self.world.dim_m * len(agent.awi.my_consumers))
         agent.action.c = np.zeros(self.world.dim_c)
        
         # process action
