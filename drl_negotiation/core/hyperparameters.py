@@ -74,8 +74,8 @@ NEG_BUY_PATH = None
 ################################################
 # training world
 ################################################
-DIM_M = 6
-DIM_B = 6
+DIM_M = 3
+DIM_B = 3
 TRAINING_AGENT_TYPES = ["drl_negotiation.agents.myagent.MyComponentsBasedAgent", "scml.scml2020.IndDecentralizingAgent"]
 REW_FACTOR = 0.2
 NEGOTIATION_SPEED = 1
