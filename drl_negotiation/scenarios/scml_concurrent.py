@@ -37,13 +37,23 @@ class Scenario(BaseScenario):
 
         number_buyers, number_sellers = agent.running_negotiations_count
 
-        if seller:
-            price_product = None
-            numbers_contracts = None
-            _obs.append(number_buyers)
+        my_input_products = agent.awi.my_output_products
+        my_output_products = agent.awi.my_output_products
+
+        if not agent.contracts:
+            pass
         else:
-            price_product = None
-            numbers_contracts = None
+            print("test")
+
+        if seller:
+            price_product = agent.awi.catalog_prices[my_output_products]
+            numbers_contracts = len(agent.contracts)
+            _obs.append(number_buyers)
+            _obs.append(price_product)
+            _obs.append(numbers_contracts)
+        else:
+            price_product = agent.awi.catalog_prices[my_input_products]
+            numbers_contracts = len(agent.contracts)
             _obs.append(number_sellers)
 
         return np.array(_obs)

@@ -178,7 +178,7 @@ class CategoricalProbabilityDistributionType(ProbabilityDistributionType):
         return []
 
     def sample_dtype(self):
-        return tf.int64
+        return tf.float32
 
 
 class MultiCategoricalProbabilityDistributionType(ProbabilityDistributionType):
@@ -211,7 +211,7 @@ class MultiCategoricalProbabilityDistributionType(ProbabilityDistributionType):
         return [len(self.n_vec)]
 
     def sample_dtype(self):
-        return tf.int64
+        return tf.float32
 
 
 class DiagGaussianProbabilityDistributionType(ProbabilityDistributionType):
@@ -276,7 +276,7 @@ class BernoulliProbabilityDistributionType(ProbabilityDistributionType):
         return [self.size]
 
     def sample_dtype(self):
-        return tf.int32
+        return tf.float32
 
 
 class CategoricalProbabilityDistribution(ProbabilityDistribution):
@@ -365,7 +365,7 @@ class MultiCategoricalProbabilityDistribution(ProbabilityDistribution):
         return tf.add_n([p.entropy() for p in self.categoricals])
 
     def sample(self):
-        return tf.stack([p.sample() for p in self.categoricals], axis=-1)
+        return tf.cast(tf.stack([p.sample() for p in self.categoricals], axis=-1), tf.float32)
 
     @classmethod
     def fromflat(cls, flat):

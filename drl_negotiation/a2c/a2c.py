@@ -160,8 +160,8 @@ class MADDPGModel:
             if not ONLY_SELLER:
                 obs_shape_n = []
                 for i in range(self.env.n):
-                    obs_shape_n.append(self.env.observation_space[i].shape)
-                    obs_shape_n.append(self.env.observation_space[i + 1].shape)
+                    obs_shape_n.append(self.env.observation_space[i*2].shape)
+                    obs_shape_n.append(self.env.observation_space[i*2 + 1].shape)
             else:
                 obs_shape_n = [self.env.observation_space[i].shape for i in range(self.env.n)]
 
