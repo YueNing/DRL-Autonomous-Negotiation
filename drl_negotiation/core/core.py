@@ -104,18 +104,18 @@ class MySCML2020Agent(SCML2020Agent):
         super(MySCML2020Agent, self).init()
 
     @property
-    def running_negotiations(self) -> [int, int]:
+    def running_negotiations_count(self) -> [int, int]:
         """
 
         Returns:
-            number of runniing negotiations
+            number of runniing negotiations (sell, buy)
         """
 
         return self._count(super(MySCML2020Agent, self).running_negotiations)
 
 
     @property
-    def negotiation_requests(self) -> [int, int]:
+    def negotiation_requests_count(self) -> [int, int]:
         """
 
         Returns:

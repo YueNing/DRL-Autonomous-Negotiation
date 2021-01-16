@@ -35,18 +35,16 @@ class Scenario(BaseScenario):
         _obs = []
         current_time = agent.awi.current_step / agent.awi.n_steps
 
-        for controller in agent.controller:
-            if controller._is_seller:
-                numbers_buyer = len(controller.responses)
-            else:
-                numbers_seller = len(controller.responses)
+        number_buyers, number_sellers = agent.running_negotiations_count
 
         if seller:
             price_product = None
             numbers_contracts = None
+            _obs.append(number_buyers)
         else:
             price_product = None
             numbers_contracts = None
+            _obs.append(number_sellers)
 
         return np.array(_obs)
 

@@ -150,8 +150,8 @@ class Scenario(BaseScenario):
 
         # running negotiation and negotiation request of agent
         o_q_n = np.array([
-            agent.running_negotiations,
-            agent.negotiation_requests,
+            agent.running_negotiations_count,
+            agent.negotiation_requests_count,
         ])
 
         o_t_c = np.array([agent.awi.current_step / agent.awi.n_steps])

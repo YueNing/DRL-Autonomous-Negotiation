@@ -81,7 +81,7 @@ class MyDRLSCMLSAOSyncController(SyncController):
                   negotiations not all of them.
 
         """
-        super(MyDRLSCMLSAOSyncController, self).counter_all(offers, states)
+        return super(MyDRLSCMLSAOSyncController, self).counter_all(offers, states)
 
 if __name__ == "__main__":
     pass

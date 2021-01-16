@@ -505,24 +505,39 @@ class SCMLEnv(gym.Env):
         self.action_space = []
         self.observation_space = []
         for agent in self.agents:
+
             # for seller
             total_action_space = []
             # for buyer
             total_action_space_buyer = []
+
             # negotiation management action space
+            m_action_space = []
+            b_action_space = []
+            consumers = len(agent.awi.my_consumers)
+            suppliers = len(agent.awi.my_suppliers)
+
             if self.discrete_action_space:
-                m_action_space = spaces.Discrete(world.dim_m*2 + 1)
+                # seller controller
+                for _ in range(consumers):
+                    m_action_space.append(spaces.Discrete(world.dim_m*2 + 1))
                 if not ONLY_SELLER:
-                    b_action_space = spaces.Discrete(world.dim_b*2 + 1)
+                    # buyer controller
+                    for _ in range(suppliers):
+                        b_action_space.append(spaces.Discrete(world.dim_b*2 + 1))
             else:
-                m_action_space = spaces.Box(low=-agent.m_range, high=+agent.m_range, shape=(world.dim_m, ), dtype=np.float32)
+                for _ in range(consumers):
+                    m_action_space.append(spaces.Box(low=-agent.m_range, high=+agent.m_range, shape=(world.dim_m, ),
+                                                     dtype=np.float32))
                 if not ONLY_SELLER:
-                    b_action_space = spaces.Box(low=-agent.b_range, high=+agent.b_range, shape=(world.dim_b,),
-                                                dtype=np.float32)
+                    for _ in range(suppliers):
+                        b_action_space.append(spaces.Box(low=-agent.b_range, high=+agent.b_range, shape=(world.dim_b,),
+                                                         dtype=np.float32))
+
             if agent.manageable:
-                total_action_space.append(m_action_space)
+                total_action_space = m_action_space
                 if not ONLY_SELLER:
-                    total_action_space_buyer.append(b_action_space)
+                    total_action_space_buyer = b_action_space
 
             # communication action space
             if self.discrete_action_space:
@@ -532,6 +547,7 @@ class SCMLEnv(gym.Env):
 
             if not agent.silent and c_action_space.n!=0:
                 total_action_space.append(c_action_space)
+                total_action_space_buyer.append(c_action_space)
 
             # for seller
             if len(total_action_space) >1:
