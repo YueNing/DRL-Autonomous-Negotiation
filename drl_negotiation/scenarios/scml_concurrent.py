@@ -36,25 +36,35 @@ class Scenario(BaseScenario):
         current_time = agent.awi.current_step / agent.awi.n_steps
 
         number_buyers, number_sellers = agent.running_negotiations_count
+        number_request_buys, number_request_sells = agent.negotiation_requests_count
 
-        my_input_products = agent.awi.my_output_products
-        my_output_products = agent.awi.my_output_products
+        my_input_product = agent.awi.my_output_product
+        my_output_product = agent.awi.my_output_product
+        number_buy_contracts = 0
+        number_sell_contracts = 0
 
-        if not agent.contracts:
-            pass
-        else:
-            print("test")
+        if agent.contracts:
+            for c in agent.contracts:
+                if c.annotation['buyer'] == agent.id:
+                    number_buy_contracts += 1
+                if c.annotation['seller'] == agent.id:
+                    number_sell_contracts += 1
 
+        _obs.append(current_time)
         if seller:
-            price_product = agent.awi.catalog_prices[my_output_products]
-            numbers_contracts = len(agent.contracts)
+            price_product = agent.awi.catalog_prices[my_output_product]
+            number_contracts = number_sell_contracts
             _obs.append(number_buyers)
+            _obs.append(number_request_buys)
             _obs.append(price_product)
-            _obs.append(numbers_contracts)
+            _obs.append(number_contracts)
         else:
-            price_product = agent.awi.catalog_prices[my_input_products]
-            numbers_contracts = len(agent.contracts)
+            price_product = agent.awi.catalog_prices[my_input_product]
+            number_contracts = number_buy_contracts
             _obs.append(number_sellers)
+            _obs.append(number_request_sells)
+            _obs.append(price_product)
+            _obs.append(number_contracts)
 
         return np.array(_obs)
 
