@@ -29,4 +29,4 @@ print("#################################### \n"
 
 current_time = time.strftime('%a %d %b %Y %H:%M:%S +0000', time.localtime())
 print(f"{current_time} Initial drl negotiation!")
-logging_setup()
+#logging_setup()

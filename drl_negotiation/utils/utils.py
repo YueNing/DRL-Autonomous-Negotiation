@@ -636,6 +636,9 @@ def parse_args():
     parser.add_argument("--plots-dir", type=str, default="./learning_curves/",
                         help="directory where plot data is saved")
 
+    # Log
+    parser.add_argument("--logging-level", type=str, default=logging.DEBUG, help="level of stream logging")
+
     return parser.parse_args()
 
 #####################################################################################

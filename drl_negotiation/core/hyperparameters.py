@@ -76,7 +76,7 @@ NEG_BUY_PATH = None
 ################################################
 DIM_M = 3
 DIM_B = 3
-TRAINING_AGENT_TYPES = ["drl_negotiation.agents.myagent.MyComponentsBasedAgent", "scml.scml2020.IndDecentralizingAgent"]
+TRAINING_AGENT_TYPES = ["drl_negotiation.agents.myagent.MyConcurrentBasedAgent", "scml.scml2020.DecentralizingAgent"]
 REW_FACTOR = 0.2
 NEGOTIATION_SPEED = 1
 
