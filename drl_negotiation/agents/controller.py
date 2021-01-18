@@ -5,11 +5,13 @@ DRL Controller
 # Packages used for Test
 ############################
 import logging
+import random
 from typing import Optional, Dict, Tuple
 from negmas import (Outcome,
                     SAOResponse,
                     SAOState,
                     MechanismState,
+                    ResponseType,
                     )
 
 from scml.scml2020.services import SyncController
@@ -47,25 +49,6 @@ class MyDRLSCMLSAOSyncController(SyncController):
         # kwargs['default_negotiator_type'] = default_negotiator_type
         # self.ufun = None
 
-    def propose(self, negotiator_id: str, state: MechanismState) -> Optional["Outcome"]:
-        logging.debug(f"propose of {self} is called, negotiator_id is {negotiator_id}")
-        return super(MyDRLSCMLSAOSyncController, self).propose(negotiator_id, state)
-
-    def respond(
-        self, negotiator_id: str, state: MechanismState, offer: "Outcome"
-    ) -> "ResponseType":
-        """
-        TODO:
-        Args:
-            negotiator_id:
-            state:
-            offer:
-
-        Returns:
-
-        """
-        super(MyDRLSCMLSAOSyncController, self).respond(negotiator_id, state, offer)
-
     def counter_all(
             self, offers: Dict[str, "Outcome"], states: Dict[str, SAOState]
     ) -> Dict[str, SAOResponse]:
@@ -81,7 +64,13 @@ class MyDRLSCMLSAOSyncController(SyncController):
                   negotiations not all of them.
 
         """
-        return super(MyDRLSCMLSAOSyncController, self).counter_all(offers, states)
+        responses = {
+            k: SAOResponse(random.choice(list(ResponseType)),
+                           self.negotiators[k][0].ami.outcomes[random.randrange(0, len(self.negotiators[k][0].ami.outcomes))])
+            for k in offers.keys()
+        }
+        return responses
+        # return super(MyDRLSCMLSAOSyncController, self).counter_all(offers, states)
 
 if __name__ == "__main__":
     pass
