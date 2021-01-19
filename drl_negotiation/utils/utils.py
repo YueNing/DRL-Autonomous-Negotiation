@@ -6,13 +6,14 @@ import random
 import tensorflow as tf
 from gym import spaces
 import pickle
-from  negmas import Issue
+from negmas import Issue
 from typing import List, Tuple
 from drl_negotiation.core.hyperparameters import *
 from drl_negotiation.core.core import TrainWorld
 from drl_negotiation.third_party.ansistrm.ansistrm import ColorizingStreamHandler
 from negmas.helpers import get_class
 from scml.scml2020 import SCML2020World
+
 
 # from scml_env import NegotiationEnv
 # from mynegotiator import DRLNegotiator
@@ -31,17 +32,17 @@ def generate_config(n_issues=1):
         issues.append(Issue((300, 550)))
         rp_range = (500, 550)
         ip_range = (300, 350)
-        weights = [(-0.35, ), (0.25,)]
+        weights = [(-0.35,), (0.25,)]
     if n_issues == 2:
-        issues.append(Issue((0, 10))) # quantity
-        issues.append(Issue((10, 100))) # unit price
+        issues.append(Issue((0, 10)))  # quantity
+        issues.append(Issue((10, 100)))  # unit price
         rp_range = None
         ip_range = None
         weights = [(0, -0.25), (0, 0.25)]
     if n_issues == 3:
-        issues.append(Issue((0, 10))) # quantity
-        issues.append(Issue((0, 100))) # delivery time
-        issues.append(Issue((10, 100))) # unit price
+        issues.append(Issue((0, 10)))  # quantity
+        issues.append(Issue((0, 100)))  # delivery time
+        issues.append(Issue((10, 100)))  # unit price
         rp_range = None
         ip_range = None
         weights = [(0, -0.25, -0.6), (0, 0.25, 1)]
@@ -56,7 +57,8 @@ def generate_config(n_issues=1):
         "n_steps": n_steps
     }
 
-def genearate_observation_space(config=None, normalize: bool=True):
+
+def genearate_observation_space(config=None, normalize: bool = True):
     if config:
         if normalize:
             return [
@@ -71,12 +73,13 @@ def genearate_observation_space(config=None, normalize: bool=True):
                 # config.get("ip_range")[0],
                 # config.get("rp_range")[0]
             ],
-            [   config.get("issues")[0].values[1],
-                config.get("max_t"),
-                # config.get("ip_range")[1],
-                # config.get("rp_range")[1]
+            [config.get("issues")[0].values[1],
+             config.get("max_t"),
+             # config.get("ip_range")[1],
+             # config.get("rp_range")[1]
              ],
         ]
+
 
 def generate_action_space(config=None, normalize=True):
     if config:
@@ -88,7 +91,8 @@ def generate_action_space(config=None, normalize=True):
         # single issue
         return [[config.get("issues")[0].values[0], ], [config.get("issues")[0].values[1], ]]
 
-def normalize_observation(obs =None, negotiator:"DRLNegotiator" = None, rng=(-1, 1)) -> List:
+
+def normalize_observation(obs=None, negotiator: "DRLNegotiator" = None, rng=(-1, 1)) -> List:
     """
 
     Args: [(300, 0), (550, 1)]
@@ -102,34 +106,35 @@ def normalize_observation(obs =None, negotiator:"DRLNegotiator" = None, rng=(-1,
         x_min = negotiator.ami.issues[index].values[0]
         x_max = negotiator.ami.issues[index].values[1]
 
-        result = (rng[1]-rng[0])*(
-            (x_in - x_min) / (x_max-x_min)
+        result = (rng[1] - rng[0]) * (
+                (x_in - x_min) / (x_max - x_min)
         ) + rng[0]
 
         _obs.append(
             result
         )
 
-    result = (rng[1]-rng[0])*(
-        (obs[-1] - 0) / (negotiator.maximum_time - 0)
+    result = (rng[1] - rng[0]) * (
+            (obs[-1] - 0) / (negotiator.maximum_time - 0)
     ) + rng[0]
 
     _obs.append(result)
 
     return _obs
 
-def reverse_normalize_action(action: Tuple=None, negotiator:"DRLNegotiator" = None, rng=(-1, 1)):
 
+def reverse_normalize_action(action: Tuple = None, negotiator: "DRLNegotiator" = None, rng=(-1, 1)):
     _action = []
     for index, _ in enumerate(action):
         x_min = negotiator.ami.issues[index].values[0]
         x_max = negotiator.ami.issues[index].values[1]
-        result = ((_ - rng[0]) / (rng[1] - rng[0]))*(x_max - x_min) + x_min
+        result = ((_ - rng[0]) / (rng[1] - rng[0])) * (x_max - x_min) + x_min
         _action.append(result)
 
     return _action
 
-def reverse_normalize(action: Tuple=None, source_rng: Tuple=None, rng=(-1, 1)):
+
+def reverse_normalize(action: Tuple = None, source_rng: Tuple = None, rng=(-1, 1)):
     """
     used for SCMLAgent,
     action: (-1, 1)
@@ -148,10 +153,11 @@ def reverse_normalize(action: Tuple=None, source_rng: Tuple=None, rng=(-1, 1)):
     for index, _ in enumerate(action):
         x_min = source_rng[index][0]
         x_max = source_rng[index][1]
-        result = ((_ - rng[0]) / (rng[1] - rng[0]))*(x_max - x_min) + x_min
+        result = ((_ - rng[0]) / (rng[1] - rng[0])) * (x_max - x_min) + x_min
         _action.append(int(result))
 
     return tuple(_action)
+
 
 # Global session
 def get_session():
@@ -160,15 +166,17 @@ def get_session():
     '''
     return tf.compat.v1.get_default_session()
 
+
 def make_session(num_cpu):
     """
         returns a session that will use num_cpu CPU's only
     """
     tf_config = tf.compat.v1.ConfigProto(
-            inter_op_parallelism_threads=num_cpu,
-            intra_op_parallelism_threads=num_cpu,
-            )
+        inter_op_parallelism_threads=num_cpu,
+        intra_op_parallelism_threads=num_cpu,
+    )
     return tf.compat.v1.Session(config=tf_config)
+
 
 def single_threaded_session():
     """
@@ -176,7 +184,9 @@ def single_threaded_session():
     """
     return make_session(1)
 
+
 ALREADY_INITIALIZED = set()
+
 
 def initialize():
     """
@@ -185,6 +195,7 @@ def initialize():
     new_variables = set(tf.compat.v1.global_variables()) - ALREADY_INITIALIZED
     get_session().run(tf.compat.v1.variables_initializer(new_variables))
     ALREADY_INITIALIZED.update(new_variables)
+
 
 # tf utils
 def function(inputs, outputs, updates=None):
@@ -212,16 +223,18 @@ def function(inputs, outputs, updates=None):
         _function = lambda *args, **kwargs: f(*args, **kwargs)[0]
     return _function
 
+
 class _Function:
     '''
         Capsules functions
     '''
+
     def __init__(self, inputs, outputs, updates, check_nan=False):
         for inp in inputs:
             if not issubclass(type(inp), TfInput):
-                assert len(inp.op.inputs) == 0,\
+                assert len(inp.op.inputs) == 0, \
                     "inputs should all be placeholders of rl_algs.common.IfInput"
-        self.inputs =inputs
+        self.inputs = inputs
         updates = updates or []
         self.update_group = tf.group(*updates)
         self.outputs_update = list(outputs) + [self.update_group]
@@ -238,7 +251,7 @@ class _Function:
     def __call__(self, *args, **kwargs):
         assert len(args) <= len(self.inputs), "Too many arguments provided"
         feed_dict = {}
-        
+
         # args
         for inpt, value in zip(self.inputs, args):
             self._feed_input(feed_dict, inpt, value)
@@ -260,7 +273,7 @@ class _Function:
         # update feed dict with givens
         for inpt in self.givens:
             feed_dict[inpt] = feed_dict.get(inpt, self.givens[inpt])
-        
+
         results = get_session().run(self.outputs_update, feed_dict=feed_dict)[:-1]
         if self.check_nan:
             if any(np.isnan(r).any() for r in results):
@@ -268,9 +281,11 @@ class _Function:
 
         return results
 
+
 # tf inputs
 def is_placeholder(x):
     return type(x) is tf.Tensor and len(x.op.inputs) == 0
+
 
 class TfInput(object):
     def __init__(self, name="unnamed"):
@@ -282,6 +297,7 @@ class TfInput(object):
     def make_feed_dict(self):
         raise NotImplementedError
 
+
 class PlaceholderTfInput(TfInput):
     def __init__(self, placeholder):
         self._placeholder = placeholder
@@ -292,36 +308,42 @@ class PlaceholderTfInput(TfInput):
     def make_feed_dict(self, data):
         return {self._placeholder: data}
 
+
 class BatchInput(PlaceholderTfInput):
     def __init__(self, shape, dtype=tf.float32, name=None):
-        super().__init__(tf.compat.v1.placeholder(dtype, [None]+list(shape), name=name))
+        super().__init__(tf.compat.v1.placeholder(dtype, [None] + list(shape), name=name))
+
 
 class Unit8Input(PlaceholderTfInput):
     def __init__(self, shape, name=None):
-
-        super().__init__(tf.placeholder(tf.uint8, [None]+list(shape), name=name))
-        self._shape= shape
+        super().__init__(tf.placeholder(tf.uint8, [None] + list(shape), name=name))
+        self._shape = shape
         self._output = tf.cast(super().get(), tf.float32) / 255.0
 
     def get(self):
         return self._output
 
+
 # scope
 def scope_name():
     return tf.compat.v1.get_variable_scope().name
+
 
 def scope_vars(scope, trainable_only=False):
     """
         get the paramters inside a scope
     """
     return tf.compat.v1.get_collection(
-            tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES if trainable_only else tf.compat.v1.GraphKeys.GLOBAL_VARIABLES,
-            scope=scope if isinstance(scope, str) else scope.name
-            )
+        tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES if trainable_only else tf.compat.v1.GraphKeys.GLOBAL_VARIABLES,
+        scope=scope if isinstance(scope, str) else scope.name
+    )
+
+
 def absolute_scope_name(relative_scope_name):
     return scope_name() + "/" + relative_scope_name
 
-# optimizer 
+
+# optimizer
 def minimize_and_clip(optimizer, objective, var_list, clip_val=10):
     if clip_val is None:
         return optimizer.minimize(objective, var_list=var_list)
@@ -332,11 +354,13 @@ def minimize_and_clip(optimizer, objective, var_list, clip_val=10):
                 gradients[i] = (tf.clip_by_norm(grad, clip_val), var)
         return optimizer.apply_gradients(gradients)
 
+
 # ================================================================
 # Saving variables
 # ================================================================
 def get_saver():
     return tf.compat.v1.train.Saver()
+
 
 def load_state(fname, saver=None):
     """Load all the variables to the current session from the location <fname>"""
@@ -345,12 +369,13 @@ def load_state(fname, saver=None):
     saver.restore(get_session(), fname)
     return saver
 
+
 def traversalDir_FirstDir(path):
     list = []
     if (os.path.exists(path)):
         files = os.listdir(path)
         for file in files:
-            m = os.path.join(path,file)
+            m = os.path.join(path, file)
             if (os.path.isdir(m)):
                 list.append(m)
     else:
@@ -358,19 +383,21 @@ def traversalDir_FirstDir(path):
 
     return list
 
+
 def save_as_scope(scope_prefix: "MADDPGAgentTrainer", save_dir=None, model_name=None, extra="/p_func"):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope_prefix+extra)[-6:])
+    saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope_prefix + extra)[-6:])
     # dirs = traversalDir_FirstDir(save_dir+scope_prefix)
     # if not dirs:
     #     sub_save_dir = '/'+'0001'+'/'
     # else:
     #     sub_save_dir = '/'+str(int(dirs[-1]) + 1).zfill(4)+'/'
-    if not os.path.exists(save_dir+scope_prefix):
-        os.mkdir(save_dir+scope_prefix)
-    saver.save(get_session(), save_dir+scope_prefix+'/'+model_name)
+    if not os.path.exists(save_dir + scope_prefix):
+        os.mkdir(save_dir + scope_prefix)
+    saver.save(get_session(), save_dir + scope_prefix + '/' + model_name)
     return saver
+
 
 def save_state(fname, saver=None, global_step=None):
     """Save all the variables in the current session to the location <fname>"""
@@ -380,32 +407,41 @@ def save_state(fname, saver=None, global_step=None):
     saver.save(get_session(), fname, global_step=global_step)
     return saver
 
+
 # operations
 
 def _sum(x, axis=None, keepdims=False):
     return tf.reduce_sum(x, axis=None if axis is None else [axis], keep_dims=keepdims)
 
+
 def _mean(x, axis=None, keepdims=False):
     return tf.reduce_mean(x, axis=None if axis is None else [axis], keep_dims=keepdims)
 
+
 def _var(x, axis=None, keepdims=False):
     meanx = _mean(x, axis=axis, keepdims=keepdims)
-    return _mean(tf.square(x-meanx), axis=axis, keepdims=keepdims)
+    return _mean(tf.square(x - meanx), axis=axis, keepdims=keepdims)
+
 
 def _std(x, axis=None, keepdims=False):
     return tf.sqrt(_var(x, axis=axis, keepdims=keepdims))
 
+
 def _max(x, axis=None, keepdims=False):
     return tf.reduce_max(x, axis=None if axis is None else [axis], keep_dims=keepdims)
+
 
 def _min(x, axis=None, keepdims=False):
     return tf.reduce_min(x, axis=None if axis is None else [axis], keep_dims=keepdims)
 
+
 def _concatenate(arrs, axis=0):
     return tf.concat(axis=axis, values=arrs)
 
+
 def _argmax(x, axis=None):
     return tf.argmax(x, axis=axis)
+
 
 def _softmax(x, axis=None):
     return tf.nn.softmax(x, axis=axis)
@@ -415,13 +451,14 @@ def _softmax(x, axis=None):
 # negotiation model
 ########################################################
 
-def load_seller_neg_model(path="NEG_SELL_PATH") ->"MADDPGAgentTrainer":
+def load_seller_neg_model(path="NEG_SELL_PATH") -> "MADDPGAgentTrainer":
     """
 
     Returns:
         model of seller, to decide the next step seller's action
     """
     pass
+
 
 def load_buyer_neg_model(path="NEG_BUY_PATH"):
     """
@@ -431,10 +468,17 @@ def load_buyer_neg_model(path="NEG_BUY_PATH"):
     """
     pass
 
+
 ###########################################################
 # env
 ###########################################################
-def make_env(scenario_name, arglist=None, save_config=False, load_config=False, save_dir=None, load_dir=None):
+def make_env(scenario_name,
+             arglist=None,
+             save_config=False,
+             load_config=False,
+             save_dir=None,
+             load_dir=None
+             ):
     """
 
     Args:
@@ -465,21 +509,7 @@ def make_env(scenario_name, arglist=None, save_config=False, load_config=False, 
 
     # create world/game
     if load_config:
-        try:
-            load_dir = load_dir if load_dir is not None else LOAD_WORLD_CONFIG_DIR
-            with open(load_dir+'.pkl', 'rb') as file:
-                config = pickle.load(file)
-                agent_types = config['agent_types']
-                config['agent_types'] = []
-                for _ in agent_types:
-                    config['agent_types'].append(get_class(_))
-                logging.info(f"load world config successfully from {load_dir}")
-        except FileNotFoundError as e:
-            logging.error(f"Error when Try to load the file from {load_dir}, "
-                          f"please ensure world config file in the path {load_dir}")
-            logging.debug(str(e))
-            logging.info("will not load world config!")
-            config = None
+        config = get_world_config(load_dir)
     else:
         config = None
 
@@ -510,6 +540,7 @@ def make_env(scenario_name, arglist=None, save_config=False, load_config=False, 
     logging.info(f"Make {env} successfully!")
     return env
 
+
 def make_world(config=None):
     if config is None:
         agent_types = [get_class(agent_type, ) for agent_type in TRAINING_AGENT_TYPES_CONCURRENT]
@@ -531,14 +562,36 @@ def make_world(config=None):
     world = TrainWorld(configuration=world_configuration)
     return world
 
+
+def get_world_config(load_dir):
+    try:
+        load_dir = load_dir if load_dir is not None else LOAD_WORLD_CONFIG_DIR
+        with open(load_dir + '.pkl', 'rb') as file:
+            config = pickle.load(file)
+            agent_types = config['agent_types']
+            config['agent_types'] = []
+            for _ in agent_types:
+                config['agent_types'].append(get_class(_))
+            logging.info(f"load world config successfully from {load_dir}")
+    except FileNotFoundError as e:
+        logging.error(f"Error when Try to load the file from {load_dir}, "
+                      f"please ensure world config file in the path {load_dir}")
+        logging.debug(str(e))
+        logging.info("will not load world config!")
+        config = None
+
+    return config
+
+
 #####################################################################
 # trainer
 #####################################################################
 import drl_negotiation
 from drl_negotiation.a2c.policy import mlp_model
 
+
 def get_trainers(env, num_adversaries=0, obs_shape_n=None, arglist=None):
-    #TODO: train seller and buyer together, env.action_space?
+    # TODO: train seller and buyer together, env.action_space?
 
     trainers = []
     model = mlp_model
@@ -555,7 +608,7 @@ def get_trainers(env, num_adversaries=0, obs_shape_n=None, arglist=None):
     # first set up the adversaries, default num_adversaries is 0
     for i in range(num_adversaries):
         trainers.append(trainer(
-            env.agents[i].name.replace("@", '-')+"_seller", model, obs_shape_n, action_space, i, arglist,
+            env.agents[i].name.replace("@", '-') + "_seller", model, obs_shape_n, action_space, i, arglist,
             local_q_func=(arglist.adv_policy == 'ddpg')
         ))
         if not ONLY_SELLER:
@@ -578,14 +631,14 @@ def get_trainers(env, num_adversaries=0, obs_shape_n=None, arglist=None):
     # set up the good agent
     for i in range(num_adversaries, env.n):
         trainers.append(trainer(
-            env.agents[i].name.replace("@", '-')+"_seller", model, obs_shape_n, action_space, i*2, arglist,
+            env.agents[i].name.replace("@", '-') + "_seller", model, obs_shape_n, action_space, i * 2, arglist,
             local_q_func=(arglist.good_policy == "ddpg")
         )
         )
         if not ONLY_SELLER:
             trainers.append(trainer(
                 env.agents[i].name.replace("@", '-') + "_buyer", model, obs_shape_n, action_space,
-                i*2 + 1, arglist,
+                i * 2 + 1, arglist,
                 local_q_func=(arglist.good_policy == 'ddpg')
             ))
 
@@ -603,6 +656,7 @@ def get_trainers(env, num_adversaries=0, obs_shape_n=None, arglist=None):
 # inputs
 #########################################################################
 import argparse
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -641,6 +695,7 @@ def parse_args():
 
     return parser.parse_args()
 
+
 #####################################################################################
 # logging
 #####################################################################################
@@ -656,7 +711,7 @@ def logging_setup(level=None, filename=None):
     """
     tf.get_logger().setLevel('ERROR')
     level = level if level is not None else LOGGING_LEVEL
-    filename = filename if filename is not  None else FILENAME
+    filename = filename if filename is not None else FILENAME
 
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
@@ -688,6 +743,8 @@ def logging_setup(level=None, filename=None):
     logger.addHandler(fh)
     logger.info(f"log file saved in {filename}")
 
+
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
