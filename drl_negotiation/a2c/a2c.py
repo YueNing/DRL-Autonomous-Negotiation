@@ -63,7 +63,7 @@ class MADDPGModel:
                  benchmark_dir="./benchmark_files/",
                  restore=False,
                  display=False,
-                 plots_dir="./learning_curves/",
+                 plots_dir=PLOTS_DIR,
                  # init the model, used for evaluation
                  _init_setup_model=False,
                  save_trainers=SAVE_TRAINERS,
@@ -287,6 +287,7 @@ class MADDPGModel:
                 # saves final episode reward for plotting training curve
                 ##############################################################################
                 if len(episode_rewards) > self.num_episodes:
+                    os.makedirs(self.plots_dir, exist_ok=True)
                     module_path = os.getcwd()
                     rew_file_name = self.plots_dir + self.exp_name + "_rewards.pkl"
                     rew_file_name = os.path.join(module_path, rew_file_name)
@@ -297,6 +298,7 @@ class MADDPGModel:
                         pickle.dump(final_ep_ag_rewards, fp)
                     logging.info(f'...Finished total of {len(episode_rewards)} episodes')
                     break
+            return final_ep_rewards, final_ep_ag_rewards, self.env
 
     def predict(self, obs_n, train=True):
         if train:

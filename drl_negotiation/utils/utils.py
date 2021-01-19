@@ -654,6 +654,7 @@ def logging_setup(level=None, filename=None):
     Returns:
         None
     """
+    tf.get_logger().setLevel('ERROR')
     level = level if level is not None else LOGGING_LEVEL
     filename = filename if filename is not  None else FILENAME
 
@@ -686,7 +687,6 @@ def logging_setup(level=None, filename=None):
     logger.addHandler(ch)
     logger.addHandler(fh)
     logger.info(f"log file saved in {filename}")
-
 
 if __name__ == "__main__":
     import doctest

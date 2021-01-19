@@ -180,6 +180,7 @@ class TrainWorld(SCML2020World):
         )
 
         self.configuration = copy.deepcopy(configuration)
+        self.configuration['no_logs'] = True
 
         super().__init__(**self.configuration)
         # set action_callback for agent which hasnot it
