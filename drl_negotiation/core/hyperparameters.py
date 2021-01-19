@@ -18,6 +18,7 @@ ONLY_SELLER = False # train seller and buyer together
 ROOT_DIR = "/" + "tmp" + "/"
 # save dir, single policy
 SAVE_DIR = ROOT_DIR+"policy4" + "/"
+PLOTS_DIR = SAVE_DIR + "learning_curves" + "/"
 # model name
 MODEL_NAME = "model"
 # train episode
