@@ -6,6 +6,9 @@ import logging
 # now running in scml2020world could just under condition, not train
 RUNNING_IN_SCML2020World = False
 POLICIES = ['/tmp/policy2/', '/tmp/policy3/']
+# action of count all in controller
+RANDOM = False
+
 # Training from scratch: set TRAIN, SAVE_WORLD_CONFIG as True
 # Training from checkpoints: set TRAIN as True, SAVE_WORLD_CONFIG as False
 # Evaluation from trained model: set TRAIN, SAVE_WORLD_CONFIG as False

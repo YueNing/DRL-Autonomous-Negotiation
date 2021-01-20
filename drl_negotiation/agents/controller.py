@@ -18,6 +18,7 @@ from scml.scml2020.services import SyncController
 import numpy as np
 from scml.scml2020.common import UNIT_PRICE
 from negmas import ResponseType
+from drl_negotiation.core.hyperparameters import RANDOM
 
 ##########################################################################################################
 # Controller for SCML, Used for training concurrent negotiation with DRL
@@ -46,6 +47,7 @@ class MyDRLSCMLSAOSyncController(SyncController):
             time_threshold=kwargs.pop('time_threshold'),
             **kwargs
         )
+        self.parent = parent
         # kwargs['default_negotiator_type'] = default_negotiator_type
         # self.ufun = None
 
@@ -64,13 +66,16 @@ class MyDRLSCMLSAOSyncController(SyncController):
                   negotiations not all of them.
 
         """
-        responses = {
-            k: SAOResponse(random.choice(list(ResponseType)),
-                           self.negotiators[k][0].ami.outcomes[random.randrange(0, len(self.negotiators[k][0].ami.outcomes))])
-            for k in offers.keys()
-        }
+        if RANDOM:
+            responses = {
+                k: SAOResponse(random.choice(list(ResponseType)),
+                               self.negotiators[k][0].ami.outcomes[random.randrange(0, len(self.negotiators[k][0].ami.outcomes))])
+                for k in offers.keys()
+            }
+        else:
+            responses = super(MyDRLSCMLSAOSyncController, self).counter_all(offers, states)
+
         return responses
-        # return super(MyDRLSCMLSAOSyncController, self).counter_all(offers, states)
 
 if __name__ == "__main__":
     pass
