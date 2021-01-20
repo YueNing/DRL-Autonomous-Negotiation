@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 import numpy as np
 import collections
@@ -579,6 +580,7 @@ def get_world_config(load_dir):
         logging.debug(str(e))
         logging.info("will not load world config!")
         config = None
+        sys.exit()
 
     return config
 

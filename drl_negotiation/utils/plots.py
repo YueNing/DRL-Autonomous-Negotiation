@@ -2,7 +2,7 @@ import numpy as np
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
-
+from collections import defaultdict
 
 def show_ep_rewards(data, model, number_episodes=20):
     """
@@ -79,6 +79,24 @@ def show_agent_rewards(data, model:"MADDPGModel"=None, agents=5, number_episodes
         data=pd.melt(data, ['episode'], var_name="agent", value_name="mean_reward")
     )
     plt.show()
+
+def show_scores(world):
+    scores = defaultdict(list)
+    for aid, score in world.scores().items():
+        scores[world.agents[aid].__class__.__name__.split(".")[-1]].append(score)
+    scores = {k: sum(v) / len(v) for k, v in scores.items()}
+    plt.bar(list(scores.keys()), list(scores.values()), width=0.2)
+    plt.show()
+
+
+def show(world, winner):
+    stats = pd.DataFrame(data=world.stats)
+    fig, axs = plt.subplots(2, 3)
+    for ax, key in zip(axs.flatten().tolist(), ["score", "balance", "assets", "productivity",
+                                                "spot_market_quantity", "spot_market_loss"]):
+        ax.plot(stats[f"{key}_{winner}"])
+        ax.set(ylabel=key)
+    fig.show()
 
 if __name__ == '__main__':
     import doctest
