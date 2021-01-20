@@ -2,7 +2,7 @@ from drl_negotiation.a2c.a2c import MADDPGModel
 from drl_negotiation.core.hyperparameters import *
 from drl_negotiation.utils.utils import make_env
 from drl_negotiation.utils.utils import logging_setup
-from drl_negotiation.utils.plots import show_agent_rewards, show_ep_rewards
+from drl_negotiation.utils.plots import show_agent_rewards, show_ep_rewards, cumulative_reward
 import logging
 
 logging_setup(logging.ERROR)
@@ -15,10 +15,11 @@ env = make_env('scml_concurrent',
                )
 
 model = MADDPGModel(env=env, verbose=0)
-final_ep_rewards, agent_rewards, _ = model.learn(train_episodes=20)
+final_ep_rewards, agent_rewards, episode_rewards, _ = model.learn(train_episodes=20)
 
 show_ep_rewards(final_ep_rewards, model)
 show_agent_rewards(agent_rewards, model)
+cumulative_reward(episode_rewards)
 
 obs_n = env.reset()
 for i in range(10):

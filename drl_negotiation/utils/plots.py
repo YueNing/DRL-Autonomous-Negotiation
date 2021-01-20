@@ -4,8 +4,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from collections import defaultdict
 
+
 def show_ep_rewards(data, model, number_episodes=20):
     """
+    mean episode reward
     >>> show_ep_rewards([42.36277500051694, 43.57323638074746, 44.766200950337335, 43.46595151832854],
     ...                 None,
     ...                 number_episodes=20
@@ -34,6 +36,7 @@ def show_ep_rewards(data, model, number_episodes=20):
     )
     sns.lineplot(x="episode", y="mean_episode_reward", data=data)
     plt.show()
+
 
 def show_agent_rewards(data, model:"MADDPGModel"=None, agents=5, number_episodes=20):
     """
@@ -80,6 +83,7 @@ def show_agent_rewards(data, model:"MADDPGModel"=None, agents=5, number_episodes
     )
     plt.show()
 
+
 def show_scores(world):
     scores = defaultdict(list)
     for aid, score in world.scores().items():
@@ -97,6 +101,37 @@ def show(world, winner):
         ax.plot(stats[f"{key}_{winner}"])
         ax.set(ylabel=key)
     fig.show()
+
+
+def cumulative_reward(data):
+    """
+    cumulative episode reward
+    >>> cumulative_reward([0.3, 0.6, 0.3, -0.2, 0.8, 1.0])
+
+    Args:
+        data:
+
+    Returns:
+
+    """
+    x_axis = np.arange(len(data))
+    y_axis = data
+    cum_sum_y_axis = np.cumsum(y_axis)
+
+    data = pd.DataFrame(
+        {
+            **{"episode": x_axis},
+            **{
+                "ep_reward": y_axis,
+                "cumulative_reward": cum_sum_y_axis
+            }
+        }
+    )
+
+    sns.lineplot(x="episode", y="reward", hue="reward_type",
+                 data=pd.melt(data, ['episode'], var_name="reward_type", value_name="reward"))
+    plt.show()
+
 
 if __name__ == '__main__':
     import doctest

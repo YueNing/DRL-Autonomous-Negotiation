@@ -152,6 +152,17 @@ class MADDPGModel:
                              "with set_env(self, env) method.")
 
     def learn(self, train_episodes=None):
+        """
+        learning process
+        Args:
+            train_episodes:
+
+        Returns:
+            final_ep_rewards: mean episode rewards
+            final_ep_ag_rewards: mean episode agents rewards
+            episode_rewards: episode rewards
+            self.env: final environment
+        """
         self._setup_learn()
         if train_episodes is not None:
             self.num_episodes = train_episodes
@@ -298,7 +309,7 @@ class MADDPGModel:
                         pickle.dump(final_ep_ag_rewards, fp)
                     logging.info(f'...Finished total of {len(episode_rewards)} episodes')
                     break
-            return final_ep_rewards, final_ep_ag_rewards, self.env
+            return final_ep_rewards, final_ep_ag_rewards, episode_rewards, self.env
 
     def predict(self, obs_n, train=True):
         if train:
