@@ -33,6 +33,7 @@ class Scenario(BaseScenario):
 
     def observation(self, agent: MySCML2020Agent, world: TrainWorld, seller=True):
         _obs = []
+        # between 0 and 1
         current_time = agent.awi.current_step / agent.awi.n_steps
 
         number_buyers, number_sellers = agent.running_negotiations_count
@@ -70,8 +71,13 @@ class Scenario(BaseScenario):
 
     def reward(self, agent: MySCML2020Agent, world: TrainWorld, seller=True):
         # sub-goal, best deal which is defined as being nearest to the agent needs with lowest price
-        # main-goal, maximum profiability at the end of episode.
-        return random.random()
+        # main-goal, maximum profitability at the end of episode.
+        rew = 0
+        rew += world.scores()[agent.id]
+        if RANDOM_REWARD:
+            return random.random()
+        else:
+            return rew
 
     def done(self, agent: MySCML2020Agent, world: TrainWorld, seller=True):
         return False

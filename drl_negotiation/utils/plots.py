@@ -3,7 +3,7 @@ import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
 from collections import defaultdict
-
+from scml.scml2020 import SCML2020World
 
 def show_ep_rewards(data, model, number_episodes=20):
     """
@@ -84,7 +84,7 @@ def show_agent_rewards(data, model:"MADDPGModel"=None, agents=5, number_episodes
     plt.show()
 
 
-def show_scores(world):
+def show_scores(world: SCML2020World):
     scores = defaultdict(list)
     for aid, score in world.scores().items():
         scores[world.agents[aid].__class__.__name__.split(".")[-1]].append(score)
