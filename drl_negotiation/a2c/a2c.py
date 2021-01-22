@@ -269,9 +269,10 @@ class MADDPGModel:
                 for agent in self.trainers:
                     agent.preupdate()
                 for agent in self.trainers:
-                    loss = agent.update(self.trainers, train_step)
-                    if loss is not None:
-                        logging.debug(f"{agent}'s loss is {loss}")
+                    info = agent.update(self.trainers, train_step)
+                    if info is not None:
+                        logging.debug(f"{agent}'s [q_loss, p_loss, np.mean(target_q), np.mean(rew), "
+                                      f"np.mean(target_q_next), np.std(target_q)] are {info}")
 
                 ##############################################################################
                 # save model

@@ -23,7 +23,7 @@ cumulative_reward(episode_rewards)
 
 obs_n = env.reset()
 for i in range(10):
-    action_n = model.predict(obs_n)
+    action_n = model.predict(obs_n, train=False)
     obs_n, rew_n, done_n, info_n = env.step(action_n)
     env.render()
 
