@@ -530,14 +530,14 @@ class SCMLEnv(Environment):
                 # seller controller
                 for _ in range(consumers):
                     m_action_space.append(spaces.Discrete(world.Q))
-                    m_action_space.append(spaces.Discrete(world.U))
                     m_action_space.append(spaces.Discrete(world.T))
+                    m_action_space.append(spaces.Discrete(world.U))
                 if not ONLY_SELLER:
                     # buyer controller
                     for _ in range(suppliers):
                         b_action_space.append(spaces.Discrete(world.Q))
-                        b_action_space.append(spaces.Discrete(world.U))
                         b_action_space.append(spaces.Discrete(world.T))
+                        b_action_space.append(spaces.Discrete(world.U))
             else:
                 for _ in range(consumers):
                     m_action_space.append(spaces.Box(low=-agent.m_range, high=+agent.m_range, shape=(world.dim_m, ),

@@ -95,6 +95,11 @@ class MyDRLSCMLSAOSyncController(SyncController):
                 response_type = ResponseType.ACCEPT_OFFER if offers[nid] == response_outcome \
                     else ResponseType.REJECT_OFFER
 
+                logging.debug(f"offer is {offers[nid]} and response outcome is {response_outcome}")
+
+                if offers[nid] == response_outcome:
+                    print(f"Achieved, {offers[nid]} == {response_outcome}")
+
                 responses[nid] = SAOResponse(
                     response_type,
                     None if response_type == ResponseType.ACCEPT_OFFER else response_outcome

@@ -85,7 +85,9 @@ DIM_B = 3
 TRAINING_AGENT_TYPES = ["drl_negotiation.agents.myagent.MyConcurrentBasedAgent", "scml.scml2020.DecentralizingAgent"]
 REW_FACTOR = 0.2
 NEGOTIATION_SPEED = 1
-
+QUANTITY = 10
+TIME = MAX_EPISODE_LEN
+UNIT_PRICE = 100
 ################################################
 # scml scenario
 ################################################

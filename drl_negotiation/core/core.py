@@ -162,9 +162,9 @@ class TrainWorld(SCML2020World):
         self.dim_b = DIM_B # buyer
 
         #TODO: limits on the negotiation agenda size
-        self.Q = 10
-        self.U = 100
-        self.T = 100
+        self.Q = QUANTITY
+        self.T = TIME
+        self.U = UNIT_PRICE
 
         # simulation timestep
         self.dt = 0.1

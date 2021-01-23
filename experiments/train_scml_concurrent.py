@@ -27,6 +27,7 @@ for i in range(10):
     action_n = model.predict(obs_n, train=False)
     es = env.step(action_n)
     obs_n = es.observation
-    env.render("ascii")
+    result = env.render("ascii")
+    print(result)
 
 env.close()
