@@ -32,12 +32,11 @@ class Scenario(BaseScenario):
         world.__init__(configuration=reset_configuration)
 
     def observation(self, agent: MySCML2020Agent, world: TrainWorld, seller=True):
-        _obs = []
         # between 0 and 1
-        current_time = agent.awi.current_step / agent.awi.n_steps
+        current_time = [agent.awi.current_step / agent.awi.n_steps]
 
-        number_buyers, number_sellers = agent.running_negotiations_count
-        number_request_buys, number_request_sells = agent.negotiation_requests_count
+        running = agent.running_negotiations_count
+        requesting = agent.negotiation_requests_count
 
         my_input_product = agent.awi.my_output_product
         my_output_product = agent.awi.my_output_product
@@ -51,23 +50,64 @@ class Scenario(BaseScenario):
                 if c.annotation['seller'] == agent.id:
                     number_sell_contracts += 1
 
-        _obs.append(current_time)
+        last_offers = [[] for _ in agent.awi.my_consumers] + [[] for _ in agent.awi.my_suppliers]
         if seller:
-            price_product = agent.awi.catalog_prices[my_output_product]
-            number_contracts = number_sell_contracts
-            _obs.append(number_buyers)
-            _obs.append(number_request_buys)
-            _obs.append(price_product)
-            _obs.append(number_contracts)
-        else:
-            price_product = agent.awi.catalog_prices[my_input_product]
-            number_contracts = number_buy_contracts
-            _obs.append(number_sellers)
-            _obs.append(number_request_sells)
-            _obs.append(price_product)
-            _obs.append(number_contracts)
+            #last_offers = [[] for _ in agent.awi.my_consumers]
+            for nid in agent.controllers[1].history_offers:
+                negotiation = [negotiation for negotiation in agent.controllers[1].history_running_negotiations
+                               if negotiation.negotiator == agent.controllers[1].negotiators[nid][0]]
+                if negotiation:
+                    if negotiation[0].annotation["seller"] == agent.id:
+                        last_offers[sorted(agent.awi.my_consumers).index(negotiation[0].annotation["buyer"])].append(
+                            agent.controllers[1].history_offers[nid]
+                        )
+                    else:
+                        last_offers[len(agent.awi.my_consumers) + sorted(agent.awi.my_suppliers).index(
+                            negotiation[0].annotation["seller"])].append(agent.controllers[1].history_offers[nid])
 
-        return np.array(_obs)
+            agent.controllers[0].history_offers = {}
+
+            for index, offer in enumerate(last_offers):
+                if offer:
+                    last_offers[index] = np.array(offer).mean(axis=0).tolist()
+                else:
+                    last_offers[index] = [0, 0, 0]
+
+            price_product = [agent.awi.catalog_prices[my_output_product]]
+            last_offers = np.array(last_offers).flatten().tolist()
+            print(f"seller last_offers {last_offers}")
+        else:
+            last_offers = [[] for _ in agent.awi.my_suppliers]
+            for nid in agent.controllers[0].history_offers:
+                negotiation = [negotiation for negotiation in agent.controllers[0].history_running_negotiations if negotiation.negotiator ==
+                               agent.controllers[0].negotiators[nid][0]]
+                if negotiation:
+                    if negotiation[0].annotation["buyer"] == agent.id:
+                        last_offers[len(agent.awi.my_consumers) + sorted(agent.awi.my_suppliers).index(
+                            negotiation[0].annotation["seller"])].append(
+                            agent.controllers[0].history_offers[nid])
+                    else:
+                        last_offers[sorted(agent.awi.my_consumers).index(negotiation[0].annotation["buyer"])].append(
+                            agent.controllers[0].history_offers[nid])
+
+            agent.controllers[0].history_offers = {}
+
+            for index, offer in enumerate(last_offers):
+                if offer:
+                    last_offers[index] = np.array(offer).mean(axis=0).tolist()
+                else:
+                    last_offers[index] = [0, 0, 0]
+
+            price_product = [agent.awi.catalog_prices[my_input_product]]
+            last_offers = np.array(last_offers).flatten().tolist()
+            print(f"buyer last_offers {last_offers}")
+
+        if seller:
+            return np.concatenate((current_time, last_offers, running, requesting,
+                                   [number_buy_contracts, number_sell_contracts], price_product))
+        else:
+            return np.concatenate((current_time, last_offers, running, requesting,
+                                   [number_buy_contracts, number_sell_contracts], price_product))
 
     def reward(self, agent: MySCML2020Agent, world: TrainWorld, seller=True):
         # sub-goal, best deal which is defined as being nearest to the agent needs with lowest price

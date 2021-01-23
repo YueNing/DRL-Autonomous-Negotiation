@@ -104,7 +104,7 @@ class NormalizedEnv(Wrapper):
                        step_type=es.step_type)
 
     def _update_obs_estimate(self, obs):
-        flat_obs = np.asarray(obs).flatten()
+        flat_obs = np.concatenate(obs).ravel()
         self._obs_mean = (1 - self._obs_alpha) * self._obs_mean + self._obs_alpha * flat_obs
         self._obs_var = (1 - self._obs_alpha) * self._obs_var + self._obs_alpha * np.square(flat_obs - self._obs_mean)
 
@@ -126,7 +126,7 @@ class NormalizedEnv(Wrapper):
 
         """
         self._update_obs_estimate(obs)
-        flat_obs =  np.asarray(obs).flatten()
+        flat_obs =  np.concatenate(obs).ravel()
         normalized_obs = (flat_obs - self._obs_mean) / (np.sqrt(self._obs_var) + 1e-8)
         if not self._flatten_obs:
             temp = []

@@ -51,8 +51,43 @@ class MyDRLSCMLSAOSyncController(SyncController):
         )
         from drl_negotiation.core.core import MySCML2020Agent
         self.parent: MySCML2020Agent = parent
+        self.history_offers: Dict[str, "Outcome"] = {}
+        self.history_running_negotiations = None
         # kwargs['default_negotiator_type'] = default_negotiator_type
         # self.ufun = None
+
+    def respond(
+        self, negotiator_id: str, state: MechanismState, offer: "Outcome"
+    ) -> "ResponseType":
+        # get the saved response to this negotiator if any
+        response = self.responses.get(negotiator_id, None)
+        if response is not None:
+            # remove the response and return it
+            del self.responses[negotiator_id]
+            self.n_waits[negotiator_id] = 0
+            return response
+
+        # set the saved offer for this negotiator
+        self.offers[negotiator_id] = offer
+        self.offer_states[negotiator_id] = state
+        n_negotiators = len(self.active_negotiators)
+        # if we got all the offers or waited long enough, counter all the offers so-far
+        if (
+            len(self.offers) == n_negotiators
+            or self.n_waits[negotiator_id] >= n_negotiators
+        ):
+            responses = self.counter_all(offers=self.offers, states=self.offer_states)
+            for nid in responses.keys():
+                # register the responses for next time for all other negotiators
+                if nid != negotiator_id:
+                    self.responses[nid] = responses[nid].response
+                self.proposals[nid] = responses[nid].outcome
+            self.offers = dict()
+            self.offer_states = dict()
+            self.n_waits[negotiator_id] = 0
+            return responses[negotiator_id].response
+        self.n_waits[negotiator_id] += 1
+        return ResponseType.WAIT
 
     def counter_all(
             self, offers: Dict[str, "Outcome"], states: Dict[str, SAOState]
@@ -78,17 +113,19 @@ class MyDRLSCMLSAOSyncController(SyncController):
             }
         else:
             responses = {}
+            self.history_running_negotiations = self.parent.running_negotiations
             for nid in offers:
+                self.history_offers[nid] = offers[nid]
                 negotiator = self.negotiators[nid]
                 negotiation = [negotiation for negotiation in self.parent.running_negotiations
                                if negotiation.negotiator == self.negotiators[nid][0]][0]
 
                 if negotiation.annotation["seller"] == self.parent.id:
-                    index = self.parent.awi.my_consumers.index(negotiation.annotation["buyer"])
+                    index = sorted(self.parent.awi.my_consumers).index(negotiation.annotation["buyer"])
                     # TODO, convert action to legal outcome, the range of proposal
                     response_outcome = tuple(self.parent.action.m[index * 3:index * 3 + 3])
                 else:
-                    index = self.parent.awi.my_suppliers.index(negotiation.annotation["seller"])
+                    index = sorted(self.parent.awi.my_suppliers).index(negotiation.annotation["seller"])
                     # TODO, convert action to legal outcome
                     response_outcome = tuple(self.parent.action.b[index * 3:index * 3 + 3])
 
