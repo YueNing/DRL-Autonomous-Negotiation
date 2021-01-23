@@ -473,12 +473,15 @@ def load_buyer_neg_model(path="NEG_BUY_PATH"):
 ###########################################################
 # env
 ###########################################################
+from drl_negotiation.core.envs.normalized_env import NormalizedEnv
+
 def make_env(scenario_name,
              arglist=None,
              save_config=False,
              load_config=False,
              save_dir=None,
-             load_dir=None
+             load_dir=None,
+             normalize=False,
              ):
     """
 
@@ -538,6 +541,10 @@ def make_env(scenario_name,
         done_callback=scenario.done,
         shared_viewer=False
     )
+
+    if normalize:
+        env = NormalizedEnv(env)
+
     logging.info(f"Make {env} successfully!")
     return env
 

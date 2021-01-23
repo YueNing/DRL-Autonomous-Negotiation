@@ -11,7 +11,8 @@ env = make_env('scml_concurrent',
                save_config=SAVE_WORLD_CONFIG,
                load_config=LOAD_WORLD_CONFIG,
                save_dir=SAVE_WORLD_CONFIG_DIR,
-               load_dir=LOAD_WORLD_CONFIG_DIR
+               load_dir=LOAD_WORLD_CONFIG_DIR,
+               normalize=True
                )
 
 model = MADDPGModel(env=env, verbose=0)

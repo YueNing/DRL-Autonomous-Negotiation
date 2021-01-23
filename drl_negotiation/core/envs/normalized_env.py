@@ -27,10 +27,10 @@ class NormalizedEnv(Wrapper):
             self,
             env,
             scale_reward=1.,
-            normalize_obs=False,
+            normalize_obs=True,
             normalize_reward=False,
             expected_action_scale=1.,
-            flatten_obs=True,
+            flatten_obs=False,
             obs_alhpa=0.001,
             reward_alpha=0.001,
     ):
@@ -40,10 +40,9 @@ class NormalizedEnv(Wrapper):
         self._normalize_obs = normalize_obs
         self._normalize_reward = normalize_reward
         self._expected_action_scale = expected_action_scale
-        self._flatten_bs = flatten_obs
-
+        self._flatten_obs = flatten_obs
         self._obs_alpha = obs_alhpa
-        flat_obs_dim = np.prod(np.array([obs_space.flat_dim for obs_space in self._env.observation_space]))
+        flat_obs_dim = np.sum(np.array([obs_space.flat_dim for obs_space in self._env.observation_space]))
         self._obs_mean = np.zeros(flat_obs_dim)
         self._obs_var = np.ones(flat_obs_dim)
 
@@ -100,12 +99,12 @@ class NormalizedEnv(Wrapper):
         return EnvStep(env_spec=es.env_spec,
                        action=action,
                        reward=reward * self._scale_reward,
-                       observation=next_obs,
+                       observation=np.array(next_obs),
                        env_info=es.env_info,
-                       done=es.done)
+                       step_type=es.step_type)
 
     def _update_obs_estimate(self, obs):
-        flat_obs = self._env.observation_space.flatten(obs)
+        flat_obs = np.asarray(obs).flatten()
         self._obs_mean = (1 - self._obs_alpha) * self._obs_mean + self._obs_alpha * flat_obs
         self._obs_var = (1 - self._obs_alpha) * self._obs_var + self._obs_alpha * np.square(flat_obs - self._obs_mean)
 
@@ -127,11 +126,14 @@ class NormalizedEnv(Wrapper):
 
         """
         self._update_obs_estimate(obs)
-        flat_obs = self._env.observation_space.flatten(obs)
+        flat_obs =  np.asarray(obs).flatten()
         normalized_obs = (flat_obs - self._obs_mean) / (np.sqrt(self._obs_var) + 1e-8)
         if not self._flatten_obs:
-            normalized_obs = self._env.observation_space.unflatten(
-                self._env.observation_space, normalized_obs)
+            temp = []
+            for obs_sp in self._env.observation_space:
+                temp.append(obs_sp.unflatten(normalized_obs[0:obs_sp.flat_dim]))
+                normalized_obs = normalized_obs[obs_sp.flat_dim:]
+            normalized_obs = temp
         return normalized_obs
 
     def _apply_normalize_reward(self, reward):

@@ -463,7 +463,7 @@ class MyNegotiationEnv(DRLNegotiationEnv):
 #
 #
 ####################################################################################################
-import math
+import akro
 from gym import spaces
 from drl_negotiation.core.core import TrainWorld
 from drl_negotiation.core.hyperparameters import *
@@ -587,10 +587,10 @@ class SCMLEnv(Environment):
 
             # observation space
             obs_dim = len(observation_callback(agent, self.world))
-            self._observation_space.append(spaces.Box(low=-np.inf, high=+np.inf, shape=(obs_dim, ), dtype=np.float32))
+            self._observation_space.append(akro.Box(low=-np.inf, high=+np.inf, shape=(obs_dim, ), dtype=np.float32))
             if not ONLY_SELLER:
                 obs_dim = len(observation_callback(agent, self.world, seller=False))
-                self._observation_space.append(spaces.Box(low=-np.inf, high=+np.inf, shape=(obs_dim, ), dtype=np.float32))
+                self._observation_space.append(akro.Box(low=-np.inf, high=+np.inf, shape=(obs_dim, ), dtype=np.float32))
 
             agent.action.c = np.zeros(self.world.dim_c)
 

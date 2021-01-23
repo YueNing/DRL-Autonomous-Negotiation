@@ -43,7 +43,7 @@ EVALUATION = not TRAIN
 
 # if train, not restore, train from scratch
 SAVE_WORLD_CONFIG = True
-LOAD_WORLD_CONFIG = True
+LOAD_WORLD_CONFIG = False
 
 SAVE_WORLD_CONFIG_DIR = SAVE_DIR + "world.config"
 LOAD_WORLD_CONFIG_DIR = " "
