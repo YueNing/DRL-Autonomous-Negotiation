@@ -49,7 +49,7 @@ class MADDPGModel:
                  # number of training episodes
                  num_episodes=60,
                  # max length of every episode
-                 max_episode_len=10,
+                 max_episode_len=MAX_EPISODE_LEN,
                  # number of adversaries
                  num_adversaries=0,
                  # policy of good agent
@@ -198,7 +198,7 @@ class MADDPGModel:
             final_ep_rewards = []
             final_ep_ag_rewards = []
             agent_info = [[[]]]
-            obs_n = self.env.reset()
+            obs_n, _ = self.env.reset()
 
             episode_step = 0
             train_step = 0
@@ -216,28 +216,24 @@ class MADDPGModel:
                                                       self.env.action_space[i].high)
 
                 # print(f"action_n: {action_n}")
-                new_obs_n, rew_n, done_n, info_n = self.env.step(clipped_action_n)
-
-                episode_step += 1
-                done = all(done_n)
-                terminal = (episode_step > self.max_episode_len)
-
+                es = self.env.step(clipped_action_n)
+                done = all(es.last)
+                logging.debug(f"espisode last step type: {es.last}")
                 # experience
                 for i, agent in enumerate(self.trainers):
-                    agent.experience(obs_n[i], action_n[i], rew_n[i], new_obs_n[i], done_n[i], terminal)
+                    agent.experience(obs_n[i], action_n[i], es.reward[i], es.observation[i], es.step_type[i], es.timeout)
 
-                obs_n = new_obs_n
+                obs_n = es.observation
 
-                for i, rew in enumerate(rew_n):
+                for i, rew in enumerate(es.reward):
                     episode_rewards[-1] += rew
                     if not ONLY_SELLER:
                         agent_rewards[int(i / 2)][-1] += rew
                     else:
                         agent_rewards[i][-1] += rew
 
-                if done or terminal:
-                    obs_n = self.env.reset()
-                    episode_step = 0
+                if done:
+                    obs_n,_ = self.env.reset()
                     pbar.update(1)
                     episode_rewards.append(0)
                     for a in agent_rewards:
@@ -248,10 +244,10 @@ class MADDPGModel:
 
                 # Evaluate, benchmarking learned policies
                 if self.benchmark:
-                    for i, info in enumerate(info_n):
-                        agent_info[-1][i].append(info_n['n'])
+                    for i, info in enumerate(es.env_info):
+                        agent_info[-1][i].append(es.env_info['n'])
 
-                    if train_step > self.benchmark_iters and (done or terminal):
+                    if train_step > self.benchmark_iters and (done or es.timeout):
                         file_name = self.benchmark_dir + self.exp_name + '.pkl'
                         logging.info("Finished benchmarking, now saving....")
                         with open(file_name, 'wb') as fp:
@@ -278,7 +274,7 @@ class MADDPGModel:
                 # save model
                 # display training output
                 ##############################################################################
-                if terminal and (len(episode_rewards) % self.save_rate == 0):
+                if all(es.timeout) and (len(episode_rewards) % self.save_rate == 0):
                     # save the model separately
                     if self.save_trainers:
                         for _ in self.trainers:
@@ -315,7 +311,7 @@ class MADDPGModel:
     def predict(self, obs_n, train=True):
         if train:
             action_n = [agent.action(obs) for agent, obs in zip(self.trainers, obs_n)]
-            return action_n
+            return np.array(action_n)
         else:
             with U.single_threaded_session():
                 U.initialize()
@@ -327,4 +323,4 @@ class MADDPGModel:
                 U.load_state(tf.train.latest_checkpoint(self.save_dir), saver=saver)
 
                 action_n = [agent.action(obs) for agent, obs in zip(self.trainers, obs_n)]
-                return action_n
+                return np.array(action_n)

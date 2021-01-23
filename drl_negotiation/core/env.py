@@ -463,17 +463,22 @@ class MyNegotiationEnv(DRLNegotiationEnv):
 #
 #
 ####################################################################################################
+import math
 from gym import spaces
 from drl_negotiation.core.core import TrainWorld
 from drl_negotiation.core.hyperparameters import *
+from drl_negotiation.core._env import Environment, EnvSpec, EnvStep
+from drl_negotiation.core._dtypes import StepType
 
-class SCMLEnv(gym.Env):
+class SCMLEnv(Environment):
     metadata = {
             'render.modes': ['human']
             }
+
     def __init__(
             self,
             world: Union[TrainWorld],
+            goal=GOAL,
             reset_callback=None,
             reward_callback=None,
             observation_callback=None,
@@ -482,11 +487,14 @@ class SCMLEnv(gym.Env):
             shared_viewer=True,
             ):
 
+        self._goal = goal
         self.world = world
         self.agents = self.world.policy_agents
 
         # vectorized gym env property
         self.n = len(self.agents)
+        self._step_cnt = None
+        self._visualize = False
         # callback
         self.reset_callback = reset_callback
         self.reward_callback = reward_callback
@@ -500,10 +508,11 @@ class SCMLEnv(gym.Env):
         self.force_discrete_action = world.discrete_action if hasattr(world, 'discrete_action') else False
         self.shared_reward = world.collaborative if hasattr(world, 'collaborative') else False
         self.time = 0
-
+        self._step_cnt = None
+        self._max_episode_length = self.world.n_steps
         # spaces
-        self.action_space = []
-        self.observation_space = []
+        self._action_space = []
+        self._observation_space = []
         for agent in self.agents:
 
             # for seller
@@ -561,9 +570,9 @@ class SCMLEnv(gym.Env):
                     act_space = spaces.MultiDiscrete([act_space.n for act_space in total_action_space])
                 else:
                     act_space = spaces.Tuple(total_action_space)
-                self.action_space.append(act_space)
+                self._action_space.append(act_space)
             else:
-                self.action_space.append(total_action_space[0])
+                self._action_space.append(total_action_space[0])
 
             # for buyer
             if len(total_action_space_buyer) > 1:
@@ -572,19 +581,23 @@ class SCMLEnv(gym.Env):
                     act_space = spaces.MultiDiscrete([act_space.n for act_space in total_action_space_buyer])
                 else:
                     act_space = spaces.Tuple(total_action_space_buyer)
-                self.action_space.append(act_space)
+                self._action_space.append(act_space)
             else:
-                self.action_space.append(total_action_space_buyer[0])
+                self._action_space.append(total_action_space_buyer[0])
 
             # observation space
             obs_dim = len(observation_callback(agent, self.world))
-            self.observation_space.append(spaces.Box(low=-np.inf, high=+np.inf, shape=(obs_dim, ), dtype=np.float32))
+            self._observation_space.append(spaces.Box(low=-np.inf, high=+np.inf, shape=(obs_dim, ), dtype=np.float32))
             if not ONLY_SELLER:
                 obs_dim = len(observation_callback(agent, self.world, seller=False))
-                self.observation_space.append(spaces.Box(low=-np.inf, high=+np.inf, shape=(obs_dim, ), dtype=np.float32))
+                self._observation_space.append(spaces.Box(low=-np.inf, high=+np.inf, shape=(obs_dim, ), dtype=np.float32))
 
             agent.action.c = np.zeros(self.world.dim_c)
-        
+
+        self._spec = EnvSpec(action_space=self.action_space,
+                             observation_space=self.observation_space,
+                             max_episode_length=self._max_episode_length)
+
         # rendering
         self.shared_viewer = shared_viewer
         if self.shared_viewer:
@@ -593,7 +606,48 @@ class SCMLEnv(gym.Env):
             # policy agents
             self.viewers = [None] * self.n
         self._reset_render()
-    
+
+    @property
+    def action_space(self):
+        """np.ndarray[akro.Space]: The action space specification."""
+        return self._action_space
+
+    @property
+    def observation_space(self):
+        """np.ndarray[akro.Space]: The observation space specification."""
+        return self._observation_space
+
+    @property
+    def spec(self):
+        """EnvSpec: The environment specification."""
+        return self._spec
+
+    @property
+    def render_modes(self):
+        """list: A list of string representing the supported render modes."""
+        return [
+            'ascii',
+        ]
+
+    def reset(self):
+        # reset world
+        self.reset_callback(self.world)
+
+        first_obs = []
+        self.agents = self.world.policy_agents
+        # initial the state of agents
+
+        for agent in self.agents:
+            self.world.update_agent_state(agent)
+
+        # and get the initial obs
+        for agent in self.agents:
+            first_obs.append(self._get_obs(agent, seller=True))
+            if not ONLY_SELLER:
+                first_obs.append(self._get_obs(agent, seller=False))
+        self._step_cnt = 0
+        return np.array(first_obs), dict(goal=self._goal)
+
     def step(self, action_n):
         obs_n = []
         reward_n = []
@@ -639,66 +693,48 @@ class SCMLEnv(gym.Env):
             # if not ONLY_SELLER:
             #     reward_n = reward_n * 2
 
-        return obs_n, reward_n, done_n, info_n
+        self._step_cnt +=1
 
-    def reset(self):
-        # reset world
-        self.reset_callback(self.world)
-        
-        obs_n = []
-        self.agents = self.world.policy_agents
-        # intial the state of agents
+        step_type = [StepType.get_step_type(
+            step_cnt=self._step_cnt,
+            max_episode_length=self._max_episode_length,
+            done=_) for _ in done_n]
 
-        for agent in self.agents:
-            self.world.update_agent_state(agent)
+        if all([1 if s in (StepType.TERMINAL, StepType.TIMEOUT) else 0 for s in step_type]):
+            self._step_cnt = None
 
-        # and get the initial obs
-        for agent in self.agents:
-            obs_n.append(self._get_obs(agent, seller=True))
-            if not ONLY_SELLER:
-                obs_n.append(self._get_obs(agent, seller=False))
+        return EnvStep(
+            env_spec=self.spec,
+            action=action_n,
+            reward=np.array(reward_n),
+            observation=np.array(obs_n),
+            env_info=info_n,
+            step_type=np.array(step_type)
+        )
 
-        return obs_n
+    def render(self, mode="ascii"):
+        """Renders the environment.
 
-    def render(self, mode="human"):
-        pass
-        # # create viewers
-        # for i in range(len(self.viewers)):
-        #     if self.viewers[i] is None:
-        #         self.viewers[i] = Viewer(700, 700, self.agents[i])
-        #
-        # # add infos
-        # if self.infos is None:
-        #     self.infos = {}
-        #
-        # for agent in self.agents:
-        #     # TODO: visible information
-        #     if not agent in self.infos:
-        #         self.infos[agent] = f"{agent}, test {time.time()}"
-        #     else:
-        #         if RENDER_INFO:
-        #             infos = self.info_n['n'][self.agents.index(agent)]
-        #             for key, value in infos.items():
-        #                 self.infos[agent] = key + '\n'
-        #                 strings_value = [str(_) for _ in value]
-        #                 self.infos[agent] += '\n'.join(strings_value)
-        #
-        # # write infos into the files
-        # if RENDER_INFO:
-        #     for agent in self.agents:
-        #         filename = f'{agent}.log'
-        #         try:
-        #             with open(filename, "a+") as fp:
-        #                 fp.write(self.infos[agent]+"\n")
-        #         except:
-        #             logging.error("Error, write the info into files when rendering!")
-        #
-        # # results
-        # results = []
-        # for i in range(len(self.viewers)):
-        #     results.append(self.viewers[i].render())
-        #
-        # return results
+        Args:
+            mode (str): the mode to render with. The string must be present in
+                `self.render_modes`.
+
+        Returns:
+            str: the point and goal of environment.
+
+        """
+
+        profit = [agent.state.f[2] - agent.state.f[0] for agent in self.agents]
+        return f"profit: {sum(profit)}, Goal: {self._goal}"
+
+    def visualize(self):
+        """Creates a visualization of the environment."""
+
+        self._visualize = True
+        print(self.render('ascii'))
+
+    def close(self):
+        """Close the env."""
 
     def _reset_render(self):
         self.infos = None

@@ -21,7 +21,7 @@ show_ep_rewards(final_ep_rewards, model)
 show_agent_rewards(agent_rewards, model)
 cumulative_reward(episode_rewards)
 
-obs_n = env.reset()
+obs_n,_ = env.reset()
 for i in range(10):
     action_n = model.predict(obs_n, train=False)
     obs_n, rew_n, done_n, info_n = env.step(action_n)

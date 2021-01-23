@@ -2,6 +2,7 @@
 # Global
 ###############################################
 import logging
+GOAL = 1000
 # control the negotiation manager
 # now running in scml2020world could just under condition, not train
 RUNNING_IN_SCML2020World = False
