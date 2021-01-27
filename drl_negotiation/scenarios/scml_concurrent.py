@@ -51,6 +51,8 @@ class Scenario(BaseScenario):
                     number_sell_contracts += 1
 
         last_offers = [[] for _ in agent.awi.my_consumers] + [[] for _ in agent.awi.my_suppliers]
+        for negotiation in agent.running_negotiations:
+            logging.debug(f"{agent}:{negotiation.annotation}")
         if seller:
             #last_offers = [[] for _ in agent.awi.my_consumers]
             for nid in agent.controllers[1].history_offers:
@@ -65,7 +67,10 @@ class Scenario(BaseScenario):
                         last_offers[len(agent.awi.my_consumers) + sorted(agent.awi.my_suppliers).index(
                             negotiation[0].annotation["seller"])].append(agent.controllers[1].history_offers[nid])
 
-            agent.controllers[0].history_offers = {}
+            agent.controllers[1].history_offers = {}
+
+            # if np.array(last_offers).any():
+            #     print("hello")
 
             for index, offer in enumerate(last_offers):
                 if offer:
@@ -75,9 +80,9 @@ class Scenario(BaseScenario):
 
             price_product = [agent.awi.catalog_prices[my_output_product]]
             last_offers = np.array(last_offers).flatten().tolist()
-            print(f"seller last_offers {last_offers}")
+            logging.debug(f"{agent}'s seller last_offers {last_offers}")
         else:
-            last_offers = [[] for _ in agent.awi.my_suppliers]
+            # last_offers = [[] for _ in agent.awi.my_suppliers]
             for nid in agent.controllers[0].history_offers:
                 negotiation = [negotiation for negotiation in agent.controllers[0].history_running_negotiations if negotiation.negotiator ==
                                agent.controllers[0].negotiators[nid][0]]
@@ -100,7 +105,7 @@ class Scenario(BaseScenario):
 
             price_product = [agent.awi.catalog_prices[my_input_product]]
             last_offers = np.array(last_offers).flatten().tolist()
-            print(f"buyer last_offers {last_offers}")
+            logging.debug(f"{agent}'s buyer last_offers {last_offers}")
 
         if seller:
             return np.concatenate((current_time, last_offers, running, requesting,
@@ -112,8 +117,8 @@ class Scenario(BaseScenario):
     def reward(self, agent: MySCML2020Agent, world: TrainWorld, seller=True):
         # sub-goal, best deal which is defined as being nearest to the agent needs with lowest price
         # main-goal, maximum profitability at the end of episode.
-        rew = 0
-        rew += world.scores()[agent.id]
+        factory = world.a2f[agent.id]
+        rew = -np.sqrt(np.square(world.scores()[agent.id] - 100 / factory.initial_balance))
         if RANDOM_REWARD:
             return random.random()
         else:

@@ -629,6 +629,10 @@ class SCMLEnv(Environment):
             'ascii',
         ]
 
+    @property    
+    def step_cnt(self):
+        return self._step_cnt
+
     def reset(self):
         # reset world
         self.reset_callback(self.world)

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 from scml.scml2020 import SCML2020World
 
-def show_ep_rewards(data, model, number_episodes=20):
+def show_ep_rewards(data, model,     number_episodes=20):
     """
     mean episode reward
     >>> show_ep_rewards([42.36277500051694, 43.57323638074746, 44.766200950337335, 43.46595151832854],

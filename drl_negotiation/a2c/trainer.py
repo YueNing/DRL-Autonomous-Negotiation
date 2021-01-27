@@ -81,10 +81,11 @@ def p_train(make_obs_ph_n,
 
         q = q_func(q_input, 1, scope="q_func", reuse=True, num_units=num_units)[:, 0]
 
-        # TODO: need to understand
+        # -loss s the goal of q, maximize the reward
         pg_loss = -tf.reduce_mean(q)
 
         loss = pg_loss + p_reg * 1e-3
+        # loss = pg_loss
 
         optimizer_expr = U.minimize_and_clip(optimizer, loss, p_func_vars, grad_norm_clipping)
 
@@ -131,10 +132,10 @@ def q_train(make_obs_ph_n, act_space_n, q_index, q_func, optimizer, grad_norm_cl
         # loss of q-value, mean square error
         q_loss = tf.reduce_mean(tf.square(q - target_ph))
 
+        # reduce the variance while keeping the bias unchanged
         q_reg = tf.reduce_mean(tf.square(q))
 
-        # TODO: need to unstand
-        loss = q_loss * q_reg
+        loss = q_loss
 
         optimizer_expr = U.minimize_and_clip(optimizer, loss, q_func_vars, grad_norm_clipping)
 

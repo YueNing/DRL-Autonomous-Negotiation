@@ -16,7 +16,7 @@ RANDOM_REWARD = False
 # Evaluation from trained model: set TRAIN, SAVE_WORLD_CONFIG as False
 TRAIN = True
 # train from checkpoints
-RESTORE = False
+RESTORE = True
 # Train only the seller component of agent
 ONLY_SELLER = False # train seller and buyer together
 # root dir, save all policies here
@@ -29,15 +29,18 @@ MODEL_NAME = "model"
 # train episode
 TRAIN_EPISODES = 1000
 # train episode save rate
-SAVE_RATE = 5
+SAVE_RATE = 500
 # max length of single episode
-MAX_EPISODE_LEN = 10
+MAX_EPISODE_LEN = 25
+# batch size
+BATCH_SIZE = 256
 # save the model of trainers separately
 SAVE_TRAINERS = True
 
 LOAD_MODEL = False
 LOGGING_LEVEL = logging.INFO
-DISABLE_LOGGING_COLOR = False
+LOGGING_FILE_LEVEL = logging.DEBUG
+DISABLE_LOGGING_COLOR = False 
 FILENAME = SAVE_DIR+"my.log"
 EVALUATION = not TRAIN
 

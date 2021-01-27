@@ -5,7 +5,7 @@ from drl_negotiation.utils.utils import logging_setup
 from drl_negotiation.utils.plots import show_agent_rewards, show_ep_rewards, cumulative_reward
 import logging
 
-logging_setup(logging.ERROR)
+logging_setup(logging.INFO)
 
 env = make_env('scml_concurrent',
                save_config=SAVE_WORLD_CONFIG,
@@ -15,8 +15,8 @@ env = make_env('scml_concurrent',
                normalize=True
                )
 
-model = MADDPGModel(env=env, verbose=0)
-final_ep_rewards, agent_rewards, episode_rewards, _ = model.learn(train_episodes=20)
+model = MADDPGModel(env=env, verbose=0, restore=RESTORE)
+final_ep_rewards, agent_rewards, episode_rewards, _ = model.learn(train_episodes=10000)
 
 show_ep_rewards(final_ep_rewards, model)
 show_agent_rewards(agent_rewards, model)

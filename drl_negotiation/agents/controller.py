@@ -135,7 +135,7 @@ class MyDRLSCMLSAOSyncController(SyncController):
                 logging.debug(f"offer is {offers[nid]} and response outcome is {response_outcome}")
 
                 if offers[nid] == response_outcome:
-                    print(f"Achieved, {offers[nid]} == {response_outcome}")
+                    logging.info(f"Achieved, {offers[nid]} == {response_outcome}")
 
                 responses[nid] = SAOResponse(
                     response_type,

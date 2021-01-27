@@ -19,7 +19,7 @@ email = "n1085633848@outlook.com"
 license = "MIT License"
 
 import time
-from drl_negotiation.utils.utils import logging_setup
+#from drl_negotiation.utils.utils import logging_setup
 
 print("#################################### \n"
       "Welcome to drl negotiation, enjoy it!\n "
@@ -28,5 +28,5 @@ print("#################################### \n"
       "####################################")
 
 current_time = time.strftime('%a %d %b %Y %H:%M:%S +0000', time.localtime())
-print(f"{current_time} Initial drl negotiation!")
+print(f"Initial drl negotiation!")
 #logging_setup()

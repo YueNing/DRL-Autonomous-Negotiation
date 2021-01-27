@@ -736,7 +736,7 @@ def logging_setup(level=None, filename=None):
         path = '/'.join(filename.split("/")[:-1])
         os.makedirs(path)
         fh = logging.FileHandler(filename=filename)
-    fh.setLevel(logging.DEBUG)
+    fh.setLevel(LOGGING_FILE_LEVEL)
     fh.setFormatter(formatter)
 
     # StreamHandler

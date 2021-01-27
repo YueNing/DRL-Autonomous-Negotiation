@@ -26,7 +26,7 @@ class MADDPGModel:
 
                  # training
                  # trainer update steps
-                 n_steps=2,
+                 n_steps=100,
                  # learning rate
                  lr=1e-2,
                  # discount factor
@@ -42,12 +42,12 @@ class MADDPGModel:
                  # experiment name
                  exp_name="",
                  # batch size * max_episode_len = replay buffer
-                 batch_size=1,
+                 batch_size=BATCH_SIZE,
                  num_units=64,
                  # env
                  n_envs=1,
                  # number of training episodes
-                 num_episodes=60,
+                 num_episodes=TRAIN_EPISODES,
                  # max length of every episode
                  max_episode_len=MAX_EPISODE_LEN,
                  # number of adversaries
@@ -106,7 +106,7 @@ class MADDPGModel:
 
         self.trainers = None
 
-        U.logging_setup()
+        #U.logging_setup()
 
         if _init_setup_model:
             self.setup_model()
@@ -186,7 +186,7 @@ class MADDPGModel:
             saver = None
             if self.display or self.restore or self.benchmark:
                 logging.info("Loading previous state...")
-                saver = tf.train.import_meta_graph(self.load_dir + self.model_name + '.meta')
+                #saver = tf.train.import_meta_graph(self.load_dir + self.model_name + '.meta')
                 U.load_state(tf.train.latest_checkpoint(self.load_dir), saver=saver)
 
             if saver is None:
@@ -206,7 +206,7 @@ class MADDPGModel:
             pbar = tqdm(total=self.num_episodes)
 
             while True:
-                # print(f'episodes: {len(episode_rewards)}, train steps: {train_step}')
+                logging.debug(f'episodes: {len(episode_rewards)}, episode_step: {self.env.step_cnt}, train steps: {train_step}')
                 action_n = self.predict(obs_n)
 
                 clipped_action_n = action_n
@@ -221,7 +221,7 @@ class MADDPGModel:
                 logging.debug(f"espisode last step type: {es.last}")
                 # experience
                 for i, agent in enumerate(self.trainers):
-                    agent.experience(obs_n[i], action_n[i], es.reward[i], es.observation[i], es.step_type[i], es.timeout)
+                    agent.experience(obs_n[i], action_n[i], es.reward[i], es.observation[i], es.last[i], es.timeout)
 
                 obs_n = es.observation
 
