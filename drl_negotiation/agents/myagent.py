@@ -4,7 +4,13 @@ from scml.scml2020 import (
     PredictionBasedTradingStrategy,
 )
 from scml.scml2020.agents.decentralizing import _NegotiationCallbacks
-from scml.scml2020 import (SupplyDrivenProductionStrategy)
+from scml.scml2020 import (
+    SupplyDrivenProductionStrategy,
+    KeepOnlyGoodPrices,
+    StepNegotiationManager,
+
+    DecentralizingAgent
+)
 
 from negmas import LinearUtilityFunction
 from .mynegotiationmanager import MyNegotiationManager, MyConcurrentNegotiationManager
@@ -39,3 +45,16 @@ class MyConcurrentBasedAgent(
         my concurrent based agent,
     """
     pass
+
+class MyOpponentAgent(
+    KeepOnlyGoodPrices,
+    _NegotiationCallbacks,
+    StepNegotiationManager,
+    PredictionBasedTradingStrategy,
+    SupplyDrivenProductionStrategy,
+    MySCML2020Agent,
+):
+    def __init__(self, *arags, **kwargs):
+        kwargs["adversary"] = True
+        super().__init__(*arags, **kwargs)
+
