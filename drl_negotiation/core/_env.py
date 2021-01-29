@@ -309,6 +309,7 @@ class EnvStep:
             time step. These must conform to :obj: `EnvStep.action_space`.
         reward (numpy.ndarray): A float representing the reward for taking the action given the observation, at this
         time step.
+        extra_rew (numpy.ndarray): reward of not trainable agents in the system
         observation (numpy.ndarray]): A numpy array of shape :math: `(O^*)`
             containing the observation for the this time step in the environment. These must conform to
             :obj: `EnvStep.observation_space`. The observation after applying the action.
@@ -319,6 +320,7 @@ class EnvStep:
     env_spec: EnvSpec
     action: np.ndarray
     reward: np.ndarray
+    extra_rew: np.ndarray
     observation: np.ndarray
     env_info: Dict[str, np.ndarray or dict]
     step_type: np.ndarray

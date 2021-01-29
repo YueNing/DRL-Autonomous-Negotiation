@@ -16,7 +16,7 @@ RANDOM_REWARD = False
 # Evaluation from trained model: set TRAIN, SAVE_WORLD_CONFIG as False
 TRAIN = True
 # train from checkpoints
-RESTORE = True
+RESTORE = False
 # Train only the seller component of agent
 ONLY_SELLER = False # train seller and buyer together
 # root dir, save all policies here
@@ -29,9 +29,9 @@ MODEL_NAME = "model"
 # train episode
 TRAIN_EPISODES = 1000
 # train episode save rate
-SAVE_RATE = 500
+SAVE_RATE = 1
 # max length of single episode
-MAX_EPISODE_LEN = 25
+MAX_EPISODE_LEN = 10
 # batch size
 BATCH_SIZE = 256
 # save the model of trainers separately
@@ -99,7 +99,7 @@ UNIT_PRICE = 100
 N_STEPS = MAX_EPISODE_LEN
 
 # scml scenario, concurrent
-TRAINING_AGENT_TYPES_CONCURRENT = ["drl_negotiation.agents.myagent.MyConcurrentBasedAgent", "scml.scml2020.DecentralizingAgent"]
+TRAINING_AGENT_TYPES_CONCURRENT = ["drl_negotiation.agents.myagent.MyConcurrentBasedAgent", "drl_negotiation.agents.myagent.MyOpponentAgent"]
 
 ################################################
 # running world

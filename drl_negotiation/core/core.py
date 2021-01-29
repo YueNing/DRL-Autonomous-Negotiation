@@ -74,7 +74,8 @@ class MySCML2020Agent(SCML2020Agent):
     Owner = 'My'
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        # agents are adversary
+        self.adversary = kwargs.pop("adversary") if "adversary" in kwargs else False
         # agents are manageable by default
         self.manageable = MANAGEABLE
         # cannot send communication signals
@@ -97,8 +98,7 @@ class MySCML2020Agent(SCML2020Agent):
         self.action_callback = None
         # agents are interactive
         self.interative = False
-        # agents are adversary
-        self.adversary = False
+        super().__init__(*args, **kwargs)
 
     def init(self):
         super(MySCML2020Agent, self).init()
@@ -122,6 +122,22 @@ class MySCML2020Agent(SCML2020Agent):
             number of standing negotiation requests, sell, buy
         """
         return self._count(super(MySCML2020Agent, self).negotiation_requests)
+
+    @property
+    def contracts_count(self):
+        number_buy_contracts = 0
+        number_sell_contracts = 0
+        if self.contracts:
+            for c in self.contracts:
+                if c.annotation['buyer'] == self.id:
+                    number_buy_contracts += 1
+                if c.annotation['seller'] == self.id:
+                    number_sell_contracts += 1
+        return number_buy_contracts, number_sell_contracts
+
+    @property
+    def current_time(self):
+        return [self.awi.current_step / self.awi.n_steps]
 
     def _count(self, negotiations):
         sell = 0
@@ -210,14 +226,14 @@ class TrainWorld(SCML2020World):
         '''
            e.g. maddpg drived agents,
         '''
-        return [agent for agent in self.entities if agent.action_callback is None]
+        return [agent for agent in self.entities if agent.action_callback is None and not agent.adversary]
     
     @property
     def heuristic_agents(self):
         '''
             e.g. heuristic agents, BuyCheapSellExpensiveAgent
         '''
-        return [agent for agent in self.entities if agent.action_callback=='heuristic']
+        return [agent for agent in self.entities if agent.action_callback is None and agent.adversary]
 
     @property
     def interactive_agents(self):

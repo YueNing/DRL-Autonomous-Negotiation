@@ -489,10 +489,13 @@ class SCMLEnv(Environment):
 
         self._goal = goal
         self.world = world
+        # trainable agents
         self.agents = self.world.policy_agents
+        self.heuristic_agents = self.world.heuristic_agents
 
         # vectorized gym env property
         self.n = len(self.agents)
+        self.extra_n = len(self.heuristic_agents)
         self._step_cnt = None
         self._visualize = False
         # callback
@@ -657,6 +660,7 @@ class SCMLEnv(Environment):
         reward_n = []
         done_n = []
         info_n = {'n': []}
+        extra_rew = []
         self.agents = self.world.policy_agents
         
         # policy agents
@@ -681,6 +685,11 @@ class SCMLEnv(Environment):
 
             # update state after calculate reward
             agent.state.f[1] = agent.state.f[2]
+
+        for agent in self.world.heuristic_agents:
+            extra_rew.append(self._get_reward(agent, seller=True))
+            if not ONLY_SELLER:
+                extra_rew.append(self._get_reward(agent, seller=False))
 
         if RENDER_INFO:
             self.info_n = info_n
@@ -711,6 +720,7 @@ class SCMLEnv(Environment):
             env_spec=self.spec,
             action=action_n,
             reward=np.array(reward_n),
+            extra_rew=np.array(extra_rew),
             observation=np.array(obs_n),
             env_info=info_n,
             step_type=np.array(step_type)

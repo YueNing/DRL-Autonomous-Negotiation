@@ -194,9 +194,11 @@ class MADDPGModel:
 
             episode_rewards = [0.0]
             agent_rewards = [[0.0] for _ in range(self.env.n)]
+            extra_agent_rewards = [[0.0] for _ in range(self.env.extra_n)]
 
             final_ep_rewards = []
             final_ep_ag_rewards = []
+            final_ep_extra_ag_rewards = []
             agent_info = [[[]]]
             obs_n, _ = self.env.reset()
 
@@ -232,15 +234,35 @@ class MADDPGModel:
                     else:
                         agent_rewards[i][-1] += rew
 
-                if done:
-                    obs_n,_ = self.env.reset()
-                    pbar.update(1)
-                    episode_rewards.append(0)
-                    for a in agent_rewards:
-                        a.append(0)
-                    agent_info.append([[]])
+                for i, rew in enumerate(es.extra_rew):
+                    if not ONLY_SELLER:
+                        extra_agent_rewards[int(i/2)][-1] +=rew
+                    else:
+                        extra_agent_rewards[i][-1] += rew
 
-                train_step += 1
+
+                ##############################################################################
+                # save model
+                # display training output
+                ##############################################################################
+                if all(es.timeout) and (len(episode_rewards) % self.save_rate == 0):
+                    # save the model separately
+                    if self.save_trainers:
+                        for _ in self.trainers:
+                            U.save_as_scope(_.name, save_dir=self.save_dir, model_name=self.model_name)
+                    # save all model paramters
+                    U.save_state(self.save_dir + self.model_name, saver=saver)
+
+                    if num_adversaries == 0:
+                        logging.info(f"steps: {train_step}, episodes: {len(episode_rewards)}, "
+                                     f"mean episode reward: {np.mean(episode_rewards[-self.save_rate:])}, "
+                                     f"time: {round(time.time() - t_start, 3)}")
+                    t_start = time.time()
+                    final_ep_rewards.append(np.mean(episode_rewards[-self.save_rate:]))
+                    for rew in agent_rewards:
+                        final_ep_ag_rewards.append(np.mean(rew[-self.save_rate:]))
+                    for rew in extra_agent_rewards:
+                        final_ep_extra_ag_rewards.append(np.mean(rew[-self.save_rate:]))
 
                 # Evaluate, benchmarking learned policies
                 if self.benchmark:
@@ -270,26 +292,20 @@ class MADDPGModel:
                         logging.debug(f"{agent}'s [q_loss, p_loss, np.mean(target_q), np.mean(rew), "
                                       f"np.mean(target_q_next), np.std(target_q)] are {info}")
 
-                ##############################################################################
-                # save model
-                # display training output
-                ##############################################################################
-                if all(es.timeout) and (len(episode_rewards) % self.save_rate == 0):
-                    # save the model separately
-                    if self.save_trainers:
-                        for _ in self.trainers:
-                            U.save_as_scope(_.name, save_dir=self.save_dir, model_name=self.model_name)
-                    # save all model paramters
-                    U.save_state(self.save_dir + self.model_name, saver=saver)
+                #####################################################################################
+                # Prepare for next episode, if done
+                #####################################################################################
+                if done:
+                    obs_n,_ = self.env.reset()
+                    pbar.update(1)
+                    episode_rewards.append(0)
+                    for a in agent_rewards:
+                        a.append(0)
+                    for a in extra_agent_rewards:
+                        a.append(0)
+                    agent_info.append([[]])
 
-                    if num_adversaries == 0:
-                        logging.info(f"steps: {train_step}, episodes: {len(episode_rewards)}, "
-                                     f"mean episode reward: {np.mean(episode_rewards[-self.save_rate:])}, "
-                                     f"time: {round(time.time() - t_start, 3)}")
-                    t_start = time.time()
-                    final_ep_rewards.append(np.mean(episode_rewards[-self.save_rate:]))
-                    for rew in agent_rewards:
-                        final_ep_ag_rewards.append(np.mean(rew[-self.save_rate:]))
+                train_step += 1
 
                 ##############################################################################
                 # saves final episode reward for plotting training curve
@@ -302,11 +318,15 @@ class MADDPGModel:
                     with open(rew_file_name, 'wb') as fp:
                         pickle.dump(final_ep_rewards, fp)
                     agrew_file_name = self.plots_dir + self.exp_name + '_agrewards.pkl'
+                    extra_agrew_file_name = self.plots_dir + self.exp_name + '_extra_agrewards.pkl'
                     with open(agrew_file_name, 'wb') as fp:
                         pickle.dump(final_ep_ag_rewards, fp)
+                    with open(extra_agrew_file_name, 'wb') as fp:
+                        pickle.dump(final_ep_extra_ag_rewards, fp)
                     logging.info(f'...Finished total of {len(episode_rewards)} episodes')
                     break
-            return final_ep_rewards, final_ep_ag_rewards, episode_rewards, self.env
+
+            return final_ep_rewards, final_ep_ag_rewards, final_ep_extra_ag_rewards, episode_rewards, self.env
 
     def predict(self, obs_n, train=True):
         if train:

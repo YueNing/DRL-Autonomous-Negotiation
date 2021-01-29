@@ -21,6 +21,7 @@ def show_ep_rewards(data, model,     number_episodes=20):
     Returns:
 
     """
+    assert len(data) > 0, "data is empty"
     if model is None:
         save_times = len(data)
         save_rate = int(number_episodes / save_times)
@@ -38,7 +39,7 @@ def show_ep_rewards(data, model,     number_episodes=20):
     plt.show()
 
 
-def show_agent_rewards(data, model:"MADDPGModel"=None, agents=5, number_episodes=20):
+def show_agent_rewards(data, model:"MADDPGModel"=None, agents=5, number_episodes=20, extra=False):
     """
     >>> show_agent_rewards([8.409011336587847, 8.351518352218934, 9.003777340184879, 8.27788729251806, 8.32058067900721,
     ...                     8.27440019409948, 9.02914681190003, 8.430564051323255, 8.954079046561578, 8.885046276863111,
@@ -63,8 +64,11 @@ def show_agent_rewards(data, model:"MADDPGModel"=None, agents=5, number_episodes
         save_rate = model.save_rate
         number_episodes = model.num_episodes
         agents = len(model.env.agents)
-        save_times = int(len(data) / agents)
         agents_name = [a.name for a in model.env.agents]
+        if extra:
+            agents += len(model.env.heuristic_agents)
+            agents_name += [a.name for a in model.env.heuristic_agents]
+        save_times = int(len(data) / agents)
 
     assert save_rate * save_times == number_episodes
 

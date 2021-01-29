@@ -49,6 +49,8 @@ class NormalizedEnv(Wrapper):
         self._reward_alpha = reward_alpha
         self._reward_mean = 0.
         self._reward_var = 1.
+        self._extra_reward_mean = 0.
+        self._extra_reward_var = 1.
 
     def reset(self):
         """Call reset on wrapped env.
@@ -89,16 +91,19 @@ class NormalizedEnv(Wrapper):
         es = self._env.step(scaled_action)
         next_obs = es.observation
         reward = es.reward
+        extra_rew = es.extra_rew
 
         if self._normalize_obs:
             next_obs = self._apply_normalize_obs(next_obs)
 
         if self._normalize_reward:
             reward = self._apply_normalize_reward(reward)
+            extra_rew = self._apply_normalize_reward(extra_rew, extra=True)
 
         return EnvStep(env_spec=es.env_spec,
                        action=action,
                        reward=reward * self._scale_reward,
+                       extra_rew=extra_rew * self._scale_reward,
                        observation=np.array(next_obs),
                        env_info=es.env_info,
                        step_type=es.step_type)
@@ -115,6 +120,14 @@ class NormalizedEnv(Wrapper):
                                    1 - self._reward_alpha
                            ) * self._reward_var + self._reward_alpha * np.square(
             reward - self._reward_mean)
+
+    def _update_extra_reward_estimate(self, reward):
+        self._extra_reward_mean = (1 - self._reward_alpha) * \
+                            self._extra_reward_mean + self._reward_alpha * reward
+        self._extra_reward_var = (
+                                   1 - self._reward_alpha
+                           ) * self._extra_reward_var + self._reward_alpha * np.square(
+            reward - self._extra_reward_mean)
 
     def _apply_normalize_obs(self, obs):
         """Compute normalized observation.
@@ -136,15 +149,19 @@ class NormalizedEnv(Wrapper):
             normalized_obs = temp
         return normalized_obs
 
-    def _apply_normalize_reward(self, reward):
+    def _apply_normalize_reward(self, reward, extra=False):
         """Compute normalized reward.
         Args:
             reward (float): Reward.
         Returns:
             float: Normalized reward.
         """
-        self._update_reward_estimate(reward)
-        return reward / (np.sqrt(self._reward_var) + 1e-8)
+        if extra:
+            self._update_extra_reward_estimate(reward)
+            return reward / (np.sqrt(self._extra_reward_var) + 1e-8)
+        else:
+            self._update_reward_estimate(reward)
+            return reward / (np.sqrt(self._reward_var) + 1e-8)
 
 
 normalize = NormalizedEnv
