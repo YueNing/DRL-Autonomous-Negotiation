@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 from scml.scml2020 import SCML2020World
 
-def show_ep_rewards(data, model,     number_episodes=20, extra=False):
+def show_ep_rewards(data, model,     number_episodes=20, extra=False, backend="sns"):
     """
     mean episode reward
     >>> show_ep_rewards([42.36277500051694, 43.57323638074746, 44.766200950337335, 43.46595151832854],
@@ -82,14 +82,19 @@ def show_agent_rewards(data, model:"MADDPGModel"=None, agents=5, number_episodes
         save_times = int(len(data) / agents)
 
     assert save_rate * save_times == number_episodes
-
+    trainable_agents_data = np.reshape(np.array(data[:len(model.env.agents)*save_times]),
+                                       (save_times, len(model.env.agents)))
+    extra_agents_data = np.reshape(np.array(data[len(model.env.agents)*save_times:]),
+                                   (save_times, len(model.env.heuristic_agents)))
     x_axis = np.arange(save_rate, number_episodes + save_rate, save_rate)
     assert len(x_axis) == save_times
-    y_axis = np.reshape(np.array(data), (save_times, agents))
+    #y_axis = np.reshape(np.array(data), (save_times, agents))
     data = pd.DataFrame(
         {
             **{'episode': x_axis,},
-            **{agents_name[agent]:y_axis[:, agent] for agent in range(agents)}
+            **{agents_name[agent]:trainable_agents_data[:, agent] for agent in range(len(model.env.agents))},
+            **{agents_name[len(model.env.agents)+agent]:extra_agents_data[:, agent]
+               for agent in range(len(model.env.heuristic_agents))}
         }
     )
     sns.lineplot(
