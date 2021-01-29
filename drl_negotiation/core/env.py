@@ -703,6 +703,8 @@ class SCMLEnv(Environment):
         reward = np.sum(reward_n)
         if self.shared_reward:
             reward_n = [reward] * self.n
+            if not ONLY_SELLER:
+                reward_n *= 2
             # if not ONLY_SELLER:
             #     reward_n = reward_n * 2
 

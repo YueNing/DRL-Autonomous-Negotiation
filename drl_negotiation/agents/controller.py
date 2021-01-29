@@ -123,19 +123,24 @@ class MyDRLSCMLSAOSyncController(SyncController):
                 if negotiation.annotation["seller"] == self.parent.id:
                     index = sorted(self.parent.awi.my_consumers).index(negotiation.annotation["buyer"])
                     # TODO, convert action to legal outcome, the range of proposal
-                    response_outcome = tuple(self.parent.action.m[index * 3:index * 3 + 3])
+                    response_outcome = tuple(np.array(self.parent.action.m[index * 3:index * 3 + 3], dtype=int))
                 else:
                     index = sorted(self.parent.awi.my_suppliers).index(negotiation.annotation["seller"])
                     # TODO, convert action to legal outcome
-                    response_outcome = tuple(self.parent.action.b[index * 3:index * 3 + 3])
+                    response_outcome = tuple(np.array(self.parent.action.b[index * 3:index * 3 + 3], dtype=int))
 
-                response_type = ResponseType.ACCEPT_OFFER if offers[nid] == response_outcome \
-                    else ResponseType.REJECT_OFFER
+                util = self.utility(offers[nid], self.negotiators[nid][0].ami.issues[UNIT_PRICE].max_value)
+                response_outcome_utility = self.utility(response_outcome, self.negotiators[nid][0].ami.issues[UNIT_PRICE].max_value)
 
+                # if util >= self._utility_threshold * response_outcome_utility and util >0:
+                if offers[nid] == response_outcome:
+                    response_type = ResponseType.ACCEPT_OFFER
+                else:
+                    response_type = ResponseType.REJECT_OFFER
                 logging.debug(f"offer is {offers[nid]} and response outcome is {response_outcome}")
 
-                if offers[nid] == response_outcome:
-                    logging.info(f"Achieved, {offers[nid]} == {response_outcome}")
+                if response_type == ResponseType.ACCEPT_OFFER:
+                    logging.debug(f"Achieved, {offers[nid]} == {response_outcome}")
 
                 responses[nid] = SAOResponse(
                     response_type,

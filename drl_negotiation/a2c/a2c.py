@@ -204,7 +204,7 @@ class MADDPGModel:
             agent_info = [[[]]]
             obs_n, _ = self.env.reset()
 
-            episode_step = 0
+            #episode_step = 0
             train_step = 0
             t_start = time.time()
             pbar = tqdm(total=self.num_episodes)
@@ -229,6 +229,7 @@ class MADDPGModel:
 
                 obs_n = es.observation
 
+                logging.debug(f"episode_step:{self.env.step_cnt}, es.reward are {es.reward}")
                 for i, rew in enumerate(es.reward):
                     episode_rewards[-1] += rew
                     if not ONLY_SELLER:

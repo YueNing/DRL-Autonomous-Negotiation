@@ -26,7 +26,7 @@ class NormalizedEnv(Wrapper):
     def __init__(
             self,
             env,
-            scale_reward=1.,
+            scale_reward=3.,
             normalize_obs=True,
             normalize_reward=True,
             expected_action_scale=1.,

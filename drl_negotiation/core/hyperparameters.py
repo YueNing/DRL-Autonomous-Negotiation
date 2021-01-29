@@ -93,6 +93,8 @@ NEGOTIATION_SPEED = 1
 QUANTITY = 10
 TIME = MAX_EPISODE_LEN
 UNIT_PRICE = 100
+# share reward
+COLLABORATIVE = False
 ################################################
 # scml scenario
 ################################################

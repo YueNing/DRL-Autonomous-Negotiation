@@ -77,7 +77,8 @@ class Scenario(BaseScenario):
         # sub-goal, best deal which is defined as being nearest to the agent needs with lowest price
         # main-goal, maximum profitability at the end of episode.
         factory = world.a2f[agent.id]
-        rew = -np.sqrt(np.square(world.scores()[agent.id] - 100 / factory.initial_balance))
+        #print(f"{agent} balnce change is {factory.balance_change}")
+        rew = world.scores()[agent.id]
         if RANDOM_REWARD:
             return random.random()
         else:

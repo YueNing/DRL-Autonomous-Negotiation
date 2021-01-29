@@ -169,6 +169,7 @@ class TrainWorld(SCML2020World):
         # maddpg drived agents, heuristic agents, script drived agents, interative agents
         # self.agents = []
         # SELLER, BUYER
+        self.collaborative = COLLABORATIVE
         self.system_entities = []
 
         # communication channel dimensionality
