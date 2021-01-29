@@ -1,11 +1,16 @@
 import numpy as np
 import seaborn as sns
+import plotly.io as pio
+pio.renderers.default = "browser"
+import plotly.express as px
 import pandas as pd
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from scml.scml2020 import SCML2020World
+from drl_negotiation.core.hyperparameters import PLOT_BACKEND
 
-def show_ep_rewards(data, model,     number_episodes=20, extra=False, backend="sns"):
+
+def show_ep_rewards(data, model, number_episodes=20, extra=False, backend=PLOT_BACKEND):
     """
     mean episode reward
     >>> show_ep_rewards([42.36277500051694, 43.57323638074746, 44.766200950337335, 43.46595151832854],
@@ -43,14 +48,19 @@ def show_ep_rewards(data, model,     number_episodes=20, extra=False, backend="s
             **{names[e]:y_axis[e] for e in range(y_axis.shape[0])},
         }
     )
-    sns.lineplot(
-        x="episode", y="mean_episode_reward", hue='type',
-        data=pd.melt(data, ['episode'], var_name="type", value_name="mean_episode_reward")
-    )
-    plt.show()
+    if backend == "sns":
+        sns.lineplot(
+            x="episode", y="mean_episode_reward", hue='type',
+            data=pd.melt(data, ['episode'], var_name="type", value_name="mean_episode_reward")
+        )
+        plt.show()
+    elif backend == "plotly":
+        fig = px.line(data, x="episode", y=names)
+        fig.show()
+    else:
+        raise NotImplementedError
 
-
-def show_agent_rewards(data, model:"MADDPGModel"=None, agents=5, number_episodes=20, extra=False):
+def show_agent_rewards(data, model:"MADDPGModel"=None, agents=5, number_episodes=20, extra=False, backend=PLOT_BACKEND):
     """
     >>> show_agent_rewards([8.409011336587847, 8.351518352218934, 9.003777340184879, 8.27788729251806, 8.32058067900721,
     ...                     8.27440019409948, 9.02914681190003, 8.430564051323255, 8.954079046561578, 8.885046276863111,
@@ -97,12 +107,17 @@ def show_agent_rewards(data, model:"MADDPGModel"=None, agents=5, number_episodes
                for agent in range(len(model.env.heuristic_agents))}
         }
     )
-    sns.lineplot(
-        x="episode", y="mean_reward", hue='agent',
-        data=pd.melt(data, ['episode'], var_name="agent", value_name="mean_reward")
-    )
-    plt.show()
-
+    if backend=="sns":
+        sns.lineplot(
+            x="episode", y="mean_reward", hue='agent',
+            data=pd.melt(data, ['episode'], var_name="agent", value_name="mean_reward")
+        )
+        plt.show()
+    elif backend=="plotly":
+        fig = px.line(data, x="episode", y=agents_name)
+        fig.show()
+    else:
+        raise NotImplementedError
 
 def show_scores(world: SCML2020World):
     scores = defaultdict(list)
@@ -123,7 +138,7 @@ def show(world, winner):
     fig.show()
 
 
-def cumulative_reward(data, model, extra=False):
+def cumulative_reward(data, model, extra=False, backend=PLOT_BACKEND):
     """
     cumulative episode reward
     >>> cumulative_reward([0.3, 0.6, 0.3, -0.2, 0.8, 1.0])
@@ -139,23 +154,40 @@ def cumulative_reward(data, model, extra=False):
     y_axis = data[0]
     cum_sum_y_axis = np.cumsum(y_axis)
     y_axis_extra = data[1]
-    cum_sum_y_extra_axis = np.cumsum(y_axis_extra)
-    data = pd.DataFrame(
-        {
-            **{"episode": x_axis},
-            **{
-                "ep_reward": y_axis,
-                "cumulative_reward": cum_sum_y_axis,
-                "ep_reward_extra": y_axis_extra,
-                "cumulative_extra_reward": cum_sum_y_extra_axis,
+    if extra:
+        cum_sum_y_extra_axis = np.cumsum(y_axis_extra)
+        data = pd.DataFrame(
+            {
+                **{"episode": x_axis},
+                **{
+                    "ep_reward": y_axis,
+                    "cumulative_reward": cum_sum_y_axis,},
+                **{
+                    "ep_reward_extra": y_axis_extra,
+                    "cumulative_extra_reward": cum_sum_y_extra_axis,
+                }
             }
-        }
-    )
-
-    sns.lineplot(x="episode", y="reward", hue="reward_type",
-                 data=pd.melt(data, ['episode'], var_name="reward_type", value_name="reward"))
-    plt.show()
-
+        )
+        y_names = ["ep_reward", "cumulative_reward", "ep_reward_extra", "cumulative_extra_reward"]
+    else:
+        data = pd.DataFrame(
+            {
+                **{"episode": x_axis},
+                **{
+                    "ep_reward": y_axis,
+                    "cumulative_reward": cum_sum_y_axis,}
+            }
+        )
+        y_names = ["ep_reward", "cumulative_reward"]
+    if backend == "sns":
+        sns.lineplot(x="episode", y="reward", hue="reward_type",
+                     data=pd.melt(data, ['episode'], var_name="reward_type", value_name="reward"))
+        plt.show()
+    elif backend == "plotly":
+        fig = px.line(data, x="episode", y=y_names)
+        fig.show()
+    else:
+        raise NotImplementedError
 
 if __name__ == '__main__':
     import doctest

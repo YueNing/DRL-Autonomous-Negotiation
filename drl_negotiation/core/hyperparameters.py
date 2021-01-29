@@ -24,6 +24,8 @@ ROOT_DIR = "/" + "tmp" + "/"
 # save dir, single policy
 SAVE_DIR = ROOT_DIR+"policy4" + "/"
 PLOTS_DIR = SAVE_DIR + "learning_curves" + "/"
+# sns or plotly
+PLOT_BACKEND= "plotly"
 # model name
 MODEL_NAME = "model"
 # train episode
@@ -31,9 +33,9 @@ TRAIN_EPISODES = 1000
 # train episode save rate
 SAVE_RATE = 1
 # max length of single episode
-MAX_EPISODE_LEN = 10
+MAX_EPISODE_LEN = 5
 # batch size
-BATCH_SIZE = 256
+BATCH_SIZE = 1
 # save the model of trainers separately
 SAVE_TRAINERS = True
 
@@ -46,7 +48,7 @@ EVALUATION = not TRAIN
 
 # if train, not restore, train from scratch
 SAVE_WORLD_CONFIG = True
-LOAD_WORLD_CONFIG = True
+LOAD_WORLD_CONFIG = False
 
 SAVE_WORLD_CONFIG_DIR = SAVE_DIR + "world.config"
 LOAD_WORLD_CONFIG_DIR = " "
