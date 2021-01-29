@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 from scml.scml2020 import SCML2020World
 
-def show_ep_rewards(data, model,     number_episodes=20):
+def show_ep_rewards(data, model,     number_episodes=20, extra=False):
     """
     mean episode reward
     >>> show_ep_rewards([42.36277500051694, 43.57323638074746, 44.766200950337335, 43.46595151832854],
@@ -31,11 +31,22 @@ def show_ep_rewards(data, model,     number_episodes=20):
 
     x_axis = np.arange(save_rate, number_episodes + save_rate, save_rate)
     y_axis = np.array(data)
-    assert len(x_axis) == len(y_axis)
+    names = ["mean_episode_reward"]
+    if extra:
+        y_axis = np.reshape(y_axis, (2, int(len(data) / 2)))
+        names +=["mean_episode_extra_reward"]
+    assert len(x_axis) == y_axis.shape[1]
+
     data = pd.DataFrame(
-        {"episode":x_axis, "mean_episode_reward": y_axis}
+        {
+            **{'episode': x_axis,},
+            **{names[e]:y_axis[e] for e in range(y_axis.shape[0])},
+        }
     )
-    sns.lineplot(x="episode", y="mean_episode_reward", data=data)
+    sns.lineplot(
+        x="episode", y="mean_episode_reward", hue='type',
+        data=pd.melt(data, ['episode'], var_name="type", value_name="mean_episode_reward")
+    )
     plt.show()
 
 
@@ -107,7 +118,7 @@ def show(world, winner):
     fig.show()
 
 
-def cumulative_reward(data):
+def cumulative_reward(data, model, extra=False):
     """
     cumulative episode reward
     >>> cumulative_reward([0.3, 0.6, 0.3, -0.2, 0.8, 1.0])
@@ -118,16 +129,20 @@ def cumulative_reward(data):
     Returns:
 
     """
-    x_axis = np.arange(len(data))
-    y_axis = data
+    data = np.reshape(data, (2, int(len(data) / 2)))
+    x_axis = np.arange(data.shape[1])
+    y_axis = data[0]
     cum_sum_y_axis = np.cumsum(y_axis)
-
+    y_axis_extra = data[1]
+    cum_sum_y_extra_axis = np.cumsum(y_axis_extra)
     data = pd.DataFrame(
         {
             **{"episode": x_axis},
             **{
                 "ep_reward": y_axis,
-                "cumulative_reward": cum_sum_y_axis
+                "cumulative_reward": cum_sum_y_axis,
+                "ep_reward_extra": y_axis_extra,
+                "cumulative_extra_reward": cum_sum_y_extra_axis,
             }
         }
     )

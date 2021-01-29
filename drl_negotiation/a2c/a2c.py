@@ -193,10 +193,12 @@ class MADDPGModel:
                 saver = U.get_saver()
 
             episode_rewards = [0.0]
+            episode_extra_rewards = [0.0]
             agent_rewards = [[0.0] for _ in range(self.env.n)]
             extra_agent_rewards = [[0.0] for _ in range(self.env.extra_n)]
 
             final_ep_rewards = []
+            final_ep_extra_rewards = []
             final_ep_ag_rewards = []
             final_ep_extra_ag_rewards = []
             agent_info = [[[]]]
@@ -235,6 +237,7 @@ class MADDPGModel:
                         agent_rewards[i][-1] += rew
 
                 for i, rew in enumerate(es.extra_rew):
+                    episode_extra_rewards[-1] += rew
                     if not ONLY_SELLER:
                         extra_agent_rewards[int(i/2)][-1] +=rew
                     else:
@@ -259,6 +262,7 @@ class MADDPGModel:
                                      f"time: {round(time.time() - t_start, 3)}")
                     t_start = time.time()
                     final_ep_rewards.append(np.mean(episode_rewards[-self.save_rate:]))
+                    final_ep_extra_rewards.append(np.mean(episode_extra_rewards[-self.save_rate:]))
                     for rew in agent_rewards:
                         final_ep_ag_rewards.append(np.mean(rew[-self.save_rate:]))
                     for rew in extra_agent_rewards:
@@ -299,6 +303,7 @@ class MADDPGModel:
                     obs_n,_ = self.env.reset()
                     pbar.update(1)
                     episode_rewards.append(0)
+                    episode_extra_rewards.append(0)
                     for a in agent_rewards:
                         a.append(0)
                     for a in extra_agent_rewards:
@@ -326,7 +331,7 @@ class MADDPGModel:
                     logging.info(f'...Finished total of {len(episode_rewards)} episodes')
                     break
 
-            return final_ep_rewards, final_ep_ag_rewards, final_ep_extra_ag_rewards, episode_rewards, self.env
+            return final_ep_rewards, final_ep_extra_rewards, final_ep_ag_rewards, final_ep_extra_ag_rewards, episode_rewards, episode_extra_rewards, self.env
 
     def predict(self, obs_n, train=True):
         if train:

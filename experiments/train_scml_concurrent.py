@@ -16,11 +16,11 @@ env = make_env('scml_concurrent',
                )
 
 model = MADDPGModel(env=env, verbose=0, restore=RESTORE)
-final_ep_rewards, agent_rewards, extra_agent_rewards, episode_rewards, _ = model.learn(train_episodes=10)
+final_ep_rewards, final_ep_extra_rewards, agent_rewards, extra_agent_rewards, episode_rewards, episode_extra_rewards, _ = model.learn(train_episodes=10)
 
-show_ep_rewards(final_ep_rewards, model)
+show_ep_rewards(final_ep_rewards + final_ep_extra_rewards, model, extra=True)
 show_agent_rewards(agent_rewards + extra_agent_rewards, model, extra=True)
-cumulative_reward(episode_rewards)
+cumulative_reward(episode_rewards + episode_extra_rewards, model, extra=True)
 
 obs_n,_ = env.reset()
 for i in range(10):
