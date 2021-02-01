@@ -95,6 +95,9 @@ TIME = MAX_EPISODE_LEN
 UNIT_PRICE = 100
 # share reward
 COLLABORATIVE = False
+
+# trainer update steps, based on train step during training
+UPDATE_TRAINER_STEP = 25
 ################################################
 # scml scenario
 ################################################
