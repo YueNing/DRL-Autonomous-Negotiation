@@ -12,6 +12,7 @@ import numpy as np
 import pickle
 from tqdm import tqdm
 from drl_negotiation.core.hyperparameters import *
+from drl_negotiation.a2c._model import ModelResult
 import logging
 
 
@@ -26,7 +27,7 @@ class MADDPGModel:
 
                  # training
                  # trainer update steps
-                 n_steps=100,
+                 n_steps=UPDATE_TRAINER_STEP,
                  # learning rate
                  lr=1e-2,
                  # discount factor
@@ -332,7 +333,16 @@ class MADDPGModel:
                     logging.info(f'...Finished total of {len(episode_rewards)} episodes')
                     break
 
-            return final_ep_rewards, final_ep_extra_rewards, final_ep_ag_rewards, final_ep_extra_ag_rewards, episode_rewards, episode_extra_rewards, self.env
+            return ModelResult(
+                final_ep_rewards = np.array(final_ep_rewards),
+                final_ep_extra_rewards = np.array(final_ep_extra_rewards),
+                final_ep_ag_rewards = np.array(final_ep_ag_rewards),
+                final_ep_extra_ag_rewards = np.array(final_ep_extra_ag_rewards),
+                episode_rewards = np.array(episode_rewards),
+                episode_extra_rewards = np.array(episode_extra_rewards),
+                env = self.env
+            )
+            # return final_ep_rewards, final_ep_extra_rewards, final_ep_ag_rewards, final_ep_extra_ag_rewards, episode_rewards, episode_extra_rewards, self.env
 
     def predict(self, obs_n, train=True):
         if train:
