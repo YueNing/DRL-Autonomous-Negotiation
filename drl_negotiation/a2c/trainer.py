@@ -1,6 +1,7 @@
 import drl_negotiation.utils.utils as U
 import tensorflow as tf
 import numpy as np
+import logging
 from drl_negotiation.a2c.replay_buffer import ReplayBuffer
 from drl_negotiation.a2c.distributions import make_pd_type
 
@@ -255,6 +256,7 @@ class MADDPGAgentTrainer(AgentTrainer):
         if not t % self.args.n_steps == 0:
             return
 
+        logging.debug(f"update trainer {self} at step {t}!")
         self.replay_sample_index = self.replay_buffer.make_index(self.args.batch_size)
         obs_n = []
         obs_next_n = []
