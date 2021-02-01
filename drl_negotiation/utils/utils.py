@@ -559,13 +559,7 @@ def make_world(config=None):
         )
         world_configuration['negotiation_speed'] = NEGOTIATION_SPEED
     else:
-        world_configuration = SCML2020World.generate(
-            agent_types=config['agent_types'],
-            agent_params=config['agent_params'][:-2],
-            n_steps=config['n_steps']
-        )
-        world_configuration['negotiation_speed'] = config['negotiation_speed'] if \
-            "negotiation_speed" in config else NEGOTIATION_SPEED
+        world_configuration = config
 
     world = TrainWorld(configuration=world_configuration)
     return world
@@ -576,10 +570,6 @@ def get_world_config(load_dir):
         load_dir = load_dir if load_dir is not None else LOAD_WORLD_CONFIG_DIR
         with open(load_dir + '.pkl', 'rb') as file:
             config = pickle.load(file)
-            agent_types = config['agent_types']
-            config['agent_types'] = []
-            for _ in agent_types:
-                config['agent_types'].append(get_class(_))
             logging.info(f"load world config successfully from {load_dir}")
     except FileNotFoundError as e:
         logging.error(f"Error when Try to load the file from {load_dir}, "
