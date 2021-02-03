@@ -477,10 +477,10 @@ from drl_negotiation.core.envs.normalized_env import NormalizedEnv
 
 def make_env(scenario_name,
              arglist=None,
-             save_config=False,
-             load_config=False,
-             save_dir=None,
-             load_dir=None,
+             save_config=SAVE_WORLD_CONFIG,
+             load_config=LOAD_WORLD_CONFIG,
+             save_dir=SAVE_WORLD_CONFIG_DIR,
+             load_dir=LOAD_WORLD_CONFIG_DIR,
              normalize=False,
              ):
     """
@@ -681,6 +681,12 @@ def parse_args():
                         help="save model once every time this many episodes are compeleted")
     parser.add_argument("--load-dir", type=str, default='',
                         help="directory in which training state and model are loaded")
+    parser.add_argument("--run", type=str, default="contrib/MADDPG")
+    parser.add_argument("--num-cpus", type=int, default=0)
+    parser.add_argument("--as-test", action="store_true")
+    parser.add_argument("--torch", action="store_true")
+    parser.add_argument("--stop-reward", type=float, default=7.0)
+    parser.add_argument("--stop-timesteps", type=int, default=50000)
 
     # Evaluation
     parser.add_argument("--restore", action="store_true", default=False)

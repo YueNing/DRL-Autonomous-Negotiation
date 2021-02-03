@@ -611,12 +611,20 @@ class SCMLEnv(Environment):
         self._reset_render()
 
     @property
-    def action_space(self):
+    def possible_agents(self):
+        if not ONLY_SELLER:
+            return np.reshape(np.array([[f"{agent.id}_seller", f"{agent.id}_buyer"] for agent in self.agents]),
+                              (1, 2*len(self.agents)))[0]
+        else:
+            return np.array([f"{agent.id}" for agent in self.agents])
+
+    @property
+    def action_space(self, type=list):
         """np.ndarray[akro.Space]: The action space specification."""
         return self._action_space
 
     @property
-    def observation_space(self):
+    def observation_space(self, type=list):
         """np.ndarray[akro.Space]: The observation space specification."""
         return self._observation_space
 
@@ -635,6 +643,18 @@ class SCMLEnv(Environment):
     @property    
     def step_cnt(self):
         return self._step_cnt
+
+    def get_action_space(self, type=list):
+        """np.ndarray[akro.Space]: The action space specification."""
+        if type == dict:
+            return {f"{agent}": self._action_space[index] for index, agent in enumerate(self.possible_agents)}
+        return self.action_space
+
+    def get_observation_space(self, type=list):
+        """np.ndarray[akro.Space]: The observation space specification."""
+        if type == dict:
+            return {f"{agent}": self._observation_space[index] for index, agent in enumerate(self.possible_agents)}
+        return self.observation_space
 
     def reset(self):
         # reset world
@@ -853,4 +873,25 @@ class SCMLEnv(Environment):
         action = self._process_manager_action(agent, action, seller=True)
         self._process_communication_action(agent, action)
 
+import supersuit
+from ray.rllib.env.multi_agent_env import MultiAgentEnv, ENV_STATE
 
+class RaySCMLEnv(MultiAgentEnv):
+    """An interface to the SCML MARL environment library.
+    """
+
+    def __init__(self, env: SCMLEnv):
+        self.env = env
+
+        # agent idx list
+        self.agents = self.env.possible_agents
+
+        # get dictionaries of obs_spaces and act_spaces
+        self.observation_spaces = self.env.get_observation_space(type=dict)
+        self.action_spaces = self.env.get_action_space(type=dict)
+        # self.observation_space =
+        # self.action_space =
+        self.reset()
+
+    def reset(self):
+        pass
