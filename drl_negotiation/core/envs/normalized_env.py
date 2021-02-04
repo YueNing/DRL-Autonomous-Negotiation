@@ -1,5 +1,6 @@
 """An environment wrapper that normalizes action, observation and reward."""
 import numpy as np
+from drl_negotiation.core.hyperparameters import ONLY_SELLER
 from drl_negotiation.core._env import Wrapper, EnvStep
 
 

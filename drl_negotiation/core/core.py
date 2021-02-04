@@ -100,6 +100,15 @@ class MySCML2020Agent(SCML2020Agent):
         self.interative = False
         super().__init__(*args, **kwargs)
 
+    @property
+    def agent_scope_name(self):
+        """
+        Used in tensorflow as scope
+        Returns:
+            str
+        """
+        return self.id.replace("@", "-")
+
     def init(self):
         super(MySCML2020Agent, self).init()
 

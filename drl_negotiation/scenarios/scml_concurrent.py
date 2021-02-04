@@ -73,6 +73,12 @@ class Scenario(BaseScenario):
             return rew
 
     def done(self, agent: MySCML2020Agent, world: TrainWorld, seller=True):
+        if world.a2f[agent.id].is_bankrupt:
+            return True
+
+        if agent.awi.current_step > world.n_steps:
+            return True
+
         return False
 
     def benchmark_data(self, agent: MySCML2020Agent, world: TrainWorld, seller=True):

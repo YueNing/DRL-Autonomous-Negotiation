@@ -14,7 +14,6 @@ import numpy as np
 from typing import Tuple, List
 from drl_negotiation.core.hyperparameters import *
 from drl_negotiation.utils.utils import reverse_normalize
-from drl_negotiation.a2c.policy import create_actor
 import drl_negotiation.utils.utils as U
 from gym import spaces
 import tensorflow as tf
@@ -56,47 +55,7 @@ class MyNegotiationManager(IndependentNegotiationsManager):
         #     self._setup_model()
 
     def _setup_model(self):
-        """
-        get the buyer and seller trainer/model,
-        create the policy network and load the saved parameters
-        Returns:
-
-        """
-        scopes = [self.name.replace("@", '-') + "_seller", self.name.replace('@', '-') + "_buyer"]
-        obs_ph = []
-
-        # observation space
-        observation_space = []
-        obs_dim = [len(self._get_obs(seller=True)), len(self._get_obs(seller=False))]
-
-        observation_space.append(spaces.Box(low=-np.inf, high=+np.inf, shape=(obs_dim[0],), dtype=np.float32))
-        observation_space.append(spaces.Box(low=-np.inf, high=+np.inf, shape=(obs_dim[1],), dtype=np.float32))
-
-        obs_shape = [observation_space[i].shape for i in range(len(observation_space))]
-
-        for i in range(len(obs_shape)):
-            obs_ph.append(U.BatchInput(obs_shape[i], name="observation" + str(i)).get())
-
-        make_obs_ph = obs_ph
-
-        # action space
-        if DISCRETE_ACTION_SPACE:
-            act_space = [spaces.Discrete(DIM_M * 2 + 1), spaces.Discrete(DIM_B * 2 + 1)]
-        else:
-            act_space = [spaces.Box(low=-self.m_range, high=+self.m_range, shape=(DIM_M,), dtype=np.float32),
-                         spaces.Box(low=-self.m_range, high=+self.m_range, shape=(DIM_B,), dtype=np.float32)]
-
-        self.models = []
-
-        for index in range(len(scopes)):
-            self.models.append(
-                (create_actor(
-                    make_obs_ph=make_obs_ph[index],
-                    act_space=act_space[index],
-                    scope=scopes[index]
-                ), scopes[index]))
-
-        self.scopes = scopes
+        pass
 
     def _load_state(self, model):
         """
