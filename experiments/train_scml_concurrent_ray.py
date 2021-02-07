@@ -41,7 +41,7 @@ if __name__ == "__main__":
         "env": "scml_env"
     })
 
-    results = tune.run(args.run, stop=stop, config=config, verbose=1, num_samples=8)
+    results = tune.run(args.run, stop=stop, config=config, verbose=1, num_samples=4)
 
     if args.as_test:
         check_learning_achieved(results)
