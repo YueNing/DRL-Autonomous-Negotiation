@@ -2,3 +2,8 @@ pytest
 gym
 mpi4py
 akro
+ray
+tensorflow==2.4.1
+negmas==0.7.0
+scml==0.3.0
+
