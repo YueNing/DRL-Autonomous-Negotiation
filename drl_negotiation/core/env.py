@@ -442,11 +442,12 @@ class RaySCMLEnv(MultiAgentEnv):
 
         # make all list into dict
         dones = self._make_dict(es.last.tolist())
-        if all(dones):
+        if all(dones.values()):
             dones['__all__'] = True
         else:
             dones['__all__'] = False
 
+        #print(f"step: {self.env.step_cnt}, dones are {dones}")
         result = (self._make_dict(es.observation.tolist()), \
                self._make_dict(es.reward.tolist()), dones, \
                self._make_dict(es.env_info))
