@@ -611,7 +611,7 @@ def parse_args():
     parser.add_argument("--load-dir", type=str, default='',
                         help="directory in which training state and model are loaded")
     parser.add_argument("--run", type=str, default="contrib/MADDPG")
-    parser.add_argument("--num-cpus", type=int, default=2)
+    parser.add_argument("--num-cpus", type=int, default=16)
     parser.add_argument("--as-test", action="store_true")
     parser.add_argument("--torch", action="store_true")
     parser.add_argument("--stop-reward", type=float, default=7.0)

@@ -30,7 +30,7 @@ if __name__ == "__main__":
         config['num_gpus'] = int(os.environ.get("RLLIB_NUM_GPUS", "0"))
         group = False
 
-    ray.init(num_cpus=args.num_cpus or None)
+    ray.init(address="auto")
 
     stop = {
         "episode_reward_mean": args.stop_reward,
@@ -41,7 +41,7 @@ if __name__ == "__main__":
         "env": "scml_env"
     })
 
-    results = tune.run(args.run, stop=stop, config=config, verbose=1)
+    results = tune.run(args.run, stop=stop, config=config, verbose=1, num_samples=8)
 
     if args.as_test:
         check_learning_achieved(results)

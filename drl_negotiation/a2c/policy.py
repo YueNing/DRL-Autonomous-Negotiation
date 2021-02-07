@@ -65,7 +65,7 @@ class MADDPGTFPolicy(MADDPGPostprocessing, TFPolicy):
         if isinstance(act_space, MultiDiscrete):
             self.nvec = act_space.nvec
 
-        print(f"nvec is {self.nvec}")
+        # print(f"nvec is {self.nvec}")
         # _____ Environment Setting
         def _make_continuous_space(space):
             if isinstance(space, Box):
@@ -379,7 +379,7 @@ class MADDPGTFPolicy(MADDPGPostprocessing, TFPolicy):
             feature = tf.layers.dense(
                 out, units=act_space.shape[0], activation=None)
 
-            print(f"feature is {feature}, action_space: {act_space}")
+            # print(f"feature is {feature}, action_space: {act_space}")
             if self.nvec is None:
                 sampler = tfp.distributions.RelaxedOneHotCategorical(
                     temperature=1.0, logits=feature).sample()

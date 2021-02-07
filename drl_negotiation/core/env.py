@@ -437,7 +437,7 @@ class RaySCMLEnv(MultiAgentEnv):
 
     def step(self, action_dict):
         action_n = list(action_dict.values())
-        print(f"action_n are {action_n}")
+        # print(f"action_n are {action_n}")
         es = self.env.step(action_n)
 
         # make all list into dict
