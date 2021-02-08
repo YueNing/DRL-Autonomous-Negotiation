@@ -1,17 +1,32 @@
 import numpy as np
-import seaborn as sns
-import chart_studio.plotly as py
-import plotly.io as pio
-#pio.renderers.default = "browser"
-import plotly.express as px
 import pandas as pd
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from scml.scml2020 import SCML2020World
-from drl_negotiation.core.hyperparameters import PLOT_BACKEND
+from drl_negotiation.core.hyperparameters import (PLOT_BACKEND,
+                                                  USERNAME,
+                                                  API_KEY,
+                                                  ONLINE,
+                                                  MULTI_LAYER
+                                                  )
+
+if PLOT_BACKEND == "sns":
+    import seaborn as sns
+if PLOT_BACKEND == "plotly":
+    import chart_studio
+    chart_studio.tools.set_credentials_file(username=USERNAME, api_key=API_KEY)
+    import chart_studio.plotly as py
+    import plotly.io as pio
+    # pio.renderers.default = "browser"
+    import plotly.express as px
 
 
-def show_ep_rewards(data, model, number_episodes=20, extra=False, backend=PLOT_BACKEND):
+def show_ep_rewards(data,
+                    model,
+                    number_episodes=20,
+                    extra=False,
+                    backend=PLOT_BACKEND,
+                    multi_layer=MULTI_LAYER):
     """
     mean episode reward
     >>> show_ep_rewards([42.36277500051694, 43.57323638074746, 44.766200950337335, 43.46595151832854],
@@ -20,12 +35,15 @@ def show_ep_rewards(data, model, number_episodes=20, extra=False, backend=PLOT_B
     ...             )
 
     Args:
-        data:
-        model:
-        number_episodes:
+        multi_layer: distributed running, combine figs
+        data: data
+        model: model, maddpg
+        number_episodes: number of episodes if model is None
+        extra: True show opponent agent
+        backend: show backend, sns or plotly
 
     Returns:
-
+        None
     """
     assert len(data) > 0, "data is empty"
     if model is None:
@@ -46,7 +64,7 @@ def show_ep_rewards(data, model, number_episodes=20, extra=False, backend=PLOT_B
     data = pd.DataFrame(
         {
             **{'episode': x_axis,},
-            **{names[e]:y_axis[e] for e in range(y_axis.shape[0])},
+            **{names[e]: y_axis[e] for e in range(y_axis.shape[0])},
         }
     )
     if backend == "sns":
@@ -57,13 +75,25 @@ def show_ep_rewards(data, model, number_episodes=20, extra=False, backend=PLOT_B
         plt.show()
     elif backend == "plotly":
         fig = px.line(data, x="episode", y=names)
-        #fig.show()
-        py.plot(fig, filename='show_ep_reward', auto_open=True)
+        # fig.show()
+
+        if multi_layer:
+            return fig
+
+        if ONLINE:
+            py.plot(fig, filename='show_ep_reward', auto_open=True)
         pio.write_html(fig, file="show_ep_reward.html", auto_open=True)
     else:
         raise NotImplementedError
 
-def show_agent_rewards(data, model:"MADDPGModel"=None, agents=5, number_episodes=20, extra=False, backend=PLOT_BACKEND):
+
+def show_agent_rewards(data,
+                       model: "MADDPGModel" = None,
+                       agents=5,
+                       number_episodes=20,
+                       extra=False,
+                       backend=PLOT_BACKEND,
+                       multi_layer=MULTI_LAYER):
     """
     >>> show_agent_rewards([8.409011336587847, 8.351518352218934, 9.003777340184879, 8.27788729251806, 8.32058067900721,
     ...                     8.27440019409948, 9.02914681190003, 8.430564051323255, 8.954079046561578, 8.885046276863111,
@@ -76,8 +106,11 @@ def show_agent_rewards(data, model:"MADDPGModel"=None, agents=5, number_episodes
         model:
         agents:
         number_episodes:
-    Returns:
+        extra:
+        backend:
 
+    Returns:
+        None
     """
     if model is None:
         if type(agents) == int:
@@ -101,7 +134,7 @@ def show_agent_rewards(data, model:"MADDPGModel"=None, agents=5, number_episodes
                                    (save_times, len(model.env.heuristic_agents)))
     x_axis = np.arange(save_rate, number_episodes + save_rate, save_rate)
     assert len(x_axis) == save_times
-    #y_axis = np.reshape(np.array(data), (save_times, agents))
+    # y_axis = np.reshape(np.array(data), (save_times, agents))
     data = pd.DataFrame(
         {
             **{'episode': x_axis,},
@@ -110,17 +143,25 @@ def show_agent_rewards(data, model:"MADDPGModel"=None, agents=5, number_episodes
                for agent in range(len(model.env.heuristic_agents))}
         }
     )
-    if backend=="sns":
+    if backend == "sns":
         sns.lineplot(
             x="episode", y="mean_reward", hue='agent',
             data=pd.melt(data, ['episode'], var_name="agent", value_name="mean_reward")
         )
         plt.show()
-    elif backend=="plotly":
+    elif backend == "plotly":
         fig = px.line(data, x="episode", y=agents_name)
-        fig.show()
+
+        if multi_layer:
+            return fig
+
+        if ONLINE:
+            py.plot(fig, filename="show_agent_rewards", auto_open=True)
+        pio.write_html(fig, file="show_agent_rewards.html", auto_open=True)
+        # fig.show()
     else:
         raise NotImplementedError
+
 
 def show_scores(world: SCML2020World):
     scores = defaultdict(list)
@@ -141,16 +182,24 @@ def show(world, winner):
     fig.show()
 
 
-def cumulative_reward(data, model, extra=False, backend=PLOT_BACKEND):
+def cumulative_reward(data,
+                      model,
+                      extra=False,
+                      backend=PLOT_BACKEND,
+                      multi_layer=MULTI_LAYER):
     """
     cumulative episode reward
     >>> cumulative_reward([0.3, 0.6, 0.3, -0.2, 0.8, 1.0])
 
     Args:
+        multi_layer:
         data:
+        model:
+        extra:
+        backend:
 
     Returns:
-
+        None
     """
     data = np.reshape(data, (2, int(len(data) / 2)))
     x_axis = np.arange(data.shape[1])
@@ -188,9 +237,17 @@ def cumulative_reward(data, model, extra=False, backend=PLOT_BACKEND):
         plt.show()
     elif backend == "plotly":
         fig = px.line(data, x="episode", y=y_names)
-        fig.show()
+
+        if multi_layer:
+            return fig
+
+        if ONLINE:
+            py.plot(fig, filename="cumulative_reward", auto_open=True)
+        pio.write_html(fig, file="cumulative_reward.html", auto_open=True)
+        # fig.show()
     else:
         raise NotImplementedError
+
 
 if __name__ == '__main__':
     import doctest

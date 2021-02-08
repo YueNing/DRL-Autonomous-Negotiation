@@ -4,7 +4,11 @@ import logging
 import numpy as np
 import collections
 import random
+# import tensorflow as tf
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 from gym import spaces
 import pickle
 from negmas import Issue

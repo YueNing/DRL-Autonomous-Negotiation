@@ -152,7 +152,7 @@ class MADDPGModel:
             raise ValueError("Error: cannot train the model without a valid environment, please set an environment "
                              "with set_env(self, env) method.")
 
-    def learn(self, train_episodes=None):
+    def learn(self, train_episodes: object = None) -> object:
         """
         learning process
         Args:

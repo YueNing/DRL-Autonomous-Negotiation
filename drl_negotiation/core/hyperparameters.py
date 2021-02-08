@@ -25,7 +25,15 @@ ROOT_DIR = "/" + "tmp" + "/"
 SAVE_DIR = ROOT_DIR+"policy4" + "/"
 PLOTS_DIR = SAVE_DIR + "learning_curves" + "/"
 # sns or plotly
-PLOT_BACKEND= "plotly"
+PLOT_BACKEND = "plotly"
+# running based on ray, create multi layer charts
+MULTI_LAYER = True
+
+# settings of plotly, online or local
+ONLINE = False
+USERNAME = "naodongbanana"
+API_KEY = "kF579m9M6nXOrjw4GmKU"
+
 # model name
 MODEL_NAME = "model"
 # train episode
