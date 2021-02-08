@@ -12,7 +12,7 @@ logging_setup(logging.INFO)
 def main(num_samples=1):
 
     @ray.remote
-    def _main():
+    def _main(count):
         env = make_env('scml_concurrent',
                        save_config=SAVE_WORLD_CONFIG,
                        load_config=LOAD_WORLD_CONFIG,
@@ -27,9 +27,9 @@ def main(num_samples=1):
 
         model_result: "ModelResult" = model.learn(train_episodes=10)
 
-        fig_ep_rewards = show_ep_rewards(model_result.total_final_ep_rewards, model, extra=True)
-        fig_agent_rewards = show_agent_rewards(model_result.total_final_ep_ag_rewards, model, extra=True)
-        fig_cumulative_reward = cumulative_reward(model_result.total_final_ep_rewards, model, extra=True)
+        fig_ep_rewards = show_ep_rewards(model_result.total_final_ep_rewards, model, extra=True, count=count)
+        fig_agent_rewards = show_agent_rewards(model_result.total_final_ep_ag_rewards, model, extra=True, count=count)
+        fig_cumulative_reward = cumulative_reward(model_result.total_final_ep_rewards, model, extra=True, count=count)
 
         if EVALUATION:
             obs_n, _ = env.reset()
@@ -41,13 +41,20 @@ def main(num_samples=1):
                 print(render_result)
             env.close()
 
-        return [fig_ep_rewards, fig_agent_rewards, fig_cumulative_reward]
+        return {
+            "ep_mean_rewards": fig_ep_rewards,
+            "agent_mean_rewards": fig_agent_rewards,
+            "cumulative_rewards": fig_cumulative_reward
+        }
+        # return [fig_ep_rewards, fig_agent_rewards, fig_cumulative_reward]
 
-    futures = [_main.remote() for _ in range(num_samples)]
+    futures = [_main.remote(_) for _ in range(num_samples)]
     results = ray.get(futures)
-    print(results)
+    from drl_negotiation.utils.plots import multi_layer_charts
+    multi_layer_charts(results)
+    # print(results)
 
 
 if __name__ == '__main__':
     ray.init(address="auto")
-    main(num_samples=2)
+    main(num_samples=8)

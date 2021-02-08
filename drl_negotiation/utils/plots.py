@@ -19,6 +19,7 @@ if PLOT_BACKEND == "plotly":
     import plotly.io as pio
     # pio.renderers.default = "browser"
     import plotly.express as px
+    import plotly.graph_objects as go
 
 
 def show_ep_rewards(data,
@@ -26,7 +27,8 @@ def show_ep_rewards(data,
                     number_episodes=20,
                     extra=False,
                     backend=PLOT_BACKEND,
-                    multi_layer=MULTI_LAYER):
+                    multi_layer=MULTI_LAYER,
+                    count=0):
     """
     mean episode reward
     >>> show_ep_rewards([42.36277500051694, 43.57323638074746, 44.766200950337335, 43.46595151832854],
@@ -76,9 +78,15 @@ def show_ep_rewards(data,
     elif backend == "plotly":
         fig = px.line(data, x="episode", y=names)
         # fig.show()
-
         if multi_layer:
-            return fig
+            colors = ['blue', 'cyan']
+            trace_results = []
+            for name in names:
+                trace_results.append(go.Scatter(x=data["episode"], y=data[name],
+                                                line=dict(color=colors[names.index(name) % len(colors)]),
+                                                mode='lines', name=name, showlegend=not count, legendgroup=name))
+
+            return trace_results
 
         if ONLINE:
             py.plot(fig, filename='show_ep_reward', auto_open=True)
@@ -93,7 +101,8 @@ def show_agent_rewards(data,
                        number_episodes=20,
                        extra=False,
                        backend=PLOT_BACKEND,
-                       multi_layer=MULTI_LAYER):
+                       multi_layer=MULTI_LAYER,
+                       count=0):
     """
     >>> show_agent_rewards([8.409011336587847, 8.351518352218934, 9.003777340184879, 8.27788729251806, 8.32058067900721,
     ...                     8.27440019409948, 9.02914681190003, 8.430564051323255, 8.954079046561578, 8.885046276863111,
@@ -102,6 +111,7 @@ def show_agent_rewards(data,
     ...                     None, agents=5, number_episodes=20)
 
     Args:
+        multi_layer:
         data:
         model:
         agents:
@@ -153,7 +163,14 @@ def show_agent_rewards(data,
         fig = px.line(data, x="episode", y=agents_name)
 
         if multi_layer:
-            return fig
+            colors = ['blue', 'cyan', 'magenta', "#636efa",  "#00cc96",  "#EF553B", 'brown']
+            trace_results = []
+            for an in agents_name:
+                trace_results.append(go.Scatter(x=data['episode'], y=data[an],
+                                                line=dict(color=colors[agents_name.index(an) % len(colors)]),
+                                                mode="lines", name=an, showlegend=not count, legendgroup=an))
+
+            return trace_results
 
         if ONLINE:
             py.plot(fig, filename="show_agent_rewards", auto_open=True)
@@ -186,7 +203,8 @@ def cumulative_reward(data,
                       model,
                       extra=False,
                       backend=PLOT_BACKEND,
-                      multi_layer=MULTI_LAYER):
+                      multi_layer=MULTI_LAYER,
+                      count=0):
     """
     cumulative episode reward
     >>> cumulative_reward([0.3, 0.6, 0.3, -0.2, 0.8, 1.0])
@@ -239,12 +257,59 @@ def cumulative_reward(data,
         fig = px.line(data, x="episode", y=y_names)
 
         if multi_layer:
-            return fig
+            colors = ['blue', 'cyan', 'magenta', "#636efa"]
+            trace_results = []
+            for name in y_names:
+                trace_results.append(go.Scatter(x=data['episode'], y=data[name],
+                                                line=dict(color=colors[y_names.index(name) % len(colors)]),
+                                                mode="lines", name=name, showlegend=not count, legendgroup=name))
+            return trace_results
 
         if ONLINE:
             py.plot(fig, filename="cumulative_reward", auto_open=True)
         pio.write_html(fig, file="cumulative_reward.html", auto_open=True)
         # fig.show()
+    else:
+        raise NotImplementedError
+
+
+from typing import List, Dict
+def multi_layer_charts(data: List[Dict], backend=PLOT_BACKEND):
+    """
+
+    Args:
+        backend:
+        data: [{name: [go.Scatter, go.Scatter], name: [go.Scatter, go.Scatter], name: [go.Scatter, go.Scatter]},
+                {name: [go.Scatter, go.Scatter], name: [go.Scatter, go.Scatter], name: [go.Scatter, go.Scatter]},
+                {name: [go.Scatter, go.Scatter], name: [go.Scatter, go.Scatter], name: [go.Scatter, go.Scatter]}
+            ]
+
+    Returns:
+        None
+    """
+    if backend == "sns":
+        raise NotImplementedError("Will be implemented later!")
+    elif backend == "plotly":
+        import math
+        from plotly.subplots import make_subplots
+        keys = data[0].keys()
+
+        figs = {}
+        for key in keys:
+            rows = math.ceil(len(data) / 2)
+            cols = 2
+            _figs = make_subplots(rows=rows, cols=cols)
+            for index in range(len(data)):
+                for _ in data[index][key]:
+                    _figs.add_trace(_, row=int(index/cols)+1, col=index%cols+1)
+            figs[key] = _figs
+        # import pdb;pdb.set_trace()
+
+        if ONLINE:
+            for name, fig in figs.items():
+                py.plot(fig, filename=name, auto_open=True)
+        for name, fig in figs.items():
+            pio.write_html(fig, file=f"{name}.html", auto_open=True)
     else:
         raise NotImplementedError
 
