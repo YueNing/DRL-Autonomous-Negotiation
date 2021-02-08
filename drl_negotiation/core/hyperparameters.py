@@ -30,7 +30,7 @@ PLOT_BACKEND = "plotly"
 MULTI_LAYER = True
 
 # settings of plotly, online or local
-ONLINE = False
+ONLINE = True
 USERNAME = "naodongbanana"
 API_KEY = "kF579m9M6nXOrjw4GmKU"
 
