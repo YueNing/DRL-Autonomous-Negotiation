@@ -24,11 +24,10 @@ show_agent_rewards(result.total_final_ep_ag_rewards, model, extra=True)
 cumulative_reward(result.total_final_ep_rewards, model, extra=True)
 
 obs_n,_ = env.reset()
-for i in range(10):
+for i in range(MAX_EPISODE_LEN):
     action_n = model.predict(obs_n, train=False)
     es = env.step(action_n)
     obs_n = es.observation
     result = env.render("ascii")
     print(result)
-
 env.close()

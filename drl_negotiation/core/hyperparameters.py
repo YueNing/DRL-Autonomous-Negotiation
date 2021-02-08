@@ -8,7 +8,7 @@ GOAL = 1000
 RUNNING_IN_SCML2020World = False
 POLICIES = ['/tmp/policy2/', '/tmp/policy3/']
 # action of count all in controller
-RANDOM = False
+RANDOM = True 
 RANDOM_REWARD = False
 
 # Training from scratch: set TRAIN, SAVE_WORLD_CONFIG as True

@@ -1,7 +1,8 @@
 import numpy as np
 import seaborn as sns
+import chart_studio.plotly as py
 import plotly.io as pio
-pio.renderers.default = "browser"
+#pio.renderers.default = "browser"
 import plotly.express as px
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -56,7 +57,9 @@ def show_ep_rewards(data, model, number_episodes=20, extra=False, backend=PLOT_B
         plt.show()
     elif backend == "plotly":
         fig = px.line(data, x="episode", y=names)
-        fig.show()
+        #fig.show()
+        py.plot(fig, filename='show_ep_reward', auto_open=True)
+        pio.write_html(fig, file="show_ep_reward.html", auto_open=True)
     else:
         raise NotImplementedError
 
