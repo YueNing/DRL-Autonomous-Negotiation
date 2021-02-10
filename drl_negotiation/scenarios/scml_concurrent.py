@@ -17,7 +17,9 @@ class Scenario(BaseScenario):
         return world
 
     def reset_world(self, world:TrainWorld):
-        world.__init__(configuration=world.configuration)
+        world = make_world(config=world.configuration)
+        return world
+        # world.__init__(configuration=world.configuration)
 
     def observation(self, agent: MySCML2020Agent, world: TrainWorld, seller=True):
         last_offers = [[] for _ in agent.awi.my_consumers] + [[] for _ in agent.awi.my_suppliers]

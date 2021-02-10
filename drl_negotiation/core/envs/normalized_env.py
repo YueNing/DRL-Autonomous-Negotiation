@@ -28,7 +28,7 @@ class NormalizedEnv(Wrapper):
             env,
             scale_reward=3.,
             normalize_obs=True,
-            normalize_reward=True,
+            normalize_reward=False,
             expected_action_scale=1.,
             flatten_obs=False,
             obs_alhpa=0.001,

@@ -88,9 +88,9 @@ def show_ep_rewards(data,
 
             return trace_results
 
+        pio.write_html(fig, file="show_ep_reward.html", auto_open=True)
         if ONLINE:
             py.plot(fig, filename='show_ep_reward', auto_open=True)
-        pio.write_html(fig, file="show_ep_reward.html", auto_open=True)
     else:
         raise NotImplementedError
 
@@ -172,9 +172,9 @@ def show_agent_rewards(data,
 
             return trace_results
 
+        pio.write_html(fig, file="show_agent_rewards.html", auto_open=True)
         if ONLINE:
             py.plot(fig, filename="show_agent_rewards", auto_open=True)
-        pio.write_html(fig, file="show_agent_rewards.html", auto_open=True)
         # fig.show()
     else:
         raise NotImplementedError
@@ -265,9 +265,9 @@ def cumulative_reward(data,
                                                 mode="lines", name=name, showlegend=not count, legendgroup=name))
             return trace_results
 
+        pio.write_html(fig, file="cumulative_reward.html", auto_open=True)
         if ONLINE:
             py.plot(fig, filename="cumulative_reward", auto_open=True)
-        pio.write_html(fig, file="cumulative_reward.html", auto_open=True)
         # fig.show()
     else:
         raise NotImplementedError
@@ -304,12 +304,12 @@ def multi_layer_charts(data: List[Dict], backend=PLOT_BACKEND):
                     _figs.add_trace(_, row=int(index/cols)+1, col=index%cols+1)
             figs[key] = _figs
         # import pdb;pdb.set_trace()
+        for name, fig in figs.items():
+            pio.write_html(fig, file=f"{name}.html", auto_open=True)
 
         if ONLINE:
             for name, fig in figs.items():
                 py.plot(fig, filename=name, auto_open=True)
-        for name, fig in figs.items():
-            pio.write_html(fig, file=f"{name}.html", auto_open=True)
     else:
         raise NotImplementedError
 

@@ -30,7 +30,7 @@ PLOT_BACKEND = "plotly"
 MULTI_LAYER = True
 
 # settings of plotly, online or local
-ONLINE = True
+ONLINE = False
 USERNAME = "naodongbanana"
 API_KEY = "kF579m9M6nXOrjw4GmKU"
 
@@ -39,11 +39,11 @@ MODEL_NAME = "model"
 # train episode
 TRAIN_EPISODES = 1000
 # train episode save rate
-SAVE_RATE = 1
+SAVE_RATE = 10
 # max length of single episode
-MAX_EPISODE_LEN = 5
+MAX_EPISODE_LEN = 25
 # batch size
-BATCH_SIZE = 1
+BATCH_SIZE = 1024
 # save the model of trainers separately
 SAVE_TRAINERS = True
 
@@ -105,7 +105,7 @@ UNIT_PRICE = 100
 COLLABORATIVE = False
 
 # trainer update steps, based on train step during training
-UPDATE_TRAINER_STEP = 25
+UPDATE_TRAINER_STEP = 100
 ################################################
 # scml scenario
 ################################################

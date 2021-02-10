@@ -638,7 +638,8 @@ class SCMLEnv(Environment):
 
     def reset(self):
         # reset world
-        self.reset_callback(self.world)
+        # self.reset_callback(self.world)
+        self.world = self.reset_callback(self.world)
 
         first_obs = []
         self.agents = self.world.policy_agents
@@ -718,6 +719,7 @@ class SCMLEnv(Environment):
         if all([1 if s in (StepType.TERMINAL, StepType.TIMEOUT) else 0 for s in step_type]):
             self._step_cnt = None
 
+        # print(f"reward_n are {reward_n}")
         return EnvStep(
             env_spec=self.spec,
             action=action_n,
