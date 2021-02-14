@@ -270,7 +270,7 @@ class MADDPGAgentTrainer(AgentTrainer):
         obs, act, rew, obs_next, done = self.replay_buffer.sample_index(index)
 
         # train q network
-        num_sample = 1
+        num_sample = 10
         target_q = 0.0
         target_q_next = None
         for i in range(num_sample):

@@ -5,6 +5,7 @@ DRL Controller
 # Packages used for Test
 ############################
 import logging
+import copy
 import random
 from typing import Optional, Dict, Tuple
 from negmas import (Outcome,
@@ -71,6 +72,11 @@ class MyDRLSCMLSAOSyncController(SyncController):
         self.offers[negotiator_id] = offer
         self.offer_states[negotiator_id] = state
         n_negotiators = len(self.active_negotiators)
+
+        # saved for observation
+        self.history_running_negotiations = self.parent.running_negotiations
+        self.history_offers = copy.deepcopy(self.offers)
+
         # if we got all the offers or waited long enough, counter all the offers so-far
         if (
             len(self.offers) == n_negotiators
@@ -113,12 +119,14 @@ class MyDRLSCMLSAOSyncController(SyncController):
             }
         else:
             responses = {}
-            self.history_running_negotiations = self.parent.running_negotiations
             for nid in offers:
-                self.history_offers[nid] = offers[nid]
+                # self.history_offers[nid] = offers[nid]
                 negotiator = self.negotiators[nid]
-                negotiation = [negotiation for negotiation in self.parent.running_negotiations
-                               if negotiation.negotiator == self.negotiators[nid][0]][0]
+                try:
+                    negotiation = [negotiation for negotiation in self.parent.running_negotiations
+                                   if negotiation.negotiator == self.negotiators[nid][0]][0]
+                except Exception as e:
+                    print("error")
 
                 if negotiation.annotation["seller"] == self.parent.id:
                     index = sorted(self.parent.awi.my_consumers).index(negotiation.annotation["buyer"])
@@ -129,23 +137,35 @@ class MyDRLSCMLSAOSyncController(SyncController):
                     # TODO, convert action to legal outcome
                     response_outcome = tuple(np.array(self.parent.action.b[index * 3:index * 3 + 3], dtype=int))
 
+
                 util = self.utility(offers[nid], self.negotiators[nid][0].ami.issues[UNIT_PRICE].max_value)
                 response_outcome_utility = self.utility(response_outcome, self.negotiators[nid][0].ami.issues[UNIT_PRICE].max_value)
 
-                # if util >= self._utility_threshold * response_outcome_utility and util >0:
-                if offers[nid] == response_outcome:
-                    response_type = ResponseType.ACCEPT_OFFER
+                #if util >= 0.99 * response_outcome_utility and util > 0:
+                if response_outcome in self.negotiators[nid][0].ami.outcomes:
+                    if offers[nid] == response_outcome:
+                        response_type = ResponseType.ACCEPT_OFFER
+                        logging.debug(f"ACCEPT: offer is {offers[nid]} and response outcome is {response_outcome}")
+                    else:
+                        response_type = ResponseType.REJECT_OFFER
+                        logging.debug(f"REJECT: offer is {offers[nid]} and response outcome is {response_outcome}")
+                    self.parent.reward.append(1)
                 else:
-                    response_type = ResponseType.REJECT_OFFER
-                logging.debug(f"offer is {offers[nid]} and response outcome is {response_outcome}")
+                    response_type = ResponseType.ACCEPT_OFFER
+                    logging.debug(f"WAIT: offer is {offers[nid]} and response outcome is {response_outcome}, issues are "
+                                  f"{self.negotiators[nid][0].ami.issues}")
+                    self.parent.reward.append(-1)
 
                 if response_type == ResponseType.ACCEPT_OFFER:
                     logging.debug(f"Achieved, {offers[nid]} == {response_outcome}")
 
                 responses[nid] = SAOResponse(
                     response_type,
-                    None if response_type == ResponseType.ACCEPT_OFFER else response_outcome
+                    None if response_type == ResponseType.ACCEPT_OFFER
+                            or response_type == ResponseType.WAIT
+                    else response_outcome
                 )
+
         #responses = super(MyDRLSCMLSAOSyncController, self).counter_all(offers, states)
         return responses
 

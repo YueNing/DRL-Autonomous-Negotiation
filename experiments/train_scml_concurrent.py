@@ -99,4 +99,4 @@ if __name__ == '__main__':
         test_main()
     else:
         ray.init(address="auto")
-        main(num_samples=8)
+        main(num_samples=4)

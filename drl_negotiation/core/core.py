@@ -90,6 +90,9 @@ class MySCML2020Agent(SCML2020Agent):
         self.m_range = 1.0
         self.b_range = 1.0
 
+        # reward
+        self.reward = [0.0]
+
         # state
         self.state = AgentState()
         # action

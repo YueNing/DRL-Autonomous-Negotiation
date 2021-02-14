@@ -611,6 +611,14 @@ class SCMLEnv(Environment):
         self._reset_render()
 
     @property
+    def possible_agents(self):
+        if not ONLY_SELLER:
+            return np.reshape(np.array([[f"{agent.agent_scope_name}_seller", f"{agent.agent_scope_name}_buyer"] for agent in self.agents]),
+                              (1, 2*len(self.agents)))[0]
+        else:
+            return np.array([f"{agent.agent_scope_name}" for agent in self.agents])
+
+    @property
     def action_space(self):
         """np.ndarray[akro.Space]: The action space specification."""
         return self._action_space

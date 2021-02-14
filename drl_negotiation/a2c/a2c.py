@@ -31,7 +31,7 @@ class MADDPGModel:
                  # learning rate
                  lr=1e-2,
                  # discount factor
-                 gamma=0.95,
+                 gamma=0.99,
                  # model save dir
                  save_dir=SAVE_DIR,
                  # model name
@@ -295,7 +295,7 @@ class MADDPGModel:
                 for agent in self.trainers:
                     info = agent.update(self.trainers, train_step)
                     if info is not None:
-                        logging.debug(f"{agent}'s [q_loss, p_loss, np.mean(target_q), np.mean(rew), "
+                        print(f"{agent}'s [q_loss, p_loss, np.mean(target_q), np.mean(rew), "
                                       f"np.mean(target_q_next), np.std(target_q)] are {info}")
 
                 #####################################################################################
