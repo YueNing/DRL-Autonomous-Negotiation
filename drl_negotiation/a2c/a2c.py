@@ -295,7 +295,7 @@ class MADDPGModel:
                 for agent in self.trainers:
                     info = agent.update(self.trainers, train_step)
                     if info is not None:
-                        print(f"{agent}'s [q_loss, p_loss, np.mean(target_q), np.mean(rew), "
+                        logging.debug(f"{agent}'s [q_loss, p_loss, np.mean(target_q), np.mean(rew), "
                                       f"np.mean(target_q_next), np.std(target_q)] are {info}")
 
                 #####################################################################################

@@ -37,13 +37,13 @@ API_KEY = "kF579m9M6nXOrjw4GmKU"
 # model name
 MODEL_NAME = "model"
 # train episode
-TRAIN_EPISODES = 1000
+TRAIN_EPISODES = 100
 # train episode save rate
-SAVE_RATE = 50
+SAVE_RATE = 10
 # max length of single episode
 MAX_EPISODE_LEN = 25
 # batch size
-BATCH_SIZE = 64
+BATCH_SIZE = 16
 # save the model of trainers separately
 SAVE_TRAINERS = True
 
