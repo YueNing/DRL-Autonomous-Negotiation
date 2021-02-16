@@ -12,10 +12,10 @@ from scml.scml2020 import IndependentNegotiationsManager
 from negmas import AgentMechanismInterface, Negotiator, Issue
 import numpy as np
 from typing import Tuple, List
-from drl_negotiation.core.hyperparameters import *
-from drl_negotiation.utils.utils import reverse_normalize
-from drl_negotiation.a2c.policy import create_actor
-import drl_negotiation.utils.utils as U
+from drl_negotiation.core.config.hyperparameters import *
+from drl_negotiation.core.utils.bilateral_utils import reverse_normalize
+from drl_negotiation.core.modules.maddpg.policy import create_actor
+import drl_negotiation.core.utils.tf_utils as U
 from gym import spaces
 import tensorflow as tf
 from drl_negotiation.agents.controller import MyDRLSCMLSAOSyncController
@@ -57,7 +57,7 @@ class MyNegotiationManager(IndependentNegotiationsManager):
 
     def _setup_model(self):
         """
-        get the buyer and seller trainer/model,
+        get the buyer and seller train/model,
         create the policy network and load the saved parameters
         Returns:
 
@@ -327,7 +327,7 @@ class MyConcurrentNegotiationManager(MovingRangeNegotiationManager):
             **kwargs,
     ):
         super().__init__(*args, **kwargs)
-        self.index: List[int] = None
+        self.index: Optional[int] = None
         self.time_horizon = time_horizon
         self._time_threshold = time_threshold
         self._price_weight = price_weight

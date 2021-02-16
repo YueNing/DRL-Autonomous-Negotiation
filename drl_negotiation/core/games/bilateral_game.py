@@ -16,7 +16,7 @@ from drl_negotiation.agents.negotiator import MyDRLNegotiator, MyOpponentNegotia
 from scml.scml2020.agents import DecentralizingAgent, BuyCheapSellExpensiveAgent
 from scml.scml2020 import anac2020_std, anac2020_collusion
 from dataclasses import dataclass
-from drl_negotiation.utils.utils import reverse_normalize_action
+from drl_negotiation.core.utils.bilateral_utils import reverse_normalize_action
 
 # extra reward for agreement when negotiator get a agreement
 EXTRA_REWARD = 1.01

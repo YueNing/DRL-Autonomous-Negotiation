@@ -1,6 +1,7 @@
 import numpy as np
-from drl_negotiation.core.env import SCMLEnv
+from drl_negotiation.core._dtypes import Env
 from dataclasses import dataclass
+
 
 @dataclass(frozen=True)
 class ModelResult:
@@ -12,7 +13,7 @@ class ModelResult:
     final_ep_extra_ag_rewards (numpy.ndarray): other agents mean reward of episode in the SCML2020World
     episode_rewards (numpy.ndarray): every episode reward of rl agents
     episode_extra_rewards (numpy.ndarray): every episode reward of others agents running in the SCML2020World
-    env: running environment, e.g. drl_negotiation.core.env.SCMLEnv
+    env: running environment
     """
     final_ep_rewards: np.ndarray
     final_ep_extra_rewards: np.ndarray
@@ -20,7 +21,7 @@ class ModelResult:
     final_ep_extra_ag_rewards: np.ndarray
     episode_rewards: np.ndarray
     episode_extra_rewards: np.ndarray
-    env: SCMLEnv
+    env: Env
 
     @property
     def total_final_ep_rewards(self):

@@ -1,9 +1,7 @@
-from typing import Optional, Type
-from negmas import Action #  An action that an `Agent` can execute in a `World` through the `Simulator`
+import random
 from negmas import (
                         Issue, 
                         UtilityFunction,
-                        UtilityValue,
                         AgentMechanismInterface,
                         Outcome,
                         outcome_for,
@@ -15,9 +13,8 @@ from negmas.generics import (
     iget
 )
 from negmas.utilities import UtilityValue
-
-import random
 from typing import List, Optional, Type, Sequence, Union, Tuple
+
 
 class ANegmaUtilityFunction(UtilityFunction):
     """

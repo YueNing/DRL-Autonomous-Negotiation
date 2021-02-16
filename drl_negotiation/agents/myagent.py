@@ -1,4 +1,4 @@
-from drl_negotiation.core.core import MySCML2020Agent
+from drl_negotiation.core.games._scml import MySCML2020Agent
 from scml.scml2020 import (
     TradeDrivenProductionStrategy,
     PredictionBasedTradingStrategy,
@@ -8,8 +8,6 @@ from scml.scml2020 import (
     SupplyDrivenProductionStrategy,
     KeepOnlyGoodPrices,
     StepNegotiationManager,
-
-    DecentralizingAgent
 )
 
 from negmas import LinearUtilityFunction

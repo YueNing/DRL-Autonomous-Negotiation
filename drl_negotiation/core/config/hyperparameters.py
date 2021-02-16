@@ -44,7 +44,7 @@ SAVE_RATE = 10
 MAX_EPISODE_LEN = 25
 # batch size
 BATCH_SIZE = 16
-# save the model of trainers separately
+# save the model of train separately
 SAVE_TRAINERS = True
 
 LOAD_MODEL = False
@@ -104,7 +104,7 @@ UNIT_PRICE = 100
 # share reward
 COLLABORATIVE = False
 
-# trainer update steps, based on train step during training
+# train update steps, based on train step during training
 UPDATE_TRAINER_STEP = 100
 ################################################
 # scml scenario

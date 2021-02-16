@@ -1,13 +1,16 @@
 import logging
-from drl_negotiation.utils.utils import parse_args, logging_setup
-from drl_negotiation.core.hyperparameters import RUNNING_AGENT_TYPES
-from scml.scml2020 import SCML2020World, DecentralizingAgent, IndDecentralizingAgent
 from negmas.helpers import get_class
-from drl_negotiation.utils.utils import get_world_config
-from drl_negotiation.utils.plots import show, show_scores
+from scml.scml2020.world import SCML2020World
+from drl_negotiation.core.config.hyperparameters import RUNNING_AGENT_TYPES
+from drl_negotiation.core.utils.common import parse_args, logging_setup
+from drl_negotiation.core.utils.multi_agents_utils import get_world_config
+from drl_negotiation.core.utils.plots import show, show_scores
 
 
-def _run(arglist, agent_types, world_config=None):
+def _run(args, agent_types, world_config=None):
+    args = args
+    if args:
+        pass
     if world_config is None:
         world = SCML2020World(
             **SCML2020World.generate(

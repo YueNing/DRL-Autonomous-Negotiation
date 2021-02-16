@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.ops import math_ops
 from gym import spaces
-import drl_negotiation.utils.utils as U
+import drl_negotiation.core.utils.multi_agents_utils as U
 from stable_baselines.common.tf_layers import linear
 
 

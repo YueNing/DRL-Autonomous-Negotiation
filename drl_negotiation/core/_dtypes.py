@@ -1,8 +1,8 @@
 """Data types for agent-based learning."""
 import enum
 import typing
-from drl_negotiation.core.core import MySCML2020Agent
-
+from drl_negotiation.core.games._scml import MySCML2020Agent
+from drl_negotiation.core.envs.multi_agents_scml import SCMLEnv
 
 class StepType(enum.IntEnum):
     """Defines the status of a :class:`~TimeStep` within a sequence.
@@ -63,3 +63,6 @@ AgentID: typing.Any
 
 # A dict keyed by agent ids, e.g. {"agent-1": value}.
 MultiAgentDict = typing.Dict[AgentID, typing.Any]
+
+# All Environments
+Env = typing.Union[SCMLEnv]

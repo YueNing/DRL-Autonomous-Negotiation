@@ -1,5 +1,6 @@
 import numpy as np
-from drl_negotiation.game import MyDRLNegotiationGame, DRLNegotiationGame
+from drl_negotiation.core.games.bilateral_game import MyDRLNegotiationGame, DRLNegotiationGame
+
 
 def test_my_drl_negotiation_game():
     name = "test_my_drl_negotiation_game"
@@ -24,7 +25,7 @@ def test_my_drl_negotiation_game():
     # import pdb;pdb.set_trace()
 
 def test_drl_negotiation_game():
-    from negmas import Mechanism, MechanismState
+    from negmas import Mechanism
     # issues: None, competitors: None
     name = "test_drl_negotiation_game"
     game = DRLNegotiationGame(
@@ -47,6 +48,7 @@ def test_drl_negotiation_game():
     action_space = Discrete(5)
     action_history = []
     reward_history = []
+    result = None
     for _ in range(game.n_steps):
         result = game.step(action=action_space.sample())
         action_history.append(game.competitors[0].action)

@@ -1,8 +1,8 @@
-from drl_negotiation.a2c.a2c import MADDPGModel
-from drl_negotiation.core.hyperparameters import *
-from drl_negotiation.utils.utils import make_env
-from drl_negotiation.utils.utils import logging_setup
-from drl_negotiation.utils.plots import show_agent_rewards, show_ep_rewards, cumulative_reward, multi_layer_charts
+from drl_negotiation.core.train.maddpg import MADDPGModel
+from drl_negotiation.core.config.hyperparameters import *
+from drl_negotiation.core.utils.multi_agents_utils import make_env
+from drl_negotiation.core.utils.common import logging_setup
+from drl_negotiation.core.utils.plots import show_agent_rewards, show_ep_rewards, cumulative_reward, multi_layer_charts
 import ray
 import logging
 

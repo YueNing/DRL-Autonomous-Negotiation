@@ -1,9 +1,9 @@
-from drl_negotiation.train import train_negotiation
-from drl_negotiation.env import NegotiationEnv
-from drl_negotiation.utils import generate_config, genearate_observation_space, generate_action_space
-from drl_negotiation.game import NegotiationGame
-from drl_negotiation.negotiator import MyDRLNegotiator, MyOpponentNegotiator
-from drl_negotiation.utility_functions import MyUtilityFunction
+from drl_negotiation.core.train.bilateral_train import train_negotiation
+from drl_negotiation.core.envs.bilateral_negotiation import NegotiationEnv
+from drl_negotiation.core.utils.bilateral_utils import generate_config, genearate_observation_space, generate_action_space
+from drl_negotiation.core.games.bilateral_game import NegotiationGame
+from drl_negotiation.agents.negotiator import MyDRLNegotiator, MyOpponentNegotiator
+from drl_negotiation.core.utils.utility_functions import MyUtilityFunction
 
 
 

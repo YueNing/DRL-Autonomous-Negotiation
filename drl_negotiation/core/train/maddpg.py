@@ -6,13 +6,16 @@ import time
 import argparse
 import tensorflow as tf
 import gym
-from drl_negotiation.core.env import SCMLEnv
-import drl_negotiation.utils.utils as U
+from drl_negotiation.core.envs.multi_agents_scml import SCMLEnv
+import drl_negotiation.core.utils.tf_utils as U
+from drl_negotiation.core.utils.multi_agents_utils import get_trainers
 import numpy as np
 import pickle
 from tqdm import tqdm
-from drl_negotiation.core.hyperparameters import *
-from drl_negotiation.a2c._model import ModelResult
+from drl_negotiation.core.config.hyperparameters import (ONLY_SELLER, LOGGING_LEVEL, UPDATE_TRAINER_STEP, SAVE_DIR,
+                                                         MODEL_NAME, SAVE_RATE, BATCH_SIZE, TRAIN_EPISODES,
+                                                         MAX_EPISODE_LEN, PLOTS_DIR, SAVE_TRAINERS)
+from drl_negotiation.core.train._model import ModelResult
 import logging
 
 
@@ -26,7 +29,7 @@ class MADDPGModel:
                  logging_level=LOGGING_LEVEL,
 
                  # training
-                 # trainer update steps
+                 # train update steps
                  n_steps=UPDATE_TRAINER_STEP,
                  # learning rate
                  lr=1e-2,
@@ -107,7 +110,7 @@ class MADDPGModel:
 
         self.trainers = None
 
-        #U.logging_setup()
+        # U.logging_setup()
 
         if _init_setup_model:
             self.setup_model()
@@ -132,16 +135,16 @@ class MADDPGModel:
         # self.graph = tf.Graph()
 
     def _get_trainers(self, num_adversaries, obs_shape_n):
-        arglist = argparse.Namespace(**{"good_policy": self.good_policy,
-                                        "adv_policy": self.adv_policy,
-                                        "lr": self.lr,
-                                        "num_units": self.num_units,
-                                        "batch_size": self.batch_size,
+        arglist = argparse.Namespace(**{"good_policy"    : self.good_policy,
+                                        "adv_policy"     : self.adv_policy,
+                                        "lr"             : self.lr,
+                                        "num_units"      : self.num_units,
+                                        "batch_size"     : self.batch_size,
                                         "max_episode_len": self.max_episode_len,
-                                        "gamma": self.gamma,
-                                        "n_steps": self.n_steps
+                                        "gamma"          : self.gamma,
+                                        "n_steps"        : self.n_steps
                                         })
-        self.trainers = U.get_trainers(self.env, num_adversaries, obs_shape_n, arglist)
+        self.trainers = get_trainers(self.env, num_adversaries, obs_shape_n, arglist)
         logging.info(f"Using good policy {self.good_policy} and adv policy {self.adv_policy}")
 
     def _setup_learn(self):
@@ -152,7 +155,7 @@ class MADDPGModel:
             raise ValueError("Error: cannot train the model without a valid environment, please set an environment "
                              "with set_env(self, env) method.")
 
-    def learn(self, train_episodes: object = None) -> object:
+    def learn(self, train_episodes: int = None) -> object:
         """
         learning process
         Args:
@@ -172,8 +175,8 @@ class MADDPGModel:
             if not ONLY_SELLER:
                 obs_shape_n = []
                 for i in range(self.env.n):
-                    obs_shape_n.append(self.env.observation_space[i*2].shape)
-                    obs_shape_n.append(self.env.observation_space[i*2 + 1].shape)
+                    obs_shape_n.append(self.env.observation_space[i * 2].shape)
+                    obs_shape_n.append(self.env.observation_space[i * 2 + 1].shape)
             else:
                 obs_shape_n = [self.env.observation_space[i].shape for i in range(self.env.n)]
 
@@ -187,7 +190,7 @@ class MADDPGModel:
             saver = None
             if self.display or self.restore or self.benchmark:
                 logging.info("Loading previous state...")
-                #saver = tf.train.import_meta_graph(self.load_dir + self.model_name + '.meta')
+                # saver = tf.train.import_meta_graph(self.load_dir + self.model_name + '.meta')
                 U.load_state(tf.train.latest_checkpoint(self.load_dir), saver=saver)
 
             if saver is None:
@@ -205,13 +208,14 @@ class MADDPGModel:
             agent_info = [[[]]]
             obs_n, _ = self.env.reset()
 
-            #episode_step = 0
+            # episode_step = 0
             train_step = 0
             t_start = time.time()
             pbar = tqdm(total=self.num_episodes)
 
             while True:
-                logging.debug(f'episodes: {len(episode_rewards)}, episode_step: {self.env.step_cnt}, train steps: {train_step}')
+                logging.debug(
+                    f'episodes: {len(episode_rewards)}, episode_step: {self.env.step_cnt}, train steps: {train_step}')
                 action_n = self.predict(obs_n)
 
                 clipped_action_n = action_n
@@ -241,10 +245,9 @@ class MADDPGModel:
                 for i, rew in enumerate(es.extra_rew):
                     episode_extra_rewards[-1] += rew
                     if not ONLY_SELLER:
-                        extra_agent_rewards[int(i/2)][-1] +=rew
+                        extra_agent_rewards[int(i / 2)][-1] += rew
                     else:
                         extra_agent_rewards[i][-1] += rew
-
 
                 ##############################################################################
                 # save model
@@ -289,7 +292,7 @@ class MADDPGModel:
                     self.env.render()
                     continue
 
-                # learn, update all policies in trainers, if not in display or benchmark mode
+                # learn, update all policies in train, if not in display or benchmark mode
                 for agent in self.trainers:
                     agent.preupdate()
                 for agent in self.trainers:
@@ -302,7 +305,7 @@ class MADDPGModel:
                 # Prepare for next episode, if done
                 #####################################################################################
                 if done:
-                    obs_n,_ = self.env.reset()
+                    obs_n, _ = self.env.reset()
                     pbar.update(1)
                     episode_rewards.append(0)
                     episode_extra_rewards.append(0)
@@ -334,13 +337,13 @@ class MADDPGModel:
                     break
 
             return ModelResult(
-                final_ep_rewards = np.array(final_ep_rewards),
-                final_ep_extra_rewards = np.array(final_ep_extra_rewards),
-                final_ep_ag_rewards = np.array(final_ep_ag_rewards),
-                final_ep_extra_ag_rewards = np.array(final_ep_extra_ag_rewards),
-                episode_rewards = np.array(episode_rewards),
-                episode_extra_rewards = np.array(episode_extra_rewards),
-                env = self.env
+                final_ep_rewards=np.array(final_ep_rewards),
+                final_ep_extra_rewards=np.array(final_ep_extra_rewards),
+                final_ep_ag_rewards=np.array(final_ep_ag_rewards),
+                final_ep_extra_ag_rewards=np.array(final_ep_extra_ag_rewards),
+                episode_rewards=np.array(episode_rewards),
+                episode_extra_rewards=np.array(episode_extra_rewards),
+                env=self.env
             )
             # return final_ep_rewards, final_ep_extra_rewards, final_ep_ag_rewards, final_ep_extra_ag_rewards, episode_rewards, episode_extra_rewards, self.env
 

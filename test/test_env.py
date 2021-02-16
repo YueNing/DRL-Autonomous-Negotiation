@@ -1,17 +1,15 @@
-from drl_negotiation.env import NEnv, NegotiationEnv, DRLNegotiationEnv, MyNegotiationEnv
-from drl_negotiation.game import MyDRLNegotiationGame, DRLNegotiationGame, NegotiationGame
-from drl_negotiation.negotiator import MyDRLNegotiator, MyOpponentNegotiator
-from drl_negotiation.utility_functions import ANegmaUtilityFunction, MyUtilityFunction
-from drl_negotiation.utils import  generate_config, genearate_observation_space
-# from ANLearning.lab_notebook.scml_negotiation.scml_game import Game
+from drl_negotiation.core.envs.bilateral_negotiation import NegotiationEnv
+from drl_negotiation.core.games.bilateral_game import NegotiationGame
+from drl_negotiation.agents.negotiator import MyDRLNegotiator, MyOpponentNegotiator
+from drl_negotiation.core.utils.utility_functions import MyUtilityFunction
+from drl_negotiation.core.utils.bilateral_utils import  generate_config, genearate_observation_space
+
 
 def test_negotiation_env():
     """
     Test NegotiationEnv, Default ANegma setting, using method based on reinforcement learning
     single issue
     """
-    from negmas import Issue
-
     name = "test_n_env"
     config = generate_config()
     n_steps = 100

@@ -1,9 +1,10 @@
-import drl_negotiation.utils.utils as U
+import drl_negotiation.core.utils.tf_utils as U
 import tensorflow as tf
 import numpy as np
 import logging
-from drl_negotiation.a2c.replay_buffer import ReplayBuffer
-from drl_negotiation.a2c.distributions import make_pd_type
+from drl_negotiation.core.trainer._trainer import AgentTrainer
+from drl_negotiation.core.components.replay_buffer import ReplayBuffer
+from drl_negotiation.core.components.distributions import make_pd_type
 
 
 def make_update_exp(vals, target_vals):
@@ -21,7 +22,7 @@ def p_predict(
         act_space,
         p_func,
         num_units=64,
-        scope='trainer',
+        scope='train',
         reuse=None
 ):
     with tf.compat.v1.variable_scope(scope, reuse=reuse):
@@ -47,7 +48,7 @@ def p_train(make_obs_ph_n,
             grad_norm_clipping=None,
             local_q_func=False,
             num_units=64,
-            scope="trainer",
+            scope="train",
             reuse=None
             ):
     with tf.compat.v1.variable_scope(scope, reuse=reuse):
@@ -108,7 +109,7 @@ def p_train(make_obs_ph_n,
 
 
 def q_train(make_obs_ph_n, act_space_n, q_index, q_func, optimizer, grad_norm_clipping=None, local_q_func=False,
-            scope="trainer", reuse=None, num_units=64):
+            scope="train", reuse=None, num_units=64):
     with tf.compat.v1.variable_scope(scope, reuse=reuse):
         # action probability distribution
         act_pdtype_n = [make_pd_type(act_space) for act_space in act_space_n]
@@ -151,23 +152,6 @@ def q_train(make_obs_ph_n, act_space_n, q_index, q_func, optimizer, grad_norm_cl
         target_q_values = U.function(obs_ph_n + act_ph_n, target_q)
 
         return train, update_target_q, {'q_values': q_values, 'target_q_values': target_q_values}
-
-
-class AgentTrainer(object):
-    def __init__(self, name, model, obs_shape, act_space, args):
-        raise NotImplemented()
-
-    def action(self, obs):
-        raise NotImplemented()
-
-    def experience(self, obs, act, rew, new_obs, done, terminal):
-        raise NotImplemented()
-
-    def preupdate(self):
-        raise NotImplemented()
-
-    def update(self, agent, t):
-        raise NotImplemented()
 
 
 class MADDPGAgentTrainer(AgentTrainer):
@@ -256,7 +240,7 @@ class MADDPGAgentTrainer(AgentTrainer):
         if not t % self.args.n_steps == 0:
             return
 
-        logging.debug(f"update trainer {self} at step {t}!")
+        logging.debug(f"update train {self} at step {t}!")
         self.replay_sample_index = self.replay_buffer.make_index(self.args.batch_size)
         obs_n = []
         obs_next_n = []

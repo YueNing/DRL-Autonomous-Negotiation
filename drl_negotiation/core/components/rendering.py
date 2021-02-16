@@ -1,6 +1,7 @@
 import pyglet
 import time
 
+
 class Viewer(pyglet.window.Window):
 
     def __init__(self, width, height, agent):

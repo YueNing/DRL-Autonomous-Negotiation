@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from collections import defaultdict
 from scml.scml2020 import SCML2020World
-from drl_negotiation.core.hyperparameters import (PLOT_BACKEND,
+from drl_negotiation.core.config.hyperparameters import (PLOT_BACKEND,
                                                   USERNAME,
                                                   API_KEY,
                                                   ONLINE,

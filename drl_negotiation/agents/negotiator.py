@@ -3,34 +3,24 @@ DRL-Negotiator!
 '''
 #########################
 ## packages used for Test
-from negmas import LinearUtilityFunction
 #########################
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 import gym
 
 import numpy as np
-from typing import Optional, Union
-from negmas import Action #  An action that an `Agent` can execute in a `World` through the `Simulator`
+from typing import Union
 from negmas import (
                         Issue, 
                         MechanismState, # The mechanism state
-                        SAOMechanism, 
-                        SAONegotiator,  
-                        MappingUtilityFunction, 
                         AspirationNegotiator,
                         ResponseType,
                         UtilityFunction,
-                        UtilityValue,
-                        AgentMechanismInterface,
                         Outcome,
-                        outcome_for,
-                        outcome_as_tuple,
                     )
-    
-import random
-from typing import List, Optional, Type, Sequence
-from drl_negotiation.utils.utility_functions import MyUtilityFunction, ANegmaUtilityFunction, MyOpponentUtilityFunction
-from drl_negotiation.utils.utils import normalize_observation, reverse_normalize_action
+
+from typing import List, Optional
+from drl_negotiation.core.utils.utility_functions import MyUtilityFunction, ANegmaUtilityFunction, MyOpponentUtilityFunction
+from drl_negotiation.core.utils.bilateral_utils import normalize_observation, reverse_normalize_action
 
 __all__ = [
     "DRLMixIn",
@@ -125,7 +115,7 @@ class DRLNegotiator(DRLMixIn, CommonMixIn, AspirationNegotiator):
         self.set_env(env=env)
 
         # Must set it
-        self._action: ResponseType = None
+        self._action: Optional[ResponseType] = None
         self._proposal_offer = None
         self._current_offer = None
         self.init_proposal = init_proposal

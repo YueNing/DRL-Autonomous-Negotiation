@@ -1,5 +1,4 @@
 from scml.scml2020 import SCML2020World, DecentralizingAgent, BuyCheapSellExpensiveAgent, IndDecentralizingAgent, MovingRangeAgent
-from scml.scml2020 import SCML2020Agent
 
 def test_scml_world():
     agent_types = [

@@ -1,6 +1,7 @@
 import tensorflow as tf
-import numpy as np
-#from pyglet.window import key
+from drl_negotiation.core.trainer.maddpg.trainer import p_predict
+
+# from pyglet.window import key
 
 ########################################################################
 # Interactive policy for scml's agent
@@ -13,7 +14,7 @@ import numpy as np
 #        raise NotImplementedError
 #
 #
-#class InteractivePolicy(Policy):
+# class InteractivePolicy(Policy):
 #    def __init__(self, env, agent_index):
 #        super(InteractivePolicy, self).__init__()
 #        self.env = env
@@ -77,7 +78,7 @@ import numpy as np
 #        if k == key._8: self.management[7] = False
 
 ##########################################################
-# a2c trainer policy network
+# a2c train policy network
 ##########################################################
 def mlp_model(input, num_outputs, scope, reuse=False, num_units=64, rnn_cell=None):
     """
@@ -100,7 +101,6 @@ def mlp_model(input, num_outputs, scope, reuse=False, num_units=64, rnn_cell=Non
         out = tf.layers.dense(out, num_outputs, activation=None)
         return out
 
-from drl_negotiation.a2c.trainer import p_predict
 
 def create_actor(make_obs_ph, act_space, scope):
     p_func = mlp_model
