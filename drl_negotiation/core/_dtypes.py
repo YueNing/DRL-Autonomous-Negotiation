@@ -1,5 +1,7 @@
 """Data types for agent-based learning."""
 import enum
+import typing
+from drl_negotiation.core.core import MySCML2020Agent
 
 
 class StepType(enum.IntEnum):
@@ -51,3 +53,13 @@ class StepType(enum.IntEnum):
                              ')`?'.format(step_cnt))
         else:
             return StepType.MID
+
+
+# Type of Agent
+Agent: typing.Union[MySCML2020Agent]
+
+# Represents a generic identifier for an agent (e.g., "agent1").
+AgentID: typing.Any
+
+# A dict keyed by agent ids, e.g. {"agent-1": value}.
+MultiAgentDict = typing.Dict[AgentID, typing.Any]

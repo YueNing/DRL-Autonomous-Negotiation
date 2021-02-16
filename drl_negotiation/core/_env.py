@@ -7,7 +7,7 @@ from drl_negotiation.core._dtypes import StepType
 
 
 class Environment(abc.ABC):
-    """The main API for garage environments.
+    """The main API for negotiation environments.
 
     The public API methods are:
     +-----------------------+
@@ -191,12 +191,12 @@ class Wrapper(Environment):
 
     @property
     def action_space(self):
-        """akro.Space: The action space specification."""
+        """gym.Space: The action space specification."""
         return self._env.action_space
 
     @property
     def observation_space(self):
-        """akro.Space: The observation space specification."""
+        """gym.Space: The observation space specification."""
         return self._env.observation_space
 
     @property

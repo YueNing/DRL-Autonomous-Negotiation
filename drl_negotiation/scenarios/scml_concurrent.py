@@ -1,6 +1,7 @@
 ##############################################################
 # scml sccenario, for concurrent negotiation control
 ##############################################################
+from drl_negotiation.core._dtypes import Agent
 from drl_negotiation.scenarios.scenario import BaseScenario
 from drl_negotiation.core.hyperparameters import *
 from drl_negotiation.utils.utils import make_world
@@ -10,13 +11,20 @@ from drl_negotiation.core.core import MySCML2020Agent, TrainWorld
 import numpy as np
 import random
 
+
 class Scenario(BaseScenario):
+    def info(self, agent: Agent):
+        pass
+
+    def reset_agent(self, agent: Agent):
+        pass
+
     def make_world(self, config):
         # configuration, for Scenario scml_concurrent
         world = make_world(config=config)
         return world
 
-    def reset_world(self, world:TrainWorld):
+    def reset_world(self, world: TrainWorld):
         world = make_world(config=world.configuration)
         return world
         # world.__init__(configuration=world.configuration)
@@ -28,14 +36,17 @@ class Scenario(BaseScenario):
         # observe the range of negotiation
         for negotiation in agent.running_negotiations:
             logging.debug(f"{agent}:{negotiation.annotation}")
-            partner = negotiation.annotation["buyer"] if negotiation.annotation["seller"] == agent.id else negotiation.annotation["seller"]
-            negotiation_ranges[sorted(agent.awi.my_consumers + agent.awi.my_suppliers).index(partner)].append(negotiation.negotiator.ami.issues)
+            partner = negotiation.annotation["buyer"] if negotiation.annotation["seller"] == agent.id else \
+            negotiation.annotation["seller"]
+            negotiation_ranges[sorted(agent.awi.my_consumers + agent.awi.my_suppliers).index(partner)].append(
+                negotiation.negotiator.ami.issues)
 
         # observe the last offer proposed by the negotiation partner
         if hasattr(agent, "controllers"):
             for is_seller, controller in agent.controllers.items():
                 for nid in controller.history_offers:
-                    negotiation = [negotiation for negotiation in controller.history_running_negotiations if negotiation.negotiator == controller.negotiators[nid][0]]
+                    negotiation = [negotiation for negotiation in controller.history_running_negotiations if
+                                   negotiation.negotiator == controller.negotiators[nid][0]]
                     if negotiation:
                         if negotiation[0].annotation["seller"] == agent.id:
                             partner = negotiation[0].annotation["buyer"]
@@ -43,25 +54,28 @@ class Scenario(BaseScenario):
                             partner = negotiation[0].annotation["seller"]
 
                         # offers proposed by partner
-                        last_offers[sorted(agent.awi.my_consumers + agent.awi.my_suppliers).index(partner)].append(controller.history_offers[nid])
+                        last_offers[sorted(agent.awi.my_consumers + agent.awi.my_suppliers).index(partner)].append(
+                            controller.history_offers[nid])
                 controller.history_offers = {}
 
-        price_product = [agent.awi.catalog_prices[agent.awi.my_output_product if seller else agent.awi.my_input_product]]
+        price_product = [
+            agent.awi.catalog_prices[agent.awi.my_output_product if seller else agent.awi.my_input_product]]
         negotiation_ranges = np.array(self._post_process_negotiation_ranges(negotiation_ranges)).flatten().tolist()
         last_offers = np.array(self._post_process_offers(last_offers)).flatten().tolist()
 
         if seller:
-            result = np.concatenate((agent.current_time, last_offers, negotiation_ranges, agent.running_negotiations_count,
-                                   agent.negotiation_requests_count,
-                                   agent.contracts_count, price_product))
+            result = np.concatenate(
+                (agent.current_time, last_offers, negotiation_ranges, agent.running_negotiations_count,
+                 agent.negotiation_requests_count,
+                 agent.contracts_count, price_product))
         else:
-            result = np.concatenate((agent.current_time, last_offers, negotiation_ranges, agent.running_negotiations_count,
-                                   agent.negotiation_requests_count,
-                                   agent.contracts_count, price_product))
+            result = np.concatenate(
+                (agent.current_time, last_offers, negotiation_ranges, agent.running_negotiations_count,
+                 agent.negotiation_requests_count,
+                 agent.contracts_count, price_product))
 
-        logging.debug(f"Observation of {agent}'s {'seller' if seller else  'buyer'} are {result}")
+        logging.debug(f"Observation of {agent}'s {'seller' if seller else 'buyer'} are {result}")
         return result
-
 
     @staticmethod
     def _post_process_negotiation_ranges(negotiation_ranges):
@@ -85,7 +99,7 @@ class Scenario(BaseScenario):
         # sub-goal, best deal which is defined as being nearest to the agent needs with lowest price
         # main-goal, maximum profitability at the end of episode.
         # factory = world.a2f[agent.id]
-        #print(f"{agent} balnce change is {factory.balance_change}")
+        # print(f"{agent} balnce change is {factory.balance_change}")
 
         # delay reward
         rew = world.scores()[agent.id]
