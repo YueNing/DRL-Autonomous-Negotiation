@@ -1,4 +1,4 @@
-from negmas import SAOMechanism, Issue, AspirationNegotiator, MappingUtilityFunction
+from drl_negotiation.third_party.negmas.negmas import SAOMechanism, Issue, AspirationNegotiator, MappingUtilityFunction
 import random # for generating random ufuns
 
 def test_my_utility_function():
@@ -48,7 +48,7 @@ def test_my_utility_function():
 
 def test_anegma_utility_function():
     from drl_negotiation.core.utils.utility_functions import ANegmaUtilityFunction
-    from negmas import Issue
+    from drl_negotiation.third_party.negmas.negmas import Issue
 
     issues = [Issue((300, 550))]
 

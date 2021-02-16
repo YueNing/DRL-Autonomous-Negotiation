@@ -1,6 +1,6 @@
 import logging
-from negmas.helpers import get_class
-from scml.scml2020.world import SCML2020World
+from drl_negotiation.third_party.negmas.negmas.helpers import get_class
+from drl_negotiation.third_party.scml.src.scml.scml2020.world import SCML2020World
 from drl_negotiation.core.config.hyperparameters import RUNNING_AGENT_TYPES
 from drl_negotiation.core.utils.common import parse_args, logging_setup
 from drl_negotiation.core.utils.multi_agents_utils import get_world_config

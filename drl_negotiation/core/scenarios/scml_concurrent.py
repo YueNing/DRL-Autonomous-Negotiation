@@ -2,12 +2,10 @@
 # scml sccenario, for concurrent negotiation control
 ##############################################################
 from drl_negotiation.core._dtypes import Agent
-from drl_negotiation.scenarios.scenario import BaseScenario
-from drl_negotiation.core.hyperparameters import *
-from drl_negotiation.utils.utils import make_world
-from scml import SCML2020World
-from drl_negotiation.core.core import TrainWorld
-from drl_negotiation.core.core import MySCML2020Agent, TrainWorld
+from drl_negotiation.core.scenarios.scenario import BaseScenario
+from drl_negotiation.core.config.hyperparameters import *
+from drl_negotiation.core.utils.multi_agents_utils import make_world
+from drl_negotiation.core.games.scml import MySCML2020Agent, TrainWorld
 import numpy as np
 import random
 

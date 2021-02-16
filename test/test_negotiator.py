@@ -1,7 +1,7 @@
 def test_drl_negotiator():
     from drl_negotiation.agents.negotiator import MyDRLNegotiator
     from drl_negotiation.core.utils.utility_functions import MyUtilityFunction
-    from negmas import SAOMechanism, Issue, ResponseType
+    from drl_negotiation.third_party.negmas.negmas import SAOMechanism, Issue, ResponseType
     from drl_negotiation.core.envs.bilateral_negotiation import DRLNegotiationEnv, NEnv
     
     name = "drl_negotiator"

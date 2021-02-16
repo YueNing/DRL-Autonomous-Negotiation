@@ -1,5 +1,5 @@
 import random
-from negmas import (
+from drl_negotiation.third_party.negmas.negmas import (
                         Issue, 
                         UtilityFunction,
                         AgentMechanismInterface,
@@ -8,11 +8,11 @@ from negmas import (
                         outcome_as_tuple,
                         MappingUtilityFunction,
                     )
-from negmas.generics import (
+from drl_negotiation.third_party.negmas.negmas.generics import (
     ikeys,
     iget
 )
-from negmas.utilities import UtilityValue
+from drl_negotiation.third_party.negmas.negmas.utilities import UtilityValue
 from typing import List, Optional, Type, Sequence, Union, Tuple
 
 

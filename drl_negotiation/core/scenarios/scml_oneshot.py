@@ -1,4 +1,4 @@
-from drl_negotiation.scenarios.scenario import BaseScenario
+from drl_negotiation.core.scenarios.scenario import BaseScenario
 
 
 class Scenario(BaseScenario):

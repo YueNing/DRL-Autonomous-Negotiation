@@ -25,7 +25,7 @@ def test_my_drl_negotiation_game():
     # import pdb;pdb.set_trace()
 
 def test_drl_negotiation_game():
-    from negmas import Mechanism
+    from drl_negotiation.third_party.negmas.negmas import Mechanism
     # issues: None, competitors: None
     name = "test_drl_negotiation_game"
     game = DRLNegotiationGame(

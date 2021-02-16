@@ -13,8 +13,8 @@ from negmas import (
 from typing import Optional, Union, Dict, List
 from drl_negotiation.agents.myagent import MyComponentsBasedAgent
 from drl_negotiation.agents.negotiator import MyDRLNegotiator, MyOpponentNegotiator, DRLNegotiator
-from scml.scml2020.agents import DecentralizingAgent, BuyCheapSellExpensiveAgent
-from scml.scml2020 import anac2020_std, anac2020_collusion
+from drl_negotiation.third_party.scml.src.scml.scml2020.agents import DecentralizingAgent, BuyCheapSellExpensiveAgent
+from drl_negotiation.third_party.scml.src.scml.scml2020 import anac2020_std, anac2020_collusion
 from dataclasses import dataclass
 from drl_negotiation.core.utils.bilateral_utils import reverse_normalize_action
 

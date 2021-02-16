@@ -4,6 +4,7 @@ import typing
 from drl_negotiation.core.games._scml import MySCML2020Agent
 from drl_negotiation.core.envs.multi_agents_scml import SCMLEnv
 
+
 class StepType(enum.IntEnum):
     """Defines the status of a :class:`~TimeStep` within a sequence.
     Note that the last :class:`~TimeStep` in a sequence can either be

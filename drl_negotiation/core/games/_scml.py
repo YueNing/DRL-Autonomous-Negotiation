@@ -4,7 +4,7 @@
     E-Mail: n1085633848@outlook.com
 """
 import numpy as np
-from scml.scml2020 import SCML2020Agent
+from drl_negotiation.third_party.scml.src.scml.scml2020 import SCML2020Agent
 from drl_negotiation.core.config.hyperparameters import (MANAGEABLE, SLIENT, BLIND,
                                                          RUNNING_IN_SCML2020World
                                                          )

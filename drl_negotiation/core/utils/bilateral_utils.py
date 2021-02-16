@@ -1,6 +1,7 @@
 import random
-from negmas import Issue
+from drl_negotiation.third_party.negmas.negmas import Issue
 from typing import List, Tuple
+
 
 def generate_config(n_issues=1):
     """

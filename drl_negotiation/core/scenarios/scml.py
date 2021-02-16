@@ -1,9 +1,9 @@
-from drl_negotiation.scenarios.scenario import BaseScenario
-from drl_negotiation.core.core import TrainWorld, MySCML2020Agent
+from drl_negotiation.core.scenarios.scenario import BaseScenario
+from drl_negotiation.core.games.scml import TrainWorld, MySCML2020Agent
 from drl_negotiation.agents.myagent import MyComponentsBasedAgent
-from drl_negotiation.core.hyperparameters import *
-from negmas.helpers import get_class
-from scml.scml2020 import (
+from drl_negotiation.core.config.hyperparameters import *
+from drl_negotiation.third_party.negmas.negmas.helpers import get_class
+from drl_negotiation.third_party.scml.src.scml.scml2020 import (
             DecentralizingAgent,
             BuyCheapSellExpensiveAgent,
             SCML2020World,
