@@ -1,8 +1,8 @@
 import abc
+import gym
 from abc import ABC
-from drl_negotiation.core._dtypes import MultiAgentDict, AgentID
 from drl_negotiation.core._env import Environment
-
+from typing import Tuple, Dict, List
 
 class MultiAgentEnv(Environment, ABC):
     """The main API for multi agents negotiation environments.
@@ -81,7 +81,7 @@ class MultiAgentEnv(Environment, ABC):
         return self._seed
 
     @abc.abstractmethod
-    def step(self, action_dict: MultiAgentDict):
+    def step(self, action_dict: "MultiAgentDict"):
         """ Returns reward, terminated, info """
         raise NotImplementedError
 
@@ -91,20 +91,20 @@ class MultiAgentEnv(Environment, ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_obs_agent(self, agent_id: AgentID):
+    def get_obs_agent(self, agent_id: "AgentID"):
         """ Returns observation for agent_id """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_rew_agent(self, agent_id: AgentID):
+    def get_rew_agent(self, agent_id: "AgentID"):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_done_agent(self, agent_id: AgentID):
+    def get_done_agent(self, agent_id: "AgentID"):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_info_agent(self, agent_id: AgentID):
+    def get_info_agent(self, agent_id: "AgentID"):
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -126,7 +126,7 @@ class MultiAgentEnv(Environment, ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_avail_agent_actions(self, agent_id: AgentID):
+    def get_avail_agent_actions(self, agent_id: "AgentID"):
         """ Returns the available actions for agent_id """
         raise NotImplementedError
 
@@ -163,3 +163,38 @@ class MultiAgentEnv(Environment, ABC):
                     "n_agents": self.n_agents,
                     "episode_limit": self.episode_limit}
         return env_info
+
+    def with_agent_groups(
+            self,
+            groups: Dict[str, List["AgentID"]],
+            obs_space: gym.Space = None,
+            act_space: gym.Space = None) -> "MultiAgentEnv":
+        """Convenience method for grouping together agents in this env.
+        An agent group is a list of agent ids that are mapped to a single
+        logical agent. All agents of the group must act at the same time in the
+        environment. The grouped agent exposes Tuple action and observation
+        spaces that are the concatenated action and obs spaces of the
+        individual agents.
+        The rewards of all the agents in a group are summed. The individual
+        agent rewards are available under the "individual_rewards" key of the
+        group info return.
+        Agent grouping is required to leverage algorithms such as Q-Mix.
+        This API is experimental.
+        Args:
+            groups (dict): Mapping from group id to a list of the agent ids
+                of group members. If an agent id is not present in any group
+                value, it will be left ungrouped.
+            obs_space (Space): Optional observation space for the grouped
+                env. Must be a tuple space.
+            act_space (Space): Optional action space for the grouped env.
+                Must be a tuple space.
+        Examples:
+            >>> env = YourMultiAgentEnv(...)
+            >>> grouped_env = env.with_agent_groups(env, {
+            ...   "group1": ["agent1", "agent2", "agent3"],
+            ...   "group2": ["agent4", "agent5"],
+            ... })
+        """
+
+        from drl_negotiation.core.envs.group_agents_wrapper import GroupAgentsWrapper
+        return GroupAgentsWrapper(self, groups, obs_space, act_space)

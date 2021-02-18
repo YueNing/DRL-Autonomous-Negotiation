@@ -1,6 +1,5 @@
 import abc
 from abc import ABC
-from drl_negotiation.core._dtypes import Agent
 
 
 class BaseScenario(ABC):
@@ -30,36 +29,36 @@ class BaseScenario(ABC):
     """
 
     @abc.abstractmethod
-    def make_world(self, config=None):
+    def make_world(self, config: "WorldConfig") -> "World":
         """create element of game world"""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def reset_world(self, world=None):
+    def reset_world(self, world: "World") -> "ResetWorld":
         """create initial condition of the world"""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def reset_agent(self, agent: Agent):
+    def reset_agent(self, agent: "Agent"):
         """Reset agent, return observation"""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def observation(self, agent: Agent):
+    def observation(self, agent: "Agent"):
         """callback observe by agent"""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def reward(self, agent: Agent):
+    def reward(self, agent: "Agent"):
         """callback reward of agent"""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def done(self, agent: Agent):
+    def done(self, agent: "Agent"):
         """callback done of agent"""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def info(self, agent: Agent):
+    def info(self, agent: "Agent"):
         """callback info of agent"""
         raise NotImplementedError

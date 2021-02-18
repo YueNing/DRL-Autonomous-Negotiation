@@ -8,6 +8,8 @@ from drl_negotiation.third_party.scml.src.scml.scml2020 import SCML2020Agent
 from drl_negotiation.core.config.hyperparameters import (MANAGEABLE, SLIENT, BLIND,
                                                          RUNNING_IN_SCML2020World
                                                          )
+from drl_negotiation.core.games._game import TrainableAgent
+
 
 class AgentState:
     '''
@@ -66,7 +68,7 @@ class Action:
         self.c = None
 
 
-class MySCML2020Agent(SCML2020Agent):
+class MySCML2020Agent(SCML2020Agent, TrainableAgent):
     '''
         My scml 2020 agent, subclass of scml2020agent,
         action_callback: action decided by the callback
@@ -74,6 +76,25 @@ class MySCML2020Agent(SCML2020Agent):
         hook:
             init
     '''
+
+    def done(self):
+        pass
+
+    def info(self):
+        pass
+
+    def reward(self):
+        pass
+
+    def observation(self):
+        pass
+
+    def reset(self):
+        pass
+
+    def set_action(self, action):
+        pass
+
     Owner = 'My'
 
     def __init__(self, *args, **kwargs):

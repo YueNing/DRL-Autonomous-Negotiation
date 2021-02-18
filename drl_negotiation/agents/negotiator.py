@@ -9,7 +9,7 @@ import gym
 
 import numpy as np
 from typing import Union
-from negmas import (
+from drl_negotiation.third_party.negmas.negmas import (
                         Issue, 
                         MechanismState, # The mechanism state
                         AspirationNegotiator,

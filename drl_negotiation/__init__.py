@@ -4,7 +4,7 @@
 # negmas, http://yasserm.com/negmas/
 # scml, http://www.yasserm.com/scml/scml2020docs/
 
-# Two main modules
+# Two main networks
 # Module 1: Train a Negotiator in SAOMechanism
 # Idea comes from ANegma, https://arxiv.org/abs/2001.11785
 

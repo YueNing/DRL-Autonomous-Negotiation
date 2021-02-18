@@ -9,7 +9,7 @@ from drl_negotiation.core.envs.normalized_env import NormalizedEnv
 
 
 ###########################################################
-# env
+# standard scml Environment
 ###########################################################
 def make_env(scenario_name,
              arglist=None,
@@ -18,6 +18,7 @@ def make_env(scenario_name,
              save_dir=None,
              load_dir=None,
              normalize=False,
+             seed=None,
              ):
     """
 
@@ -41,49 +42,53 @@ def make_env(scenario_name,
     ...     ), drl_negotiation.core.env.SCMLEnv)
     True
     """
-
-    from drl_negotiation.core.envs.multi_agents_scml import SCMLEnv
     import drl_negotiation.core.scenarios as scenarios
-
     # load scenario from script
     scenario = scenarios.load(scenario_name + '.py').Scenario()
 
-    # create world/game
-    if load_config:
-        config = get_world_config(load_dir)
+    if scenario_name == "scml_oneshot":
+        from drl_negotiation.core.envs.multi_agents_negotiation import MultiNegotiationSCM
+        world = scenario.make_world()
+        env = MultiNegotiationSCM(world=world, scenario=scenario, seed=seed)
+        return env
     else:
-        config = None
+        from drl_negotiation.core.envs.multi_agents_scml import SCMLEnv
+        # create world/game
+        if load_config:
+            config = get_world_config(load_dir)
+        else:
+            config = None
 
-    world = scenario.make_world(config)
+        world = scenario.make_world(config)
 
-    if save_config:
-        save_dir = save_dir if save_dir is not None else SAVE_WORLD_CONFIG_DIR
-        try:
-            world.save_config(file_name=save_dir)
-        except FileNotFoundError:
-            path = '/'.join(save_dir.split("/")[:-1])
-            os.makedirs(path)
-            logging.info(f"Creates dirs, {path}")
+        if save_config:
+            save_dir = save_dir if save_dir is not None else SAVE_WORLD_CONFIG_DIR
+            try:
+                world.save_config(file_name=save_dir)
+            except FileNotFoundError:
+                path = '/'.join(save_dir.split("/")[:-1])
+                os.makedirs(path)
+                logging.info(f"Creates dirs, {path}")
 
-            world.save_config(file_name=save_dir)
-            logging.info(f"save {world} into {save_dir}")
+                world.save_config(file_name=save_dir)
+                logging.info(f"save {world} into {save_dir}")
 
-    # create multi-agent supply chain management environment
-    env = SCMLEnv(
-        world,
-        reset_callback=scenario.reset_world,
-        reward_callback=scenario.reward,
-        observation_callback=scenario.observation,
-        info_callback=scenario.benchmark_data,
-        done_callback=scenario.done,
-        shared_viewer=False
-    )
+        # create multi-agent supply chain management environment
+        env = SCMLEnv(
+            world,
+            reset_callback=scenario.reset_world,
+            reward_callback=scenario.reward,
+            observation_callback=scenario.observation,
+            info_callback=scenario.benchmark_data,
+            done_callback=scenario.done,
+            shared_viewer=False
+        )
 
-    if normalize:
-        env = NormalizedEnv(env)
+        if normalize:
+            env = NormalizedEnv(env)
 
-    logging.info(f"Make {env} successfully!")
-    return env
+        logging.info(f"Make {env} successfully!")
+        return env
 
 
 def make_world(config=None):
@@ -118,12 +123,57 @@ def get_world_config(load_dir):
 
     return config
 
+#####################################################################
+# oneshot scml Environments
+#####################################################################
+from drl_negotiation.third_party.scml.src.scml.oneshot import SCML2020OneShotWorld
+from drl_negotiation.third_party.scml.src.scml.oneshot.builtin import RandomOneShotAgent
+from drl_negotiation.third_party.scml.src.scml.scml2020 import is_system_agent
+
+def generate_one_shot_world(
+    agent_types,
+    n_processes=3,
+    n_steps=10,
+    n_agents_per_process=1,
+    n_lines=10,
+    **kwargs,
+):
+    world = SCML2020OneShotWorld(
+        **SCML2020OneShotWorld.generate(
+            agent_types,
+            n_processes=n_processes,
+            n_steps=n_steps,
+            n_lines=n_lines,
+            n_agents_per_process=n_agents_per_process,
+            **kwargs,
+        )
+    )
+    for s1, s2 in zip(world.suppliers[:-1], world.suppliers[1:]):
+        assert len(set(s1).intersection(set(s2))) == 0
+    for s1, s2 in zip(world.consumers[:-1], world.consumers[1:]):
+        assert len(set(s1).intersection(set(s2))) == 0
+    for p in range(n_processes):
+        assert len(world.suppliers[p + 1]) == n_agents_per_process
+        assert len(world.consumers[p]) == n_agents_per_process
+    for a in world.agents.keys():
+        if is_system_agent(a):
+            continue
+        assert len(world.agent_inputs[a]) == 1
+        assert len(world.agent_outputs[a]) == 1
+        assert len(world.agent_processes[a]) == 1
+        assert len(world.agent_suppliers[a]) == (
+            n_agents_per_process if world.agent_inputs[a][0] != 0 else 1
+        )
+        assert len(world.agent_consumers[a]) == (
+            n_agents_per_process if world.agent_outputs[a][0] != n_processes else 1
+        )
+    return world
 
 #####################################################################
-# train
+# maddpg train
 #####################################################################
 import drl_negotiation
-from drl_negotiation.core.modules.maddpg.policy import mlp_model
+from drl_negotiation.core.networks.maddpg.policy import mlp_model
 
 
 def get_trainers(env, num_adversaries=0, obs_shape_n=None, arglist=None):
@@ -187,6 +237,10 @@ def get_trainers(env, num_adversaries=0, obs_shape_n=None, arglist=None):
 
     return trainers
 
+
+def update_scml_oneshot_batch(world):
+    """update the batch information after running one step in world"""
+    pass
 
 if __name__ == "__main__":
     import doctest

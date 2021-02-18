@@ -1,4 +1,6 @@
 import numpy as np
+import abc
+from abc import ABC
 from drl_negotiation.core._dtypes import Env
 from dataclasses import dataclass
 
@@ -34,3 +36,15 @@ class ModelResult:
     @property
     def total_episode_rewards(self):
         return np.concatenate((self.episode_rewards, self.episode_extra_rewards))
+
+
+class Runner(ABC):
+
+    def setup(self):
+        raise NotImplementedError
+
+    def learn(self):
+        raise NotImplementedError
+
+    def reset(self):
+        raise NotImplementedError

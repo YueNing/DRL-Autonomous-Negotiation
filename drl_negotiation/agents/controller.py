@@ -8,16 +8,16 @@ import logging
 import copy
 import random
 from typing import Dict
-from negmas import (Outcome,
+from drl_negotiation.third_party.negmas.negmas import (Outcome,
                     SAOResponse,
                     SAOState,
                     MechanismState,
                     )
 
-from scml.scml2020.services import SyncController
+from drl_negotiation.third_party.scml.src.scml.scml2020.services import SyncController
 import numpy as np
-from scml.scml2020.common import UNIT_PRICE
-from negmas import ResponseType
+from drl_negotiation.third_party.scml.src.scml.scml2020.common import UNIT_PRICE
+from drl_negotiation.third_party.negmas.negmas import ResponseType
 from drl_negotiation.core.config.hyperparameters import RANDOM
 
 

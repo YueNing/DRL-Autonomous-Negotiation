@@ -6,20 +6,20 @@
 import os
 from typing import Dict, Optional, Any
 # ############### For Test #### will be removed #########
-from scml.scml2020 import IndependentNegotiationsManager
+from drl_negotiation.third_party.scml.src.scml.scml2020 import IndependentNegotiationsManager
 # #######################################################
 
-from negmas import AgentMechanismInterface, Negotiator, Issue
+from drl_negotiation.third_party.negmas.negmas import AgentMechanismInterface, Negotiator, Issue
 import numpy as np
 from typing import Tuple, List
 from drl_negotiation.core.config.hyperparameters import *
 from drl_negotiation.core.utils.bilateral_utils import reverse_normalize
-from drl_negotiation.core.modules.maddpg.policy import create_actor
+from drl_negotiation.core.networks.maddpg.policy import create_actor
 import drl_negotiation.core.utils.tf_utils as U
 from gym import spaces
 import tensorflow as tf
 from drl_negotiation.agents.controller import MyDRLSCMLSAOSyncController
-from scml.scml2020 import MovingRangeNegotiationManager
+from drl_negotiation.third_party.scml.src.scml.scml2020 import MovingRangeNegotiationManager
 
 
 class MyNegotiationManager(IndependentNegotiationsManager):
