@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from drl_negotiation.core.games._scml_oneshot import  Agents
+from drl_negotiation.core.games._scml_oneshot import Agents
 from drl_negotiation.core.components.episode_buffer import ReplayBuffer
 import matplotlib.pyplot as plt
 from dataclasses import dataclass
@@ -13,9 +13,12 @@ class EpisodeResult:
     step: int
 
 
+from drl_negotiation.core.envs.multi_agents_negotiation import MultiNegotiationSCM
+
+
 class RolloutWorker:
     def __init__(self, env, agents, args):
-        self.env = env
+        self.env: MultiNegotiationSCM = env
         self.agents = agents
         self.episode_limit = args.episode_limit
         self.n_actions = args.n_actions
@@ -30,8 +33,66 @@ class RolloutWorker:
         print("Init RolloutWorker")
 
     def generate_episode(self, episode_idx, evaluate=False):
+        self.tmp_step = 0
+        self.tmp_epsilon = 0 if evaluate else self.epsilon
+        self.tmp_episode_reward = 0
+        self.tmp_o, self.tmp_u, self.tmp_r, self.tmp_s, \
+        self.tmp_avail_u, self.tmp_u_onehot, self.tmp_terminate, self.tmp_padded = [], [], [], [], [], [], [], []
+
         episode_result: EpisodeResult = self.env.run()
-        return episode_result.episode, episode_result.episode_reward, episode_result.step
+
+        obs = self.env.get_obs()
+        state = self.env.get_state()
+        self.tmp_o.append(obs)
+        self.tmp_s.append(state)
+        self.tmp_o_next = self.tmp_o[1:]
+        self.tmp_s_next = self.tmp_s[1:]
+        self.tmp_o = self.tmp_o[:-1]
+        self.tmp_s = self.tmp_s[:-1]
+        avail_actions = []
+        for agent_id in range(self.n_agents):
+            avail_action = self.env.get_avail_actions(agent_id)
+            avail_actions.append(avail_action)
+        self.tmp_avail_u.append(avail_actions)
+        self.tmp_avail_u_next = self.tmp_avail_u[1:]
+        self.tmp_avail_u = self.tmp_avail_u[:-1]
+
+        # if step < self.episode_limit, padding
+        for i in range(self.step, self.episode_limit):
+            self.tmp_o.append(np.zeros((self.n_agents, self.obs_shape)))
+            self.tmp_u.append(np.zeros([self.n_agents, 1]))
+            self.tmp_s.append(np.zeros(self.state_shape))
+            self.tmp_r.append([0.])
+            self.tmp_o_next.append(np.zeros((self.n_agents, self.obs_shape)))
+            self.tmp_s_next.append(np.zeros(self.state_shape))
+            self.tmp_u_onehot.append(np.zeros((self.n_agents, self.n_actions)))
+            self.tmp_avail_u.append(np.zeros((self.n_agents, self.n_actions)))
+            self.tmp_avail_u_next.append(np.zeros((self.n_agents, self.n_actions)))
+            self.tmp_padded.append([1.])
+            self.tmp_terminate.append([1.])
+
+        episode = dict(o=self.tmp_o.copy(),
+                       s=self.tmp_s.copy(),
+                       u=self.tmp_u.copy(),
+                       r=self.tmp_r.copy(),
+                       avail_u=self.tmp_avail_u.copy(),
+                       o_next=self.tmp_o_next.copy(),
+                       s_next=self.tmp_s_next.copy(),
+                       avail_u_next=self.tmp_avail_u_next.copy(),
+                       u_onehot=self.tmp_u_onehot.copy(),
+                       padded=self.tmp_padded.copy(),
+                       terminated=self.tmp_terminate.copy())
+
+        for key in episode.keys():
+            episode[key] = np.array([episode[key]])
+
+        if not evaluate:
+            self.epsilon = self.tmp_epsilon
+
+        if evaluate and episode_idx == self.args.evaluate_epoch - 1 and self.args.replay_dir != '':
+            self.env.save_replay()
+            self.env.close()
+        return episode, self.tmp_episode_reward, self.tmp_step
 
 
 class Runner:
@@ -76,7 +137,7 @@ class Runner:
             for train_step in range(self.args.train_steps):
                 mini_batch = self.buffer.sample(min(self.buffer.current_size, self.args.batch_size))
                 self.agents.train(mini_batch, train_steps)
-                train_steps +=1
+                train_steps += 1
         episode_reward = self.evaluate()
         self.episode_rewards.append(episode_reward)
         self.plt(num)
