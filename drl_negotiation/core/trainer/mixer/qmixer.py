@@ -1,5 +1,4 @@
 from drl_negotiation.core.train._model import Runner
-from drl_negotiation.core.config.envs.scml_oneshot import BATCH
 
 
 class QMixerModel(Runner):
@@ -8,8 +7,7 @@ class QMixerModel(Runner):
         self.max_world_cnt = self.env.world.n_steps
 
     def reset(self):
-        nonlocal BATCH
-        BATCH = self.new_batch()
+        batch = self.new_batch()
 
         if self.learn_cnt > self.max_world_cnt:
             self.env.reset()
@@ -52,7 +50,7 @@ class QMixer:
 
         self.model_dir = args.model_dir + '/' + args.alg + '/' + args.map
 
-        if self.args.laod_model:
+        if self.args.load_model:
             if os.path.exists(self.model_dir + '/rnn_net_params.pkl'):
                 path_rnn = self.model_dir + '/rnn_net_params.pkl'
                 path_qmix = self.model_dir + '/qmix_net_params.pkl'
@@ -64,7 +62,7 @@ class QMixer:
                 raise Exception("No model!")
 
         self.target_rnn.load_state_dict(self.eval_rnn.state_dict())
-        self.target_qmixer_net.load_state_dict(self.eval_qmixer_net.load_state_dict())
+        self.target_qmixer_net.load_state_dict(self.eval_qmixer_net.state_dict())
 
         self.eval_parameters = list(self.eval_qmixer_net.parameters()) + list(self.eval_rnn.parameters())
         if args.optimizer == "RMS":

@@ -2,7 +2,8 @@ import random
 import numpy as np
 from gym.spaces import Discrete, MultiDiscrete
 from drl_negotiation.core.envs.multi_agent_env import MultiAgentEnv
-from drl_negotiation.core.config.envs.scml_oneshot import BATCH
+# from drl_negotiation.core.config.envs.scml_oneshot import BATCH
+from drl_negotiation.core.games._scml_oneshot import Agents
 
 
 class MultiNegotiationSCM(MultiAgentEnv):
@@ -35,13 +36,15 @@ class MultiNegotiationSCM(MultiAgentEnv):
         return spaces
 
     def get_obs_size(self):
-        pass
+        return 10 * 100
 
     def get_state(self):
         pass
 
     def get_state_size(self):
-        pass
+        """Returns the size of the global state."""
+        if self.obs_instead_of_state:
+            return self.get_obs_size() * self.n_agents
 
     def get_avail_actions(self):
         pass
@@ -50,7 +53,7 @@ class MultiNegotiationSCM(MultiAgentEnv):
         pass
 
     def get_total_actions(self):
-        pass
+        return 10 * 100
 
     def render(self):
         pass
@@ -73,7 +76,8 @@ class MultiNegotiationSCM(MultiAgentEnv):
         # arguments
         self.world = world
         self.agents = self.world.policy_agents
-
+        self.n_agents = len(self.agents)
+        
         # callback
         self.reset_world_callback = scenario.reset_world
         self.reset_agent_callback = scenario.reset_agent
@@ -85,6 +89,8 @@ class MultiNegotiationSCM(MultiAgentEnv):
         # env arguments
         self.dones = set()
         self.resetted = False
+        self.obs_instead_of_state = True
+        self.episode_limit = self.world.world.n_steps * self.world.world.neg_n_steps
 
         # spaces
         self._observation_space = Discrete(10 * 100)
@@ -102,18 +108,20 @@ class MultiNegotiationSCM(MultiAgentEnv):
         self._action_space = Discrete(10 * 100)
         self._observation_space = Discrete(10 * 100)
 
-    def step(self, action_dict):
+    def step(self):
         self.world.step()
-        if self.world.current_step <= self.world.n_steps:
-            return True
-        else:
+        if self.world.world.time > self.world.world.time_limit:
             return False
+        if self.world.world.current_step >= self.world.world.n_steps:
+            return False
+        else:
+            return True
 
     def run(self):
-        while True:
-            if not self.step():
-                break
-        self.batch = BATCH
+        self.world._rl_runner = self._rl_runner
+        result = self.world.run()
+
+        self.batch = None
         episode_result = self.batch
         return episode_result
 

@@ -64,6 +64,5 @@ class MyOneShotBasedAgent(MyOneShotAgent):
         return self.negotiators[negotiator_id][0].ami.random_outcomes(1)[0]
 
     def propose(self, negotiator_id: str, state: MechanismState) -> "Outcome":
-        observation = None
-        return self.policy(observation)
+        return self.policy(negotiator_id, state)
         # return self._random_offer(negotiator_id)
