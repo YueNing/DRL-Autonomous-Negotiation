@@ -32,14 +32,19 @@ class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
         """return the action, get policy_callback from the trainer"""
         from drl_negotiation.core.envs.multi_agents_negotiation import MultiNegotiationSCM
         env: MultiNegotiationSCM = self.awi.rl_runner.env
-
-        obs = self.observation()
-        last_action = self.last_action()
         agent_num = int(self.awi.agent.name[-1])
-        avail_actions = self.get_avail_actions()
         epsilon = 1
-        action = self.awi.rl_runner.agents.choose_action(obs, last_action, agent_num, avail_actions, epsilon)
+        obs = self.awi._world.tmp_obs[agent_num]
+        last_action = self.awi.rl_runner.rollout_worker.tmp_last_action[agent_num]
+        avail_action = self.awi.rl_runner.env.get_avail_agent_actions(agent_num)
+        action = self.awi.rl_runner.agents.choose_action(obs, last_action, agent_num, avail_action, epsilon)
 
+        action_onehot = np.zeros(self.awi.rl_runner.args.n_actions)
+        action_onehot[action] = 1
+        self.awi._world.tmp_actions.append(action)
+        self.awi._world.tmp_actions_onehot.append(action_onehot)
+        self.awi._world.tmp_avail_actions.append(avail_action)
+        self.awi.rl_runner.rollout_worker.tmp_last_action[agent_num] = action_onehot
         return action
 
 import torch
