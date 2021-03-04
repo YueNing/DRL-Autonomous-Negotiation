@@ -9,7 +9,7 @@ from typing import Dict, Optional, Any
 from scml.scml2020 import IndependentNegotiationsManager
 # #######################################################
 
-from drl_negotiation.third_party.negmas.negmas import AgentMechanismInterface, Negotiator, Issue
+from negmas import AgentMechanismInterface, Negotiator, Issue
 import numpy as np
 from typing import Tuple, List
 from drl_negotiation.core.config.hyperparameters import *

@@ -1,5 +1,5 @@
 import random
-from drl_negotiation.third_party.negmas.negmas import Issue
+from negmas import Issue
 from typing import List, Tuple
 
 

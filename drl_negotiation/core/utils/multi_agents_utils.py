@@ -3,7 +3,7 @@ import sys
 import pickle
 from drl_negotiation.core.config.hyperparameters import *
 from drl_negotiation.core.games.scml import TrainWorld
-from drl_negotiation.third_party.negmas.negmas.helpers import get_class
+from negmas.helpers import get_class
 from scml.scml2020 import SCML2020World
 from drl_negotiation.core.envs.normalized_env import NormalizedEnv
 
@@ -127,6 +127,7 @@ def get_world_config(load_dir):
 # oneshot scml Environments
 #####################################################################
 from scml.oneshot import SCML2020OneShotWorld
+from scml.oneshot.builtin import RandomOneShotAgent
 from scml.scml2020 import is_system_agent
 
 def generate_one_shot_world(
