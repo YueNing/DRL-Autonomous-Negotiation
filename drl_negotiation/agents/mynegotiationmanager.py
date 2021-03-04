@@ -6,7 +6,7 @@
 import os
 from typing import Dict, Optional, Any
 # ############### For Test #### will be removed #########
-from drl_negotiation.third_party.scml.src.scml.scml2020 import IndependentNegotiationsManager
+from scml.scml2020 import IndependentNegotiationsManager
 # #######################################################
 
 from drl_negotiation.third_party.negmas.negmas import AgentMechanismInterface, Negotiator, Issue
@@ -19,7 +19,7 @@ import drl_negotiation.core.utils.tf_utils as U
 from gym import spaces
 import tensorflow as tf
 from drl_negotiation.agents.controller import MyDRLSCMLSAOSyncController
-from drl_negotiation.third_party.scml.src.scml.scml2020 import MovingRangeNegotiationManager
+from scml.scml2020 import MovingRangeNegotiationManager
 
 
 class MyNegotiationManager(IndependentNegotiationsManager):

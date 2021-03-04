@@ -39,7 +39,9 @@ class MultiNegotiationSCM(MultiAgentEnv):
         return 10 * 100
 
     def get_state(self):
-        pass
+        if self.obs_instead_of_state:
+            obs = np.concatenate(self.get_obs(), axis=0).astype(np.float32)
+            return obs
 
     def get_state_size(self):
         """Returns the size of the global state."""
@@ -49,11 +51,20 @@ class MultiNegotiationSCM(MultiAgentEnv):
     def get_avail_actions(self):
         pass
 
-    def get_avail_agent_actions(self, agent_id: "AgentID"):
-        pass
+    def get_avail_agent_actions(self, agent_id: "AgentID", issues):
+        # Decide the available agent actions based on the
+        # range of negotiation issues set by system
+        from scml.oneshot import QUANTITY, UNIT_PRICE
+
+        avail_actions = [0] * self.n_actions
+        for i in range(issues[QUANTITY].values[0], issues[QUANTITY].values[1] + 1):
+            for j in range(issues[UNIT_PRICE].values[0], issues[UNIT_PRICE].values[1] + 1):
+                avail_actions[(i-1)*100 + (j-1)] = 1
+
+        return avail_actions
 
     def get_total_actions(self):
-        return 10 * 100
+        return self.n_actions
 
     def render(self):
         pass
@@ -108,6 +119,8 @@ class MultiNegotiationSCM(MultiAgentEnv):
         self._action_space = Discrete(10 * 100)
         self._observation_space = Discrete(10 * 100)
 
+        self.n_actions = 10 * 100
+
     def step(self):
         self.world.step()
         if self.world.world.time > self.world.world.time_limit:
@@ -130,7 +143,7 @@ class MultiNegotiationSCM(MultiAgentEnv):
         self.dones = set()
         self.reset_world_callback(self.world)
         self.agents = self.world.policy_agents
-        self.world.step()
+        # self.world.step()
         obs_dict = {i: self.reset_agent_callback(a) for i, a in self.agents.items()}
         return obs_dict
 
@@ -138,7 +151,7 @@ class MultiNegotiationSCM(MultiAgentEnv):
         """ Returns all agent observations in a list.
         Note: Agents should have access only to their local
         observations during decentralised execution"""
-        agents_obs = [self.get_obs_agent(_) for _ in range(self.agents)]
+        agents_obs = [self.get_obs_agent(_) for _ in self.agents]
         return agents_obs
 
     def get_obs_agent(self, agent_id):
@@ -146,6 +159,10 @@ class MultiNegotiationSCM(MultiAgentEnv):
         if self.observation_callback is None:
             return np.zeros(0)
         return self.observation_callback(self.agents[agent_id])
+
+    def get_reward(self):
+        reward_n = [self.get_rew_agent(agent) for agent in self.agents]
+        return np.sum(reward_n)
 
     def get_rew_agent(self, agent_id: "AgentID"):
         if self.reward_callback is None:

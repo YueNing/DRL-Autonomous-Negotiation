@@ -4,7 +4,7 @@ import pickle
 import numpy as np
 import logging
 from typing import Optional
-from drl_negotiation.third_party.scml.src.scml.scml2020 import SCML2020World, is_system_agent
+from scml.scml2020 import SCML2020World, is_system_agent
 from drl_negotiation.core.config.hyperparameters import (COLLABORATIVE, DIM_M, DIM_B, QUANTITY, TIME, UNIT_PRICE)
 from drl_negotiation.core.games._scml import AgentState, MySCML2020Agent
 

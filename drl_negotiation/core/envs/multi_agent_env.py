@@ -126,7 +126,7 @@ class MultiAgentEnv(Environment, ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_avail_agent_actions(self, agent_id: "AgentID"):
+    def get_avail_agent_actions(self, agent_id: "AgentID", issues):
         """ Returns the available actions for agent_id """
         raise NotImplementedError
 

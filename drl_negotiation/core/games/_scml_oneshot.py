@@ -1,6 +1,7 @@
 from abc import ABC
 from drl_negotiation.core.games._game import TrainableAgent
-from drl_negotiation.third_party.scml.src.scml.oneshot.agent import OneShotAgent
+from scml.oneshot.agent import OneShotAgent
+
 
 class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
     """Running in the SCML OneShot"""
@@ -11,10 +12,37 @@ class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
         pass
 
     def reward(self):
-        pass
+        current_offer = []
+        reward = []
+        for negotiator_id, negotiator in self.negotiators.items():
+            current_offer.append(negotiator[0].ami.state.current_offer)
+            reward.append(-1 if negotiator[0].ami.state.agreement is None else 1)
+        if not reward:
+            return 0
+        return reward[0]
 
     def observation(self):
-        pass
+        """Returns observation for agent, the observation is composed of:
+             - negotiation issues ranges,
+             - my last proposed offer
+             - current offer in the negotiation
+         """
+        my_last_proposal = []
+        issues = []
+        current_offer = []
+        for negotiator_id, negotiator in self.negotiators.items():
+            my_last_proposal.append(negotiator[0].my_last_proposal)
+            issues.append(negotiator[0].ami.issues)
+            current_offer.append(negotiator[0].ami.state.current_offer)
+
+        # convert offer to onehot encoding
+        if not current_offer:
+            current_offer = np.zeros(10 * 100)
+        elif current_offer[0] is None:
+            current_offer = np.zeros(10 * 100)
+        else:
+            current_offer = np.eye(10 * 100)[np.prod(current_offer)]
+        return current_offer
 
     def reset(self):
         pass
@@ -35,8 +63,9 @@ class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
         agent_num = int(self.awi.agent.name[-1])
         epsilon = 1
         obs = self.awi._world.tmp_obs[agent_num]
+        issues = self.negotiators[negotiator_id][0].ami.issues
         last_action = self.awi.rl_runner.rollout_worker.tmp_last_action[agent_num]
-        avail_action = self.awi.rl_runner.env.get_avail_agent_actions(agent_num)
+        avail_action = self.awi.rl_runner.env.get_avail_agent_actions(agent_num, issues)
         action = self.awi.rl_runner.agents.choose_action(obs, last_action, agent_num, avail_action, epsilon)
 
         action_onehot = np.zeros(self.awi.rl_runner.args.n_actions)
@@ -100,7 +129,7 @@ class Agents:
         else:
             q_value[avail_actions == 0.0] = - float("inf")
             if np.random.uniform() < epsilon:
-                action = np.random.choice(avail_actions_ind)  # action是一个整数
+                action = np.random.choice(avail_actions_ind)  # action is int
             else:
                 action = torch.argmax(q_value)
         return action

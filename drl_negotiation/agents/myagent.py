@@ -1,20 +1,19 @@
 from drl_negotiation.core.games._scml import MySCML2020Agent
-from drl_negotiation.third_party.scml.src.scml.scml2020 import (
+from scml.scml2020 import (
     TradeDrivenProductionStrategy,
     PredictionBasedTradingStrategy,
 )
-from drl_negotiation.third_party.scml.src.scml.scml2020.agents.decentralizing import _NegotiationCallbacks
-from drl_negotiation.third_party.scml.src.scml.scml2020 import (
+from scml.scml2020.agents.decentralizing import _NegotiationCallbacks
+from scml.scml2020 import (
     SupplyDrivenProductionStrategy,
     KeepOnlyGoodPrices,
     StepNegotiationManager,
 )
 
-from drl_negotiation.third_party.negmas.negmas import LinearUtilityFunction
+from negmas import LinearUtilityFunction
 from .mynegotiationmanager import MyNegotiationManager, MyConcurrentNegotiationManager
-from drl_negotiation.third_party.scml.src.scml.oneshot.builtin import RandomOneShotAgent
 from drl_negotiation.core.games._scml_oneshot import MyOneShotAgent
-from drl_negotiation.third_party.negmas.negmas import MechanismState
+from negmas import MechanismState
 
 class MyComponentsBasedAgent(
     TradeDrivenProductionStrategy,
@@ -60,9 +59,14 @@ class MyOpponentAgent(
 
 
 class MyOneShotBasedAgent(MyOneShotAgent):
+
     def _random_offer(self, negotiator_id: str):
         return self.negotiators[negotiator_id][0].ami.random_outcomes(1)[0]
 
     def propose(self, negotiator_id: str, state: MechanismState) -> "Outcome":
-        return self.policy(negotiator_id, state)
-        # return self._random_offer(negotiator_id)
+        from scml.oneshot import QUANTITY, UNIT_PRICE
+        action: int = self.policy(negotiator_id, state)
+        # convert int action to propose
+        q = action // 100 + 1
+        u = action % 100 + 1
+        return (q, 0, u)

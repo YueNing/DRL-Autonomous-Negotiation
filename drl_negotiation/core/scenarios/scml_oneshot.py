@@ -4,6 +4,7 @@ from drl_negotiation.core.games.scml_oneshot import TrainWorld
 from drl_negotiation.core.config.envs.scml_oneshot import *
 from negmas.helpers import unique_name
 
+
 class Scenario(BaseScenario):
     def info(self, agent: "Agent"):
         return agent.info()
@@ -12,9 +13,12 @@ class Scenario(BaseScenario):
         return agent.done()
 
     def reward(self, agent: "Agent"):
+        agent = agent.controller
         return agent.reward()
 
     def observation(self, agent: "Agent"):
+        # the real MyOneShotAgent is the controller of agent running in the SCMLOneShot
+        agent = agent.controller
         return agent.observation()
 
     def reset_agent(self, agent: "Agent"):
@@ -22,7 +26,7 @@ class Scenario(BaseScenario):
             return
         return agent.reset()
 
-    def make_world(self, config=None) -> "World":
+    def make_world(self, config:dict = None) -> "World":
         world = generate_one_shot_world(
             AGENT_TYPE,
             n_processes=N_PROCESSES,

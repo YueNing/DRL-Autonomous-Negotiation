@@ -33,6 +33,7 @@ class RolloutWorker:
         print("Init RolloutWorker")
 
     def generate_episode(self, episode_idx, evaluate=False):
+        self.env.reset()
         self.tmp_step = 0
         self.tmp_epsilon = 0 if evaluate else self.epsilon
         self.tmp_episode_reward = 0
@@ -40,6 +41,7 @@ class RolloutWorker:
         self.tmp_o, self.tmp_u, self.tmp_r, self.tmp_s, \
         self.tmp_avail_u, self.tmp_u_onehot, self.tmp_terminate, self.tmp_padded = [], [], [], [], [], [], [], []
 
+        self.agents.policy.init_hidden(1)
         episode_result: EpisodeResult = self.env.run()
 
         obs = self.env.get_obs()

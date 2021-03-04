@@ -1,6 +1,6 @@
 from drl_negotiation.core.games._game import TrainingWorld
-from drl_negotiation.third_party.scml.src.scml.oneshot import SCML2020OneShotWorld
-from drl_negotiation.third_party.scml.src.scml.scml2020 import is_system_agent
+from scml.oneshot import SCML2020OneShotWorld
+from scml.scml2020 import is_system_agent
 from drl_negotiation.core.utils.multi_agents_utils import generate_one_shot_world
 from drl_negotiation.core.config.envs.scml_oneshot import *
 
