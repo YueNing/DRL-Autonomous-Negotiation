@@ -11,10 +11,12 @@ class MultiNegotiationSCM(MultiAgentEnv):
     """
     @property
     def agents(self):
+        """Return all learnable agents"""
         return self._agents
 
     @agents.setter
     def agents(self, agents):
+        """Set all learnable agents"""
         self._agents = agents
 
     @property
@@ -23,6 +25,8 @@ class MultiNegotiationSCM(MultiAgentEnv):
 
     @property
     def action_spaces(self):
+        """Return all action spaces as type dict,
+        key is agents' id or agents' name"""
         spaces = {}
         for id, agent in self.agents.items():
             spaces[id] = self.action_space
@@ -30,15 +34,21 @@ class MultiNegotiationSCM(MultiAgentEnv):
 
     @property
     def observation_spaces(self):
+        """Return all observation spaces as type dict,
+        key is agents' id or agents' name"""
         spaces = {}
         for id, agent in self.agents.items():
             spaces[id] = self.observation_space
         return spaces
 
     def get_obs_size(self):
+        """Return the size of observation of single agent
+        e.g QUANTITY: 10, UNIT_PRICE: 100"""
         return 10 * 100
 
     def get_state(self):
+        """Return the state of Environment
+        one type, easy way, use observation instead state"""
         if self.obs_instead_of_state:
             obs = np.concatenate(self.get_obs(), axis=0).astype(np.float32)
             return obs
@@ -64,6 +74,8 @@ class MultiNegotiationSCM(MultiAgentEnv):
         return avail_actions
 
     def get_total_actions(self):
+        """Return size of single agent's action
+        e.g. QUANTITY:10, UNIT_PRICE:100"""
         return self.n_actions
 
     def render(self):
@@ -122,6 +134,7 @@ class MultiNegotiationSCM(MultiAgentEnv):
         self.n_actions = 10 * 100
 
     def step(self):
+        """One environment step"""
         self.world.step()
         if self.world.world.time > self.world.world.time_limit:
             return False
@@ -131,6 +144,7 @@ class MultiNegotiationSCM(MultiAgentEnv):
             return True
 
     def run(self):
+        """One total episode of World"""
         self.world._rl_runner = self._rl_runner
         result = self.world.run()
 
@@ -139,6 +153,7 @@ class MultiNegotiationSCM(MultiAgentEnv):
         return episode_result
 
     def reset(self):
+        """Reset environment, reset World"""
         self.resetted = True
         self.dones = set()
         self.reset_world_callback(self.world)
@@ -161,20 +176,24 @@ class MultiNegotiationSCM(MultiAgentEnv):
         return self.observation_callback(self.agents[agent_id])
 
     def get_reward(self):
+        """Return sum reward of all learnable agents"""
         reward_n = [self.get_rew_agent(agent) for agent in self.agents]
         return np.sum(reward_n)
 
     def get_rew_agent(self, agent_id: "AgentID"):
+        """Return reward one single agent"""
         if self.reward_callback is None:
             return 0
         return self.reward_callback(self.agents[agent_id])
 
     def get_done_agent(self, agent_id: "AgentID"):
+        """Return done information of one single agent"""
         if self.done_callback is None:
             return random.choice([True, False])
         return self.done_callback(self.agents[agent_id])
 
     def get_info_agent(self, agent_id: "AgentID"):
+        """Return info of one single agent"""
         if self.info_callback is None:
             return {}
         return self.info_callback(self.agents[agent_id])
