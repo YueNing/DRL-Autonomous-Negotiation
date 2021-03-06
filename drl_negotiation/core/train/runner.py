@@ -44,6 +44,7 @@ class RolloutWorker:
         self.agents.policy.init_hidden(1)
         episode_result: EpisodeResult = self.env.run()
 
+        # last obs
         obs = self.env.get_obs()
         state = self.env.get_state()
         self.tmp_o.append(obs)
@@ -53,15 +54,15 @@ class RolloutWorker:
         self.tmp_o = self.tmp_o[:-1]
         self.tmp_s = self.tmp_s[:-1]
         avail_actions = []
-        for agent_id in range(self.n_agents):
-            avail_action = self.env.get_avail_actions(agent_id)
+        for agent_id, agent in self.env.agents.items():
+            avail_action = self.env.get_avail_agent_actions(agent_id, issues=None)
             avail_actions.append(avail_action)
         self.tmp_avail_u.append(avail_actions)
         self.tmp_avail_u_next = self.tmp_avail_u[1:]
         self.tmp_avail_u = self.tmp_avail_u[:-1]
 
         # if step < self.episode_limit, padding
-        for i in range(self.step, self.episode_limit):
+        for i in range(self.tmp_step, self.episode_limit):
             self.tmp_o.append(np.zeros((self.n_agents, self.obs_shape)))
             self.tmp_u.append(np.zeros([self.n_agents, 1]))
             self.tmp_s.append(np.zeros(self.state_shape))

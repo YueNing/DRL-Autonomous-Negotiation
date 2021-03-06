@@ -93,15 +93,19 @@ class QMixer:
         q_targets[avail_u_next == 0.0] = - 9999999
         q_targets = q_targets.max(dim=3)[0]
 
-        q_total_eval = self.eval_qmix_net(q_evals, s)
-        q_total_target = self.target_qmix_net(q_targets, s_next)
+        q_total_eval = self.eval_qmixer_net(q_evals, s)
+        q_total_target = self.target_qmixer_net(q_targets, s_next)
 
         targets = r + self.args.gamma * q_total_target * (1 - terminated)
 
         td_error = (q_total_eval - targets.detach())
         masked_td_error = mask * td_error
 
-        loss = (masked_td_error ** 2).sum() / mask.sum()
+        if mask.sum == 0:
+            loss = (masked_td_error ** 2).sum()
+        else:
+            loss = (masked_td_error ** 2).sum() / mask.sum()
+
         self.optimizer.zero_grad()
         loss.backward()
         th.nn.utils.clip_grad_norm_(self.eval_parameters, self.args.grad_norm_clip)

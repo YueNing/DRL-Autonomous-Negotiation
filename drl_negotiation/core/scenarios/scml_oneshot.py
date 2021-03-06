@@ -13,12 +13,12 @@ class Scenario(BaseScenario):
         return agent.done()
 
     def reward(self, agent: "Agent"):
-        agent = agent.controller
+        # agent = agent.controller
         return agent.reward()
 
     def observation(self, agent: "Agent"):
         # the real MyOneShotAgent is the controller of agent running in the SCMLOneShot
-        agent = agent.controller
+        # agent = agent.controller
         return agent.observation()
 
     def reset_agent(self, agent: "Agent"):

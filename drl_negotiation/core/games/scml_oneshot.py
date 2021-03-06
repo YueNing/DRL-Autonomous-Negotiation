@@ -31,7 +31,8 @@ class TrainWorld(TrainingWorld):
         self.world.step()
 
     def run(self):
-        result = self.world.run(self._rl_runner)
+        # result = self.world.run(self._rl_runner)
+        result = self.world.run()
         return result
 
 

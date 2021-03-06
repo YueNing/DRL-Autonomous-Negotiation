@@ -61,12 +61,16 @@ class MultiNegotiationSCM(MultiAgentEnv):
     def get_avail_actions(self):
         pass
 
-    def get_avail_agent_actions(self, agent_id: "AgentID", issues):
+    def get_avail_agent_actions(self, agent_id: "AgentID", issues=None):
         # Decide the available agent actions based on the
         # range of negotiation issues set by system
         from scml.oneshot import QUANTITY, UNIT_PRICE
 
         avail_actions = [0] * self.n_actions
+
+        if issues is None:
+            return (np.array(avail_actions) + 1).tolist()
+
         for i in range(issues[QUANTITY].values[0], issues[QUANTITY].values[1] + 1):
             for j in range(issues[UNIT_PRICE].values[0], issues[UNIT_PRICE].values[1] + 1):
                 avail_actions[(i-1)*100 + (j-1)] = 1
