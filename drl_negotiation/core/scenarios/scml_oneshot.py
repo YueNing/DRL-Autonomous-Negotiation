@@ -1,3 +1,4 @@
+import scml
 from drl_negotiation.core.scenarios.scenario import BaseScenario
 from drl_negotiation.core.utils.multi_agents_utils import generate_one_shot_world
 from drl_negotiation.core.games.scml_oneshot import TrainWorld
@@ -13,12 +14,15 @@ class Scenario(BaseScenario):
         return agent.done()
 
     def reward(self, agent: "Agent"):
-        # agent = agent.controller
+        if scml.__version__ == "0.3.1":
+            agent = agent.controller
         return agent.reward()
 
     def observation(self, agent: "Agent"):
         # the real MyOneShotAgent is the controller of agent running in the SCMLOneShot
-        # agent = agent.controller
+        # scml version 0.3.1, agent in RL is controller of  agent in environment
+        if scml.__version__ == "0.3.1":
+            agent = agent.controller
         return agent.observation()
 
     def reset_agent(self, agent: "Agent"):

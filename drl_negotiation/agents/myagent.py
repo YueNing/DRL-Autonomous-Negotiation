@@ -1,3 +1,4 @@
+import inspect
 from drl_negotiation.core.games._scml import MySCML2020Agent
 from scml.scml2020 import (
     TradeDrivenProductionStrategy,
@@ -10,7 +11,7 @@ from scml.scml2020 import (
     StepNegotiationManager,
 )
 
-from negmas import LinearUtilityFunction
+from negmas import LinearUtilityFunction, ResponseType
 from .mynegotiationmanager import MyNegotiationManager, MyConcurrentNegotiationManager
 from drl_negotiation.core.games._scml_oneshot import MyOneShotAgent
 from negmas import MechanismState
@@ -63,10 +64,26 @@ class MyOneShotBasedAgent(MyOneShotAgent):
     def _random_offer(self, negotiator_id: str):
         return self.negotiators[negotiator_id][0].ami.random_outcomes(1)[0]
 
-    def propose(self, negotiator_id: str, state: MechanismState) -> "Outcome":
-        from scml.oneshot import QUANTITY, UNIT_PRICE
+    def propose(self, negotiator_id: str, state: MechanismState, tag=False) -> "Outcome":
+        if not hasattr(self, "myoffer"):
+            return self.mypropose(negotiator_id, state)
+
+        if tag:
+            return self.mypropose(negotiator_id, state)
+
+        return self.myoffer
+
+    def mypropose(self, negotiator_id:str, state: MechanismState) -> "Outcome":
         action: int = self.policy(negotiator_id, state)
         # convert int action to propose
         q = action // 100 + 1
         u = action % 100 + 1
         return (q, 0, u)
+
+    def respond(
+        self, negotiator_id: str, state: MechanismState, offer: "Outcome"
+    ) -> "ResponseType":
+        self.myoffer = self.propose(negotiator_id, state, tag=True)
+        if self.myoffer == offer:
+            return ResponseType.ACCEPT_OFFER
+        return ResponseType.REJECT_OFFER

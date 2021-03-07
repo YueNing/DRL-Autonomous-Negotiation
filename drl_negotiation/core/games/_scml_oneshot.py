@@ -58,22 +58,20 @@ class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
 
     def policy(self, negotiator_id, state):
         """return the action, get policy_callback from the trainer"""
-        from drl_negotiation.core.envs.multi_agents_negotiation import MultiNegotiationSCM
-        env: MultiNegotiationSCM = self.awi.rl_runner.env
         agent_num = int(self.awi.agent.name[-1])
         epsilon = 1
-        obs = self.awi._world.tmp_obs[agent_num]
+        obs = self.awi._world.train_world.tmp_obs[agent_num]
         issues = self.negotiators[negotiator_id][0].ami.issues
-        last_action = self.awi.rl_runner.rollout_worker.tmp_last_action[agent_num]
-        avail_action = self.awi.rl_runner.env.get_avail_agent_actions(agent_num, issues)
-        action = self.awi.rl_runner.agents.choose_action(obs, last_action, agent_num, avail_action, epsilon)
+        last_action = self.awi._world.train_world.rollout_worker.tmp_last_action[agent_num]
+        avail_action = self.awi._world.train_world.env.get_avail_agent_actions(agent_num, issues)
+        action = self.awi._world.train_world.rl_runner.agents.choose_action(obs, last_action, agent_num, avail_action, epsilon)
 
-        action_onehot = np.zeros(self.awi.rl_runner.args.n_actions)
+        action_onehot = np.zeros(self.awi._world.train_world.rl_runner.args.n_actions)
         action_onehot[action] = 1
-        self.awi._world.tmp_actions.append(action)
-        self.awi._world.tmp_actions_onehot.append(action_onehot)
-        self.awi._world.tmp_avail_actions.append(avail_action)
-        self.awi.rl_runner.rollout_worker.tmp_last_action[agent_num] = action_onehot
+        self.awi._world.train_world.tmp_actions.append(action)
+        self.awi._world.train_world.tmp_actions_onehot.append(action_onehot)
+        self.awi._world.train_world.tmp_avail_actions.append(avail_action)
+        self.awi._world.train_world.rollout_worker.tmp_last_action[agent_num] = action_onehot
         return action
 
 import torch

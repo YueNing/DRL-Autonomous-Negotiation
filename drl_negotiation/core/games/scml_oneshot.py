@@ -79,7 +79,7 @@ class TrainWorld(TrainingWorld):
             if is_system_agent(agent_id):
                 pass
             else:
-                agents[id] = agent
+                agents[agent_id] = agent
         return agents
 
     def reset(self):
@@ -95,6 +95,7 @@ class TrainWorld(TrainingWorld):
         if self.world._start_time is None or self.world._start_time < 0:
             self.world._start_time = time.perf_counter()
         if self.world.time >= self.world.time_limit:
+            self.tmp_terminated = True
             return False
         self.world._n_negs_per_agent_per_step = defaultdict(int)
         if self.world.current_step >= self.world.n_steps:
@@ -107,6 +108,7 @@ class TrainWorld(TrainingWorld):
                 for agent in self.world._entities[priority]:
                     self.world.call(agent, agent.init_)
                     if self.world.time >= self.world.time_limit:
+                        self.tmp_terminated = True
                         return False
             # update monitors
             for monitor in self.world.stats_monitors:
@@ -125,6 +127,7 @@ class TrainWorld(TrainingWorld):
         for agent in self.world.agents.values():
             self.world.call(agent, agent.on_simulation_step_started)
             if self.world.time >= self.world.time_limit:
+                self.tmp_terminated = True
                 return False
 
         self.world.loginfo(
@@ -165,6 +168,7 @@ class TrainWorld(TrainingWorld):
                 [_[0] for _ in mechanisms], n_steps, False, [_[1] for _ in mechanisms]
             )
             if self.world.time >= self.world.time_limit:
+                self.tmp_terminated = True
                 return
             n_total_broken = n_broken + n_broken_
             if n_total_broken > 0:
@@ -190,6 +194,7 @@ class TrainWorld(TrainingWorld):
             for task in tasks:
                 self.world.call(task, task.step_)
                 if self.world.time >= self.world.time_limit:
+                    self.tmp_terminated = True
                     break
 
         def _sign_contracts():
@@ -200,6 +205,7 @@ class TrainWorld(TrainingWorld):
             try:
                 self.world.simulation_step(stage)
                 if self.world.time >= self.world.time_limit:
+                    self.tmp_terminated = True
                     return
             except Exception as e:
                 self.world.simulation_exceptions[self.world._current_step].append(exception2str())
@@ -223,6 +229,7 @@ class TrainWorld(TrainingWorld):
 
                 for contract in current_contracts:
                     if self.world.time >= self.world.time_limit:
+                        self.tmp_terminated = True
                         break
                     if contract.signed_at < 0:
                         continue
@@ -307,6 +314,7 @@ class TrainWorld(TrainingWorld):
                                 contract,
                             )
                             if self.world.time >= self.world.time_limit:
+                                self.tmp_terminated = True
                                 break
                     else:
                         for p in contract.partners:
@@ -366,6 +374,7 @@ class TrainWorld(TrainingWorld):
                                 resolution,
                             )
                             if self.world.time >= self.world.time_limit:
+                                self.tmp_terminated = True
                                 break
                     contract.executed_at = self.world.current_step
             dropped = self.world.get_dropped_contracts()
@@ -397,6 +406,7 @@ class TrainWorld(TrainingWorld):
         for operation in self.world.operations:
             operation_map[operation]()
             if self.world.time >= self.world.time_limit:
+                self.tmp_terminated = True
                 return False
 
         # remove all negotiations that are completed
@@ -444,6 +454,7 @@ class TrainWorld(TrainingWorld):
         for agent in self.world.agents.values():
             self.world.call(agent, agent.on_simulation_step_ended)
             if self.world.time >= self.world.time_limit:
+                self.tmp_terminated = True
                 return False
 
         for monitor in self.world.stats_monitors:
@@ -485,8 +496,8 @@ class TrainWorld(TrainingWorld):
             n_steps = float("inf")
 
         # t
-        self.pre_rollout()
-        self.after_rollout()
+        # self.pre_rollout()
+        # self.after_rollout()
 
         while any(running):
             # random.shuffle(indices)
@@ -495,6 +506,7 @@ class TrainWorld(TrainingWorld):
                 if not running[i]:
                     continue
                 if self.world.time >= self.world.time_limit:
+                    self.tmp_terminated = True
                     break
                 mechanism = mechanisms[i]
                 contract, r = self.world._step_a_mechanism(mechanism, force_immediate_signing)
@@ -519,8 +531,10 @@ class TrainWorld(TrainingWorld):
                         )
             current_step += 1
             if current_step >= n_steps:
+                self.tmp_terminated = True
                 break
             if self.world.time >= self.world.time_limit:
+                self.tmp_terminated = True
                 break
 
             self.after_rollout()
@@ -542,14 +556,17 @@ class TrainWorld(TrainingWorld):
         self.world._start_time = time.perf_counter()
         for _ in range(self.world.n_steps):
             if self.world.time >= self.world.time_limit:
+                self.tmp_terminated = True
                 break
             if not self.step():
+                self.tmp_terminated = True
                 break
 
     def pre_rollout(self):
         # A real training step
-        self.tmp_obs = self.rl_runner.env.get_obs()
-        self.tmp_state = self.rl_runner.env.get_state()
+        self.tmp_obs = self.env.get_obs()
+        self.tmp_state = self.env.get_state()
+        # before execute action, need to reset these parameters
         self.tmp_actions, self.tmp_avail_actions, self.tmp_actions_onehot = [], [], []
 
     def after_rollout(self):
@@ -559,10 +576,15 @@ class TrainWorld(TrainingWorld):
         tmp_reward = self.rl_runner.env.get_reward()
         self.rollout_worker.tmp_o.append(self.tmp_obs)
         self.rollout_worker.tmp_s.append(self.tmp_state)
+        if not self.tmp_actions:
+            raise ValueError("Actions are None, agents do not execute actions "
+                             "No negotiations exist between agents!")
+        # cannot reshape array of size 4 into shape (2,1)
+        # Concurrent negotiation between two same agents
         self.rollout_worker.tmp_u.append(np.reshape(self.tmp_actions, [self.rollout_worker.n_agents, 1]))
         self.rollout_worker.tmp_u_onehot.append(self.tmp_actions_onehot)
         self.rollout_worker.tmp_avail_u.append(self.tmp_avail_actions)
-        self.rollout_worker.tmp_r.append([reward])
+        self.rollout_worker.tmp_r.append([tmp_reward])
         self.rollout_worker.tmp_terminate.append([self.tmp_terminated])
         self.rollout_worker.tmp_padded.append([0.])
         self.rollout_worker.tmp_episode_reward += tmp_reward
