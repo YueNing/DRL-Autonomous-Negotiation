@@ -2,7 +2,7 @@ from drl_negotiation.core.train.runner import Runner
 from drl_negotiation.core.envs.multi_agents_negotiation import MultiNegotiationSCM
 from drl_negotiation.core.utils.common import get_common_args, get_mixer_args
 import drl_negotiation.core.scenarios as scenarios
-
+from drl_negotiation.core.games.scml_oneshot import TrainWorld
 
 if __name__ == '__main__':
     args = get_common_args()
@@ -10,7 +10,7 @@ if __name__ == '__main__':
 
     scenario = scenarios.load("scml_oneshot"+".py").Scenario()
     env = MultiNegotiationSCM(
-        world=scenario.make_world(),
+        world=TrainWorld(scenario.make_world()),
         scenario=scenario,
         seed=10
     )

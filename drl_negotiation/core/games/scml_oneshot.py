@@ -78,13 +78,13 @@ class TrainWorld(TrainingWorld):
         for agent_id, agent in self.world.agents.items():
             if is_system_agent(agent_id):
                 pass
-            else:
+            elif agent_id[2:].startswith("My"):
                 agents[agent_id] = agent
         return agents
 
-    def reset(self):
-        """TODO: reset the world"""
-        pass
+    def reset(self, world):
+        """reset the world"""
+        self.world = world
 
     def t_step(self):
         self.world.step()
@@ -573,14 +573,17 @@ class TrainWorld(TrainingWorld):
         # save something after one step mechanism
         # TOOD: set up the episode runner batch information after step mechianism
         # set the parameters in rl runner
+
+        if not self.tmp_actions:
+            # raise ValueError("Actions are None, agents do not execute actions "
+            #                  "No negotiations exist between agents!")
+            # means this mechanism is finished
+            print(f"test: world_step: {self.world.current_step}, len_of_negotiation: {len(self.rollout_worker.tmp_u)}")
+            return
+
         tmp_reward = self.rl_runner.env.get_reward()
         self.rollout_worker.tmp_o.append(self.tmp_obs)
         self.rollout_worker.tmp_s.append(self.tmp_state)
-        if not self.tmp_actions:
-            raise ValueError("Actions are None, agents do not execute actions "
-                             "No negotiations exist between agents!")
-        # cannot reshape array of size 4 into shape (2,1)
-        # Concurrent negotiation between two same agents
         self.rollout_worker.tmp_u.append(np.reshape(self.tmp_actions, [self.rollout_worker.n_agents, 1]))
         self.rollout_worker.tmp_u_onehot.append(self.tmp_actions_onehot)
         self.rollout_worker.tmp_avail_u.append(self.tmp_avail_actions)

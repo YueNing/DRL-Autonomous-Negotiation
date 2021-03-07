@@ -43,6 +43,10 @@ class TrainingWorld(ABC):
     def world(self):
         return self._world
 
+    @world.setter
+    def world(self, world):
+        self._world = world
+
     @property
     def rl_runner(self):
         return self._rl_runner

@@ -42,7 +42,7 @@ class Scenario(BaseScenario):
             compact=COMPACT,
             no_logs=NO_LOGS
         )
-        return TrainWorld(world)
+        return world
 
     def reset_world(self, world: "World") -> "ResetWorld":
-        world.reset()
+        world.reset(world=self.make_world())

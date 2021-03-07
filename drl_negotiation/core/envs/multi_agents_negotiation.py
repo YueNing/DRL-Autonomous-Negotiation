@@ -112,6 +112,7 @@ class MultiNegotiationSCM(MultiAgentEnv):
         self.observation_callback = scenario.observation
         self.info_callback = scenario.info
         self.done_callback = scenario.done
+        self.scenario = scenario
 
         # env arguments
         self.dones = set()
