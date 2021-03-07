@@ -4,6 +4,7 @@ from abc import ABC
 from drl_negotiation.core._env import Environment
 from typing import Tuple, Dict, List
 
+
 class MultiAgentEnv(Environment, ABC):
     """The main API for multi agents negotiation environments.
 
@@ -53,6 +54,14 @@ class MultiAgentEnv(Environment, ABC):
 
         Example of a simple rollout loop:
     """
+    @property
+    def rl_runner(self):
+        """set the reinforcement learning running"""
+        return self._rl_runner
+
+    @rl_runner.setter
+    def rl_runner(self, runner):
+        self._rl_runner = runner
 
     @property
     def action_space(self):

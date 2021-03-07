@@ -102,7 +102,9 @@ class RolloutWorker:
 class Runner:
     def __init__(self, env, args):
         self.env = env
-        self.env._rl_runner = self
+
+        # Before run the environment, pass through the runner
+        self.env.rl_runner = self
 
         self.agents = Agents(args)
         self.rollout_worker = RolloutWorker(env, self.agents, args)

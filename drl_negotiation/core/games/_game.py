@@ -37,10 +37,19 @@ class TrainingWorld(ABC):
     """Wrapper of World"""
     def __init__(self, world):
         self._world = world
+        self._rl_runner = None
 
     @property
     def world(self):
         return self._world
+
+    @property
+    def rl_runner(self):
+        return self._rl_runner
+
+    @rl_runner.setter
+    def rl_runner(self, runner):
+        self._rl_runner = runner
 
     def reset(self):
         raise NotImplementedError

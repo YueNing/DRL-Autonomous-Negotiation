@@ -137,6 +137,9 @@ class MultiNegotiationSCM(MultiAgentEnv):
 
         self.n_actions = 10 * 100
 
+        # others
+        self._rl_runner = None
+
     def step(self):
         """One environment step"""
         self.world.step()
@@ -149,7 +152,9 @@ class MultiNegotiationSCM(MultiAgentEnv):
 
     def run(self):
         """One total episode of World"""
-        self.world._rl_runner = self._rl_runner
+
+        # set rl_runner in the world
+        self.world.rl_runner = self.rl_runner
         result = self.world.run()
 
         self.batch = None
