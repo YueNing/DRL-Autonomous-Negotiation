@@ -1,6 +1,8 @@
 import time
 import copy
 import sys
+import random
+import numpy as np
 import traceback
 from typing import Optional, List, Tuple
 from collections import defaultdict
@@ -20,6 +22,14 @@ __all__ = [
 class TrainWorld(TrainingWorld):
     def __init__(self, world: SCML2020OneShotWorld):
         super(TrainWorld, self).__init__(world)
+
+        # rollout
+        self.tmp_obs = None
+        self.tmp_state = None
+        self.tmp_actions = None
+        self.tmp_actions_onehot = None
+        self.tmp_avail_actions = None
+        self.tmp_terminated = False
 
     @property
     def n_negotiations(self):
@@ -456,25 +466,107 @@ class TrainWorld(TrainingWorld):
             n_steps: Optional[int],
             force_immediate_signing,
             partners: List[Agent],
-    ) -> Tuple[List[Contract], List[bool], int, int, int, int]:
+    ) -> Tuple[List[None], list, int, int, int, int]:
         """TODO coding here, observation, stat, reward, action"""
-        return self.world._step_negotiations(
-            mechanisms,
-            n_steps,
-            force_immediate_signing,
-            partners
+        # return self.world._step_negotiations(
+        #     mechanisms,
+        #     n_steps,
+        #     force_immediate_signing,
+        #     partners
+        # )
+        """ Runs all bending negotiations """
+        running = [_ is not None for _ in mechanisms]
+        contracts = [None] * len(mechanisms)
+        indices = list(range(len(mechanisms)))
+        n_steps_broken_, n_steps_success_ = 0, 0
+        n_broken_, n_success_ = 0, 0
+        current_step = 0
+        if n_steps is None:
+            n_steps = float("inf")
+
+        # t
+        self.pre_rollout()
+        self.after_rollout()
+
+        while any(running):
+            # random.shuffle(indices)
+            self.pre_rollout()
+            for i in indices:
+                if not running[i]:
+                    continue
+                if self.world.time >= self.world.time_limit:
+                    break
+                mechanism = mechanisms[i]
+                contract, r = self.world._step_a_mechanism(mechanism, force_immediate_signing)
+                contracts[i] = contract
+                running[i] = r
+                if not running[i]:
+                    if contract is None:
+                        n_broken_ += 1
+                        n_steps_broken_ += mechanism.state.step + 1
+                    else:
+                        n_success_ += 1
+                        n_steps_success_ += mechanism.state.step + 1
+                    for _p in partners:
+                        self.world._add_edges(
+                            _p[0],
+                            _p,
+                            self.world._edges_negotiations_succeeded
+                            if contract is not None
+                            else self.world._edges_negotiations_failed,
+                            issues=mechanism.issues,
+                            bi=True,
+                        )
+            current_step += 1
+            if current_step >= n_steps:
+                break
+            if self.world.time >= self.world.time_limit:
+                break
+
+            self.after_rollout()
+
+        return (
+            contracts,
+            running,
+            n_steps_broken_,
+            n_steps_success_,
+            n_broken_,
+            n_success_,
         )
 
     def run(self):
         # result = self.world.run(self._rl_runner)
         # result = self.world.run()
         """Runs the simulation until it ends"""
+        self.world.train_world = self
         self.world._start_time = time.perf_counter()
         for _ in range(self.world.n_steps):
             if self.world.time >= self.world.time_limit:
                 break
             if not self.step():
                 break
+
+    def pre_rollout(self):
+        # A real training step
+        self.tmp_obs = self.rl_runner.env.get_obs()
+        self.tmp_state = self.rl_runner.env.get_state()
+        self.tmp_actions, self.tmp_avail_actions, self.tmp_actions_onehot = [], [], []
+
+    def after_rollout(self):
+        # save something after one step mechanism
+        # TOOD: set up the episode runner batch information after step mechianism
+        # set the parameters in rl runner
+        tmp_reward = self.rl_runner.env.get_reward()
+        self.rollout_worker.tmp_o.append(self.tmp_obs)
+        self.rollout_worker.tmp_s.append(self.tmp_state)
+        self.rollout_worker.tmp_u.append(np.reshape(self.tmp_actions, [self.rollout_worker.n_agents, 1]))
+        self.rollout_worker.tmp_u_onehot.append(self.tmp_actions_onehot)
+        self.rollout_worker.tmp_avail_u.append(self.tmp_avail_actions)
+        self.rollout_worker.tmp_r.append([reward])
+        self.rollout_worker.tmp_terminate.append([self.tmp_terminated])
+        self.rollout_worker.tmp_padded.append([0.])
+        self.rollout_worker.tmp_episode_reward += tmp_reward
+        self.rollout_worker.tmp_step += 1
 
 
 

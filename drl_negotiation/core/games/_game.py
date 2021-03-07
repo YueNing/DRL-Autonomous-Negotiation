@@ -51,6 +51,18 @@ class TrainingWorld(ABC):
     def rl_runner(self, runner):
         self._rl_runner = runner
 
+    @property
+    def rollout_worker(self) -> "RolloutWorker":
+        return self.rl_runner.rollout_worker
+
+    @rollout_worker.setter
+    def rollout_worker(self, worker):
+        self.rollout_worker = worker
+
+    @property
+    def env(self) -> "MultiNegotiationSCM":
+        return self.rl_runner.env
+
     def reset(self):
         raise NotImplementedError
 

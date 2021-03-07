@@ -107,6 +107,7 @@ class Runner:
         self.env.rl_runner = self
 
         self.agents = Agents(args)
+        # execute the environment
         self.rollout_worker = RolloutWorker(env, self.agents, args)
         self.buffer = ReplayBuffer(args)
 
