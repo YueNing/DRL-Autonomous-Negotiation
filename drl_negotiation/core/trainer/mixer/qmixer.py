@@ -163,5 +163,5 @@ class QMixer:
         num = str(train_step // self.args.save_cycle)
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
-        th.save(self.eval_qmix_net.state_dict(), self.model_dir + '/' + num + '_qmix_net_params.pkl')
+        th.save(self.eval_qmixer_net.state_dict(), self.model_dir + '/' + num + '_qmix_net_params.pkl')
         th.save(self.eval_rnn.state_dict(),  self.model_dir + '/' + num + '_rnn_net_params.pkl')

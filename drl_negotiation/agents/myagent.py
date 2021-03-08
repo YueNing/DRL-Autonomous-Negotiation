@@ -65,25 +65,27 @@ class MyOneShotBasedAgent(MyOneShotAgent):
         return self.negotiators[negotiator_id][0].ami.random_outcomes(1)[0]
 
     def propose(self, negotiator_id: str, state: MechanismState, tag=False) -> "Outcome":
-        if not hasattr(self, "myoffer"):
+        if self.awi.agent.myoffer is None:
             return self.mypropose(negotiator_id, state)
 
         if tag:
             return self.mypropose(negotiator_id, state)
 
-        return self.myoffer
+        return self.awi.agent.myoffer
 
     def mypropose(self, negotiator_id:str, state: MechanismState) -> "Outcome":
-        action: int = self.policy(negotiator_id, state)
+        action: int = int(self.policy(negotiator_id, state))
         # convert int action to propose
         q = action // 100 + 1
         u = action % 100 + 1
         return (q, 0, u)
 
+        #return (q, 0, u)
+
     def respond(
         self, negotiator_id: str, state: MechanismState, offer: "Outcome"
     ) -> "ResponseType":
-        self.myoffer = self.propose(negotiator_id, state, tag=True)
-        if self.myoffer == offer:
+        self.awi.agent.myoffer = self.propose(negotiator_id, state, tag=True)
+        if self.awi.agent.myoffer == offer:
             return ResponseType.ACCEPT_OFFER
         return ResponseType.REJECT_OFFER

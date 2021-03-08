@@ -1,7 +1,8 @@
+import scml
 from abc import ABC
 from drl_negotiation.core.games._game import TrainableAgent
 from scml.oneshot.agent import OneShotAgent
-
+from scml import QUANTITY, UNIT_PRICE
 
 class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
     """Running in the SCML OneShot"""
@@ -14,11 +15,28 @@ class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
     def reward(self):
         current_offer = []
         reward = []
-        for negotiator_id, negotiator in self.negotiators.items():
-            current_offer.append(negotiator[0].ami.state.current_offer)
-            reward.append(-1 if negotiator[0].ami.state.agreement is None else 1)
+        # for negotiator_id, negotiator in self.negotiators.items():
+        #     current_offer.append(negotiator[0].ami.state.current_offer)
+        #     reward.append(-1 if negotiator[0].ami.state.agreement is None else 1)
+        if self.awi._world.train_world.broken:
+            reward.append(-1)
+        elif self.awi._world.train_world.success:
+            contract = self.awi._world.train_world.contract
+            if contract is None:
+                reward.append(1)
+            else:
+                if scml.__version__ == "0.3.1":
+                    reward.append(self.ufun([contract]).mean())
+                else:
+                    reward.append(self.ufun(contract.agreement))
+        elif self.awi._world.train_world.running:
+            reward.append(0)
+        else:
+            reward.append(-1)
+
         if not reward:
             return 0
+
         return reward[0]
 
     def observation(self):
@@ -41,7 +59,7 @@ class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
         elif current_offer[0] is None:
             current_offer = np.zeros(10 * 100)
         else:
-            current_offer = np.eye(10 * 100)[np.prod(current_offer)]
+            current_offer = np.eye(10 * 100)[current_offer[0][QUANTITY]*current_offer[0][UNIT_PRICE]]
         return current_offer
 
     def reset(self):
@@ -59,7 +77,7 @@ class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
     def policy(self, negotiator_id, state):
         """return the action, get policy_callback from the trainer"""
         agent_num = int(self.awi.agent.name[-1])
-        epsilon = 1
+        epsilon = self.awi._world.train_world.rollout_worker.tmp_epsilon
         obs = self.awi._world.train_world.tmp_obs[agent_num]
         issues = self.negotiators[negotiator_id][0].ami.issues
         last_action = self.awi._world.train_world.rollout_worker.tmp_last_action[agent_num]
@@ -72,6 +90,7 @@ class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
         self.awi._world.train_world.tmp_actions_onehot.append(action_onehot)
         self.awi._world.train_world.tmp_avail_actions.append(avail_action)
         self.awi._world.train_world.rollout_worker.tmp_last_action[agent_num] = action_onehot
+        self.awi._world.train_world.set_agent.append(agent_num)
         return action
 
 import torch

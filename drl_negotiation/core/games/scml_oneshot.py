@@ -31,6 +31,8 @@ class TrainWorld(TrainingWorld):
         self.tmp_avail_actions = None
         self.tmp_terminated = False
 
+        self.set_agent = []
+
     @property
     def n_negotiations(self):
         return self.world._World__n_negotiations
@@ -498,6 +500,8 @@ class TrainWorld(TrainingWorld):
         # t
         # self.pre_rollout()
         # self.after_rollout()
+        for agent_id, agent in self.policy_agents.items():
+            agent.myoffer = None
 
         while any(running):
             # random.shuffle(indices)
@@ -512,11 +516,20 @@ class TrainWorld(TrainingWorld):
                 contract, r = self.world._step_a_mechanism(mechanism, force_immediate_signing)
                 contracts[i] = contract
                 running[i] = r
+
+                self.broken = False
+                self.success = False
+                self.running = False
+                self.contract = None
+
                 if not running[i]:
                     if contract is None:
+                        self.broken = True
                         n_broken_ += 1
                         n_steps_broken_ += mechanism.state.step + 1
                     else:
+                        self.success = True
+                        self.contract = contract
                         n_success_ += 1
                         n_steps_success_ += mechanism.state.step + 1
                     for _p in partners:
@@ -529,6 +542,8 @@ class TrainWorld(TrainingWorld):
                             issues=mechanism.issues,
                             bi=True,
                         )
+                else:
+                    self.running = True
             current_step += 1
             if current_step >= n_steps:
                 self.tmp_terminated = True
@@ -568,6 +583,7 @@ class TrainWorld(TrainingWorld):
         self.tmp_state = self.env.get_state()
         # before execute action, need to reset these parameters
         self.tmp_actions, self.tmp_avail_actions, self.tmp_actions_onehot = [], [], []
+        self.set_agent = []
 
     def after_rollout(self):
         # save something after one step mechanism
@@ -578,13 +594,21 @@ class TrainWorld(TrainingWorld):
             # raise ValueError("Actions are None, agents do not execute actions "
             #                  "No negotiations exist between agents!")
             # means this mechanism is finished
-            print(f"test: world_step: {self.world.current_step}, len_of_negotiation: {len(self.rollout_worker.tmp_u)}")
+            # print(f"test: world_step: {self.world.current_step}, len_of_negotiation: {len(self.rollout_worker.tmp_u)}")
             return
 
         tmp_reward = self.rl_runner.env.get_reward()
         self.rollout_worker.tmp_o.append(self.tmp_obs)
         self.rollout_worker.tmp_s.append(self.tmp_state)
-        self.rollout_worker.tmp_u.append(np.reshape(self.tmp_actions, [self.rollout_worker.n_agents, 1]))
+        try:
+            self.rollout_worker.tmp_u.append(np.reshape(self.tmp_actions, [self.rollout_worker.n_agents, 1]))
+        except Exception as e:
+            print(f"world_step:{self.world.current_step}, contract signed {self.contract}")
+            self.tmp_actions = self.tmp_actions * 2
+            self.tmp_actions_onehot = self.tmp_actions_onehot * 2
+            self.tmp_avail_actions = self.tmp_avail_actions * 2
+            self.rollout_worker.tmp_last_action[1 - self.set_agent[0]] = self.rollout_worker.tmp_last_action[self.set_agent[0]]
+            self.rollout_worker.tmp_u.append(np.reshape(self.tmp_actions, [self.rollout_worker.n_agents, 1]))
         self.rollout_worker.tmp_u_onehot.append(self.tmp_actions_onehot)
         self.rollout_worker.tmp_avail_u.append(self.tmp_avail_actions)
         self.rollout_worker.tmp_r.append([tmp_reward])
@@ -592,6 +616,9 @@ class TrainWorld(TrainingWorld):
         self.rollout_worker.tmp_padded.append([0.])
         self.rollout_worker.tmp_episode_reward += tmp_reward
         self.rollout_worker.tmp_step += 1
+        if self.rollout_worker.args.epsilon_anneal_scale == 'step':
+            self.rollout_worker.tmp_epsilon = self.rollout_worker.tmp_epsilon - self.rollout_worker.anneal_epsilon if \
+                self.rollout_worker.tmp_epsilon > self.rollout_worker.min_epsilon else self.rollout_worker.tmp_epsilon
 
 
 
