@@ -63,7 +63,7 @@ def get_common_args():
     # qtran_alt, reinforce, coma+commnet, central_v+commnet, reinforce+commnet，
     # coma+g2anet, central_v+g2anet, reinforce+g2anet, maven
     parser.add_argument('--alg', type=str, default='qmix', help='the algorithm to train the agent')
-    parser.add_argument('--n_steps', type=int, default=500000, help='total time steps')
+    parser.add_argument('--n_steps', type=int, default=100000, help='total time steps')
     parser.add_argument('--n_episodes', type=int, default=1, help='the number of episodes before once training')
     parser.add_argument('--last_action', type=bool, default=True,
                         help='whether to use the last action to choose action')

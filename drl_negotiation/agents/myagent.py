@@ -74,7 +74,7 @@ class MyOneShotBasedAgent(MyOneShotAgent):
         return self.awi.agent.myoffer
 
     def mypropose(self, negotiator_id:str, state: MechanismState) -> "Outcome":
-        action: int = int(self.policy(negotiator_id, state))
+        action: int = self.policy(negotiator_id, state)
         # convert int action to propose
         q = action // 100 + 1
         u = action % 100 + 1

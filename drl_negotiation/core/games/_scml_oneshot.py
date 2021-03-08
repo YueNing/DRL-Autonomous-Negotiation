@@ -86,12 +86,12 @@ class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
 
         action_onehot = np.zeros(self.awi._world.train_world.rl_runner.args.n_actions)
         action_onehot[action] = 1
-        self.awi._world.train_world.tmp_actions.append(action)
+        self.awi._world.train_world.tmp_actions.append(int(action))
         self.awi._world.train_world.tmp_actions_onehot.append(action_onehot)
         self.awi._world.train_world.tmp_avail_actions.append(avail_action)
         self.awi._world.train_world.rollout_worker.tmp_last_action[agent_num] = action_onehot
         self.awi._world.train_world.set_agent.append(agent_num)
-        return action
+        return int(action)
 
 import torch
 import numpy as np

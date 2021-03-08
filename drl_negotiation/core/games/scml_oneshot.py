@@ -602,8 +602,10 @@ class TrainWorld(TrainingWorld):
         self.rollout_worker.tmp_s.append(self.tmp_state)
         try:
             self.rollout_worker.tmp_u.append(np.reshape(self.tmp_actions, [self.rollout_worker.n_agents, 1]))
+            if self.contract is not None:
+                print(f"Same propose: world_step:{self.world.current_step}, contract signed {self.contract}, action is {self.tmp_actions}")
         except Exception as e:
-            print(f"world_step:{self.world.current_step}, contract signed {self.contract}")
+            print(f"Accept: world_step:{self.world.current_step}, contract signed {self.contract}, action is {self.tmp_actions}")
             self.tmp_actions = self.tmp_actions * 2
             self.tmp_actions_onehot = self.tmp_actions_onehot * 2
             self.tmp_avail_actions = self.tmp_avail_actions * 2
