@@ -32,7 +32,7 @@ class Scenario(BaseScenario):
 
     def make_world(self, config:dict = None) -> "World":
         world = generate_one_shot_world(
-            AGENT_TYPE,
+            ONESHOT_SCENARIO_02,
             n_processes=N_PROCESSES,
             name=unique_name(
                 f"scml2020tests/single/{AGENT_TYPE[0].__name__}" f"Fine{N_PROCESSES}",

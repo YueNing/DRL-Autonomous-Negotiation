@@ -503,6 +503,10 @@ class TrainWorld(TrainingWorld):
         for agent_id, agent in self.policy_agents.items():
             agent.myoffer = None
 
+        self.debug_actions = []
+
+        self.pre_rollout()
+
         while any(running):
             # random.shuffle(indices)
             self.pre_rollout()
@@ -573,9 +577,32 @@ class TrainWorld(TrainingWorld):
             if self.world.time >= self.world.time_limit:
                 self.tmp_terminated = True
                 break
-            if not self.step():
-                self.tmp_terminated = True
+
+            result = self.step()
+
+            # reward after every negotiation finished
+            negotiation_end_reward = []
+            for agent_id, agent in self.policy_agents.items():
+                negotiation_end_reward.append(self.world._profits[agent_id][-1])
+            self.rollout_worker.tmp_r[-1] = [i + j for i, j in zip(self.rollout_worker.tmp_r[-1], negotiation_end_reward)]
+            self.rollout_worker.tmp_episode_reward += sum(negotiation_end_reward)
+            if not result:
                 break
+
+        self.tmp_terminated = True
+        extra_reward = []
+        for agent_id, score in self.world.scores().items():
+            if agent_id in self.policy_agents:
+                extra_reward.append(100*score)
+            else:
+                extra_reward.append(-100*score)
+        self.rollout_worker.tmp_terminate[-1] = [self.tmp_terminated]
+
+        # self.rollout_worker.tmp_r[-1][-1] += sum(extra_reward)
+        # self.rollout_worker.tmp_episode_reward += sum(extra_reward)
+
+        print(f"World Scores are: {self.world.scores()}")
+
 
     def pre_rollout(self):
         # A real training step
@@ -584,6 +611,7 @@ class TrainWorld(TrainingWorld):
         # before execute action, need to reset these parameters
         self.tmp_actions, self.tmp_avail_actions, self.tmp_actions_onehot = [], [], []
         self.set_agent = []
+        self.tmp_terminated = False
 
     def after_rollout(self):
         # save something after one step mechanism
@@ -595,16 +623,30 @@ class TrainWorld(TrainingWorld):
             #                  "No negotiations exist between agents!")
             # means this mechanism is finished
             # print(f"test: world_step: {self.world.current_step}, len_of_negotiation: {len(self.rollout_worker.tmp_u)}")
-            return
+            # tmp_reward = self.rl_runner.env.get_reward()
+            # self.rollout_worker.tmp_r[-1][-1] += tmp_reward
+            # self.rollout_worker.tmp_episode_reward += tmp_reward
+            for _ in range(len(self.policy_agents)):
+                action = 0
+                action_onehot = np.zeros(self.rl_runner.args.n_actions)
+                avail_action = [0] * self.rl_runner.args.n_actions
+                self.tmp_actions.append(int(action))
+                self.tmp_actions_onehot.append(action_onehot)
+                self.tmp_avail_actions.append(avail_action)
+                self.rollout_worker.tmp_last_action[_] = action_onehot
 
+        self.debug_actions.append(self.tmp_actions)
         tmp_reward = self.rl_runner.env.get_reward()
         self.rollout_worker.tmp_o.append(self.tmp_obs)
         self.rollout_worker.tmp_s.append(self.tmp_state)
         try:
             self.rollout_worker.tmp_u.append(np.reshape(self.tmp_actions, [self.rollout_worker.n_agents, 1]))
             if self.contract is not None:
-                print(f"Same propose: world_step:{self.world.current_step}, contract signed {self.contract}, action is {self.tmp_actions}")
+                print(f"Same propose: world_step:{self.world.current_step}, contract signed {self.contract}, "
+                      f"action is {self.debug_actions},"
+                      f"world catalog price {self.world.info['catalog_prices']}")
         except Exception as e:
+            # TODO: Enter here when Policy Agent negotiates with Policy Agent
             print(f"Accept: world_step:{self.world.current_step}, contract signed {self.contract}, action is {self.tmp_actions}")
             self.tmp_actions = self.tmp_actions * 2
             self.tmp_actions_onehot = self.tmp_actions_onehot * 2
@@ -621,6 +663,9 @@ class TrainWorld(TrainingWorld):
         if self.rollout_worker.args.epsilon_anneal_scale == 'step':
             self.rollout_worker.tmp_epsilon = self.rollout_worker.tmp_epsilon - self.rollout_worker.anneal_epsilon if \
                 self.rollout_worker.tmp_epsilon > self.rollout_worker.min_epsilon else self.rollout_worker.tmp_epsilon
+
+    def save_replay(self, replay_dir, prefix):
+        pass
 
 
 

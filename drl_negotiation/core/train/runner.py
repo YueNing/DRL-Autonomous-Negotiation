@@ -154,6 +154,7 @@ class Runner:
         for epoch in range(self.args.evaluate_epoch):
             _, episode_reward, _ = self.rollout_worker.generate_episode(epoch, evaluate=True)
             episode_rewards += episode_reward
+            print(f"episode_reward is {episode_reward}")
         return episode_rewards / self.args.evaluate_epoch
 
     def plt(self, num):

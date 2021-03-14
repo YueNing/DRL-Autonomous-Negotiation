@@ -4,6 +4,7 @@ from scml.scml2020 import (
     TradeDrivenProductionStrategy,
     PredictionBasedTradingStrategy,
 )
+from scml import QUANTITY, UNIT_PRICE
 from scml.scml2020.agents.decentralizing import _NegotiationCallbacks
 from scml.scml2020 import (
     SupplyDrivenProductionStrategy,
@@ -61,6 +62,15 @@ class MyOpponentAgent(
 
 class MyOneShotBasedAgent(MyOneShotAgent):
 
+    def init(self):
+        """
+        Called once after the AWI is set.
+
+        Remarks:
+            - Use this for any proactive initialization code.
+        """
+        self.ufun.normalized = False
+
     def _random_offer(self, negotiator_id: str):
         return self.negotiators[negotiator_id][0].ami.random_outcomes(1)[0]
 
@@ -76,9 +86,15 @@ class MyOneShotBasedAgent(MyOneShotAgent):
     def mypropose(self, negotiator_id:str, state: MechanismState) -> "Outcome":
         action: int = self.policy(negotiator_id, state)
         # convert int action to propose
-        q = action // 100 + 1
-        u = action % 100 + 1
-        return (q, 0, u)
+        if action == 0:
+            return None
+
+        action -= 1
+        q = action // 101
+        u = action % 101
+
+        # print(f"World Step is: {self.awi.current_step}, propose is {(q, 0, u)}")
+        return (q, self.awi.current_step, u)
 
         #return (q, 0, u)
 
@@ -86,6 +102,7 @@ class MyOneShotBasedAgent(MyOneShotAgent):
         self, negotiator_id: str, state: MechanismState, offer: "Outcome"
     ) -> "ResponseType":
         self.awi.agent.myoffer = self.propose(negotiator_id, state, tag=True)
-        if self.awi.agent.myoffer == offer:
+        if self.awi.agent.myoffer[QUANTITY] == offer[QUANTITY] and \
+                self.awi.agent.myoffer[UNIT_PRICE] == offer[UNIT_PRICE]:
             return ResponseType.ACCEPT_OFFER
         return ResponseType.REJECT_OFFER

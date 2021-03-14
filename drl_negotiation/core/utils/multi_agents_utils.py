@@ -97,7 +97,7 @@ def make_world(config=None):
         n_steps = N_STEPS
         world_configuration = SCML2020World.generate(
             agent_types=agent_types,
-            n_steps=n_steps
+            n_steps=n_steps,
         )
         world_configuration['negotiation_speed'] = NEGOTIATION_SPEED
     else:
@@ -126,6 +126,7 @@ def get_world_config(load_dir):
 #####################################################################
 # oneshot scml Environments
 #####################################################################
+import numpy as np
 from scml.oneshot import SCML2020OneShotWorld
 from scml.scml2020 import is_system_agent
 
@@ -137,16 +138,29 @@ def generate_one_shot_world(
     n_lines=10,
     **kwargs,
 ):
-    world = SCML2020OneShotWorld(
-        **SCML2020OneShotWorld.generate(
+    config = SCML2020OneShotWorld.generate(
             agent_types,
             n_processes=n_processes,
             n_steps=n_steps,
             n_lines=n_lines,
             n_agents_per_process=n_agents_per_process,
+            production_costs=[5, 8],
+            profit_means=0.1,
+            exogenous_supply_predictability=0.8,
+            exogenous_sales_predictability=0.8,
+            cash_availability=2.0,
+            storage_cost=0.1,
+            delivery_penalty=2.0,
+            storage_cost_dev=1.5,
+            delivery_penalty_dev=0.01,
+            exogenous_price_dev=0.1,
+            price_multiplier=1.5,
             **kwargs,
         )
-    )
+    config["catalog_prices"] = np.array([10, 17, 26])
+    config["initial_balance"] = 1000
+
+    world = SCML2020OneShotWorld(**config)
     for s1, s2 in zip(world.suppliers[:-1], world.suppliers[1:]):
         assert len(set(s1).intersection(set(s2))) == 0
     for s1, s2 in zip(world.consumers[:-1], world.consumers[1:]):

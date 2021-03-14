@@ -23,12 +23,13 @@ class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
         elif self.awi._world.train_world.success:
             contract = self.awi._world.train_world.contract
             if contract is None:
-                reward.append(1)
+                reward.append(0)
             else:
                 if scml.__version__ == "0.3.1":
                     reward.append(self.ufun([contract]).mean())
                 else:
-                    reward.append(self.ufun(contract.agreement))
+                    reward.append(1)
+                    # reward.append(contract.agreement["quantity"]*0.6+contract.agreement["unit_price"]*1)
         elif self.awi._world.train_world.running:
             reward.append(0)
         else:
@@ -48,18 +49,45 @@ class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
         my_last_proposal = []
         issues = []
         current_offer = []
+        catalog_prices = []
         for negotiator_id, negotiator in self.negotiators.items():
             my_last_proposal.append(negotiator[0].my_last_proposal)
             issues.append(negotiator[0].ami.issues)
             current_offer.append(negotiator[0].ami.state.current_offer)
 
         # convert offer to onehot encoding
-        if not current_offer:
-            current_offer = np.zeros(10 * 100)
-        elif current_offer[0] is None:
-            current_offer = np.zeros(10 * 100)
-        else:
-            current_offer = np.eye(10 * 100)[current_offer[0][QUANTITY]*current_offer[0][UNIT_PRICE]]
+        try:
+            if not current_offer or self.awi.current_step == self.awi.n_steps:
+                current_offer = np.zeros(11 * 101)
+            elif current_offer[self.awi.current_step] is None:
+                current_offer = np.zeros(11 * 101)
+            else:
+                current_offer = np.eye(11 * 101)[int(current_offer[self.awi.current_step][QUANTITY]*101 +
+                                                     current_offer[self.awi.current_step][UNIT_PRICE])]
+        except Exception as e:
+            print(f"Error when observing {e}!")
+
+        # catalog price 20 * 40,
+        catalog_prices = self.awi.catalog_prices
+        if catalog_prices[1] > 30:
+            raise NotImplementedError
+
+        if catalog_prices[2] > 50:
+            raise NotImplementedError
+
+        # catalog_prices = np.eye(20*40)[int((catalog_prices[1] - 10 + 1) * (catalog_prices[2] - 10 + 1))]
+        catalog_prices = np.eye(21*41)[int((catalog_prices[1] - 10) * 41 + (catalog_prices[2] - 10))]
+        production_cost = np.eye(10)[int(self.awi.profile.cost) - 1]
+        step = np.eye(11)[int(self.awi.current_step)]
+
+        # return np.concatenate(
+        #     (
+        #         current_offer,
+        #         catalog_prices,
+        #         production_cost,
+        #         # step
+        #     )
+        # )
         return current_offer
 
     def reset(self):
@@ -168,7 +196,10 @@ class Agents:
         return action
 
     def _get_max_episode_len(self, batch):
-        terminated = batch['terminated']
+        try:
+            terminated = batch['terminated']
+        except Exception as e:
+            raise ValueError("get key terminated error!")
         episode_num = terminated.shape[0]
         max_episode_len = 0
         for episode_idx in range(episode_num):

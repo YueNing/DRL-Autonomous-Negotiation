@@ -1,3 +1,4 @@
+import logging
 import random
 import numpy as np
 from gym.spaces import Discrete, MultiDiscrete
@@ -44,7 +45,27 @@ class MultiNegotiationSCM(MultiAgentEnv):
     def get_obs_size(self):
         """Return the size of observation of single agent
         e.g QUANTITY: 10, UNIT_PRICE: 100"""
-        return 10 * 100
+        current_offer = self.get_current_offer_size()
+        catalog_price = self.get_catalog_price_size()
+        production_cost = self.get_production_cost_size()
+        step = self.get_step_size()
+        return current_offer
+
+    @staticmethod
+    def get_current_offer_size():
+        return 11 * 101
+
+    @staticmethod
+    def get_catalog_price_size():
+        return 1 * (20 + 1) * (40 + 1)
+
+    @staticmethod
+    def get_production_cost_size():
+        return 10
+
+    @staticmethod
+    def get_step_size():
+        return 11
 
     def get_state(self):
         """Return the state of Environment
@@ -73,7 +94,7 @@ class MultiNegotiationSCM(MultiAgentEnv):
 
         for i in range(issues[QUANTITY].values[0], issues[QUANTITY].values[1] + 1):
             for j in range(issues[UNIT_PRICE].values[0], issues[UNIT_PRICE].values[1] + 1):
-                avail_actions[(i-1)*100 + (j-1)] = 1
+                avail_actions[i*101 + j + 1] = 1
 
         return avail_actions
 
@@ -89,7 +110,11 @@ class MultiNegotiationSCM(MultiAgentEnv):
         pass
 
     def save_replay(self):
-        pass
+        prefix = self.replay_prefix or "oneshot"
+        replay_dir = self.replay_dir or ""
+        replay_path = self.world.save_replay(replay_dir=replay_dir, prefix=prefix)
+        logging.info(f"Replay saved at: {replay_path}")
+
 
     def available_agents(self):
         pass
@@ -99,7 +124,10 @@ class MultiNegotiationSCM(MultiAgentEnv):
     def __init__(self,
                  world=None,
                  scenario=None,
-                 seed=None, ):
+                 seed=None,
+                 replay_dir="replay_buffer",
+                 replay_prefix=""):
+
         # arguments
         self.world = world
         self.agents = self.world.policy_agents
@@ -120,10 +148,6 @@ class MultiNegotiationSCM(MultiAgentEnv):
         self.obs_instead_of_state = True
         self.episode_limit = self.world.world.n_steps * self.world.world.neg_n_steps
 
-        # spaces
-        self._observation_space = Discrete(10 * 100)
-        self._action_space = Discrete(10 * 100)
-
         # other
         self._max_episode_length = None
         self._seed = seed
@@ -133,13 +157,15 @@ class MultiNegotiationSCM(MultiAgentEnv):
         # setting
         random.seed(self.seed)
 
-        self._action_space = Discrete(10 * 100)
-        self._observation_space = Discrete(10 * 100)
+        self._action_space = Discrete(11 * 101 + 1)
+        self._observation_space = Discrete(11 * 101)
 
-        self.n_actions = 10 * 100
+        self.n_actions = 11 * 101 + 1
 
         # others
         self._rl_runner = None
+        self.replay_dir = replay_dir
+        self.replay_prefix = replay_prefix
 
     def step(self):
         """One environment step"""
@@ -169,6 +195,8 @@ class MultiNegotiationSCM(MultiAgentEnv):
         self.reset_world_callback(self.world)
         self.agents = self.world.policy_agents
         # self.world.step()
+        # print(f"Reset World Successfully, Catalog Price of new World is {self.world.world.info['catalog_prices']}, "
+        #       f"Production Costs are {self.world.world.profiles[0].cost}")
         obs_dict = {i: self.reset_agent_callback(a) for i, a in self.agents.items()}
         return obs_dict
 
@@ -186,7 +214,7 @@ class MultiNegotiationSCM(MultiAgentEnv):
         return self.observation_callback(self.agents[agent_id])
 
     def get_reward(self):
-        """Return sum reward of all learnable agents"""
+        """Return sum reward of all learnable agents, after every negotiation step."""
         reward_n = [self.get_rew_agent(agent) for agent in self.agents]
         return np.sum(reward_n)
 
