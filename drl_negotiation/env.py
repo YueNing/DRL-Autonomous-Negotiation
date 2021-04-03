@@ -267,8 +267,8 @@ class NEnv(RLEnvMixIn, BaseEnv, gym.Env, ABC):
     def reset(self) -> object:
         """
         Resets the environment to an initial state and returns an initial observation,
-        initial observation obtains negotiators' intial observation and others information 
-        relates to the definition of observation space. 
+        initial observation contains negotiators' intial observation and 
+        other information relative to the definition of observation space. 
 
         Returns:
             object: the initial observation
