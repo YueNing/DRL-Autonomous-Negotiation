@@ -1,3 +1,8 @@
+"""
+Multi-Agent Training Environment
+Adapt for SCML2020-OneShot
+http://www.yasserm.com/scml/scml2020docs/modules/scmloneshot.html
+"""
 import logging
 import random
 import numpy as np
