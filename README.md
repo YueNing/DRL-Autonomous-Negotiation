@@ -25,9 +25,9 @@ After installation, you can perform a test to check whether the installation is 
 
 **Single-Agent(Negotiator) Autonomous Negotiation**
 
-In single negotiator scenario, two strategies called **acceptance strategy** and **offer strategy** are learned by DRL negotiator. For every strategy there are two specific settings are given: single negotiation issue and multi-issues negotiation.
+In single negotiator scenario, two strategies called **acceptance strategy** and **offer strategy** are learned by DRL negotiator. For each strategy, there are two specific settings: single negotiation issue and multi-issues negotiation.
 
-Detailed source code can be found in [single agent(negotiator) autonomous negotiation](https://github.com/YueNing/summary_thesis/blob/master/summary-2020-10a11/2020-10a11-Ningyue-Negmas-negotiation.ipynb)
+Detailed explanation can be found in [single agent(negotiator) autonomous negotiation](https://github.com/YueNing/summary_thesis/blob/master/summary-2020-10a11/2020-10a11-Ningyue-Negmas-negotiation.ipynb)
 
 **Multi-Agent(Factory Manager) autonomous concurrent negotiations**
 
