@@ -30,17 +30,17 @@ class BaseScenario(ABC):
 
     @abc.abstractmethod
     def make_world(self, config: "WorldConfig") -> "World":
-        """create element of game world"""
+        """Creates instance of game or training world"""
         raise NotImplementedError
 
     @abc.abstractmethod
     def reset_world(self, world: "World") -> "ResetWorld":
-        """create initial condition of the world"""
+        """Sets the world to the initial state"""
         raise NotImplementedError
 
     @abc.abstractmethod
     def reset_agent(self, agent: "Agent"):
-        """Reset agent, return observation"""
+        """Resets agent, returns initial observation"""
         raise NotImplementedError
 
     @abc.abstractmethod

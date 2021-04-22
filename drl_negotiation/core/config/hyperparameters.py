@@ -39,10 +39,11 @@ MODEL_NAME = "model"
 # train episode
 TRAIN_EPISODES = 100
 # train episode save rate
-SAVE_RATE = 10
+SAVE_RATE = 200
 # max length of single episode
 MAX_EPISODE_LEN = 25
 # batch size
+# save the model of trainers separately
 BATCH_SIZE = 16
 # save the model of train separately
 SAVE_TRAINERS = True
@@ -102,7 +103,7 @@ QUANTITY = 10
 TIME = MAX_EPISODE_LEN
 UNIT_PRICE = 100
 # share reward
-COLLABORATIVE = False
+COLLABORATIVE = True 
 
 # train update steps, based on train step during training
 UPDATE_TRAINER_STEP = 100

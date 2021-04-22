@@ -1,8 +1,8 @@
-####################################################################################################
-# For SCML
-#
-#
-####################################################################################################
+"""
+Multi-Agent Training Environment
+Adapt to SCML2020/2021 (Standard SCML)
+http://www.yasserm.com/scml/scml2020docs/modules/scml2020.html
+"""
 import akro
 import numpy as np
 from typing import Union

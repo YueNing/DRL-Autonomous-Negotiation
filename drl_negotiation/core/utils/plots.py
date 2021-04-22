@@ -305,7 +305,7 @@ def multi_layer_charts(data: List[Dict], backend=PLOT_BACKEND):
             figs[key] = _figs
         # import pdb;pdb.set_trace()
         for name, fig in figs.items():
-            pio.write_html(fig, file=f"{name}.html", auto_open=True)
+            pio.write_html(fig, file=f"shared_{name}.html", auto_open=True)
 
         if ONLINE:
             for name, fig in figs.items():
