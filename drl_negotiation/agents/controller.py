@@ -7,19 +7,18 @@ DRL Controller
 import logging
 import copy
 import random
-from typing import Optional, Dict, Tuple
+from typing import Dict
 from negmas import (Outcome,
                     SAOResponse,
                     SAOState,
                     MechanismState,
-                    ResponseType,
                     )
 
 from scml.scml2020.services import SyncController
 import numpy as np
 from scml.scml2020.common import UNIT_PRICE
 from negmas import ResponseType
-from drl_negotiation.core.hyperparameters import RANDOM
+from drl_negotiation.core.config.hyperparameters import RANDOM
 
 
 ##########################################################################################################
@@ -50,8 +49,7 @@ class MyDRLSCMLSAOSyncController(SyncController):
             time_threshold=kwargs.pop('time_threshold'),
             **kwargs
         )
-        from drl_negotiation.core.core import MySCML2020Agent
-        self.parent: MySCML2020Agent = parent
+        self.parent = parent
         self.history_offers: Dict[str, "Outcome"] = {}
         self.history_running_negotiations = None
         # kwargs['default_negotiator_type'] = default_negotiator_type

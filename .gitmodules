@@ -1,0 +1,6 @@
+[submodule "drl_negotiation/third_party/negmas"]
+	path = drl_negotiation/third_party/negmas
+	url = https://github.com/yasserfarouk/negmas.git
+[submodule "drl_negotiation/third_party/scml"]
+	path = drl_negotiation/third_party/scml
+	url = https://github.com/yasserfarouk/scml.git

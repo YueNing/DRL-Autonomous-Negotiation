@@ -7,7 +7,7 @@ from drl_negotiation.core._dtypes import StepType
 
 
 class Environment(abc.ABC):
-    """The main API for garage environments.
+    """The main API for negotiation environments.
 
     The public API methods are:
     +-----------------------+
@@ -53,6 +53,20 @@ class Environment(abc.ABC):
 
     @property
     @abc.abstractmethod
+    def observation_spaces(self):
+        """np.ndarray[gym.Space]: Multi agents, the observation spaces specification
+            just set up in multi agents environment
+        """
+
+    @property
+    @abc.abstractmethod
+    def action_spaces(self):
+        """np.ndarray[gym.Space]: Multi agents, the action spaces specification
+            just set up in multi agents environment
+        """
+
+    @property
+    @abc.abstractmethod
     def spec(self):
         """EnvSpec: The environment specification."""
 
@@ -62,6 +76,28 @@ class Environment(abc.ABC):
         """list: A list of string representing the supported render modes.
         See render() for a list of modes.
         """
+
+    @property
+    @abc.abstractmethod
+    def available_agents(self):
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def agent_selection(self):
+        raise NotImplementedError
+
+    @property
+    def get_obs(self, agent):
+        raise NotImplementedError
+
+    @property
+    def agents(self):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def seed(self, seed):
+        raise NotImplementedError
 
     @abc.abstractmethod
     def reset(self):
@@ -191,12 +227,12 @@ class Wrapper(Environment):
 
     @property
     def action_space(self):
-        """akro.Space: The action space specification."""
+        """gym.Space: The action space specification."""
         return self._env.action_space
 
     @property
     def observation_space(self):
-        """akro.Space: The observation space specification."""
+        """gym.Space: The observation space specification."""
         return self._env.observation_space
 
     @property

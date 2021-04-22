@@ -1,8 +1,8 @@
 def test_drl_negotiator():
-    from drl_negotiation.negotiator import MyDRLNegotiator, DRLNegotiator
-    from drl_negotiation.utility_functions import MyUtilityFunction
-    from negmas import SAOMechanism, Issue, ResponseType, Outcome
-    from drl_negotiation.env import DRLNegotiationEnv, NEnv
+    from drl_negotiation.agents.negotiator import MyDRLNegotiator
+    from drl_negotiation.core.utils.utility_functions import MyUtilityFunction
+    from drl_negotiation.third_party.negmas.negmas import SAOMechanism, Issue, ResponseType
+    from drl_negotiation.core.envs.bilateral_negotiation import DRLNegotiationEnv, NEnv
     
     name = "drl_negotiator"
     issues = [
@@ -93,9 +93,9 @@ def test_drl_negotiator():
 
 
 def test_opponent_negotiator():
-    from drl_negotiation.negotiator import MyOpponentNegotiator
+    from drl_negotiation.agents.negotiator import MyOpponentNegotiator
     from negmas import Issue, SAOMechanism
-    from drl_negotiation.utility_functions import MyUtilityFunction
+    from drl_negotiation.core.utils.utility_functions import MyUtilityFunction
 
     name = "test_opponent_negotiator"
     # seller

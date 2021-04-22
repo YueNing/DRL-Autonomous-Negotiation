@@ -1,5 +1,8 @@
 """Data types for agent-based learning."""
 import enum
+import typing
+from drl_negotiation.core.games._game import TrainableAgent
+from drl_negotiation.core.games._game import TrainingWorld
 
 
 class StepType(enum.IntEnum):
@@ -51,3 +54,25 @@ class StepType(enum.IntEnum):
                              ')`?'.format(step_cnt))
         else:
             return StepType.MID
+
+
+# Type of Agent
+Agent: typing.Union[TrainableAgent]
+
+# Type of World
+World: typing.Union[TrainingWorld]
+
+# Config of World
+WorldConfig: typing.Dict
+
+# Output of resetting World
+ResetWorld: typing.Optional["World"]
+
+# Represents a generic identifier for an agent (e.g., "agent1").
+AgentID: typing.Any
+
+# A dict keyed by agent ids, e.g. {"agent-1": value}.
+MultiAgentDict = typing.Dict["AgentID", typing.Any]
+
+# All Environments
+Env = typing.Union["SCMLEnv"]
