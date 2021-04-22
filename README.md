@@ -34,7 +34,8 @@ Detailed source code can be found in [single agent(negotiator) autonomous negoti
 ### Examples
 See the _examples_ directory.
 
-- run 
+- run , result(mean reward of acceptacen strategy) of single agent(negotiator) autonomous neogtiation 
+![single.PNG](https://i.loli.net/2021/04/23/ytPOCNMxLlSaTDh.png)
 
 ### Testing
 It is using pytest for tests. You can run them via:
