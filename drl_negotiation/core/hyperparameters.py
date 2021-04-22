@@ -8,7 +8,7 @@ GOAL = 1000
 RUNNING_IN_SCML2020World = False
 POLICIES = ['/tmp/policy2/', '/tmp/policy3/']
 # action of count all in controller
-RANDOM = True 
+RANDOM = False
 RANDOM_REWARD = False
 
 # Training from scratch: set TRAIN, SAVE_WORLD_CONFIG as True
@@ -37,13 +37,13 @@ API_KEY = "kF579m9M6nXOrjw4GmKU"
 # model name
 MODEL_NAME = "model"
 # train episode
-TRAIN_EPISODES = 1000
+TRAIN_EPISODES = 10000
 # train episode save rate
-SAVE_RATE = 10
+SAVE_RATE = 200
 # max length of single episode
 MAX_EPISODE_LEN = 25
 # batch size
-BATCH_SIZE = 1024
+BATCH_SIZE = 160
 # save the model of trainers separately
 SAVE_TRAINERS = True
 
@@ -102,7 +102,7 @@ QUANTITY = 10
 TIME = MAX_EPISODE_LEN
 UNIT_PRICE = 100
 # share reward
-COLLABORATIVE = False
+COLLABORATIVE = True 
 
 # trainer update steps, based on train step during training
 UPDATE_TRAINER_STEP = 100

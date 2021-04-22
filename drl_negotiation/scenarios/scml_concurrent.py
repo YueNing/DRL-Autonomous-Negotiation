@@ -23,10 +23,15 @@ class Scenario(BaseScenario):
 
     def observation(self, agent: MySCML2020Agent, world: TrainWorld, seller=True):
         last_offers = [[] for _ in agent.awi.my_consumers] + [[] for _ in agent.awi.my_suppliers]
+        negotiation_ranges = [[] for _ in agent.awi.my_consumers] + [[] for _ in agent.awi.my_suppliers]
 
+        # observe the range of negotiation
         for negotiation in agent.running_negotiations:
             logging.debug(f"{agent}:{negotiation.annotation}")
+            partner = negotiation.annotation["buyer"] if negotiation.annotation["seller"] == agent.id else negotiation.annotation["seller"]
+            negotiation_ranges[sorted(agent.awi.my_consumers + agent.awi.my_suppliers).index(partner)].append(negotiation.negotiator.ami.issues)
 
+        # observe the last offer proposed by the negotiation partner
         if hasattr(agent, "controllers"):
             for is_seller, controller in agent.controllers.items():
                 for nid in controller.history_offers:
@@ -37,22 +42,35 @@ class Scenario(BaseScenario):
                         else:
                             partner = negotiation[0].annotation["seller"]
 
+                        # offers proposed by partner
                         last_offers[sorted(agent.awi.my_consumers + agent.awi.my_suppliers).index(partner)].append(controller.history_offers[nid])
-
                 controller.history_offers = {}
 
         price_product = [agent.awi.catalog_prices[agent.awi.my_output_product if seller else agent.awi.my_input_product]]
+        negotiation_ranges = np.array(self._post_process_negotiation_ranges(negotiation_ranges)).flatten().tolist()
         last_offers = np.array(self._post_process_offers(last_offers)).flatten().tolist()
-        logging.debug(f"{agent}'s {'seller' if seller else  'buyer'} last_offers {last_offers}")
 
         if seller:
-            return np.concatenate((agent.current_time, last_offers, agent.running_negotiations_count,
+            result = np.concatenate((agent.current_time, last_offers, negotiation_ranges, agent.running_negotiations_count,
                                    agent.negotiation_requests_count,
                                    agent.contracts_count, price_product))
         else:
-            return np.concatenate((agent.current_time, last_offers, agent.running_negotiations_count,
+            result = np.concatenate((agent.current_time, last_offers, negotiation_ranges, agent.running_negotiations_count,
                                    agent.negotiation_requests_count,
                                    agent.contracts_count, price_product))
+
+        logging.debug(f"Observation of {agent}'s {'seller' if seller else  'buyer'} are {result}")
+        return result
+
+
+    @staticmethod
+    def _post_process_negotiation_ranges(negotiation_ranges):
+        for index, nr in enumerate(negotiation_ranges):
+            if nr:
+                negotiation_ranges[index] = [list(issue.values) for issue in nr[0]]
+            else:
+                negotiation_ranges[index] = [[0, 0], [0, 0], [0, 0]]
+        return negotiation_ranges
 
     @staticmethod
     def _post_process_offers(last_offers):
@@ -66,13 +84,22 @@ class Scenario(BaseScenario):
     def reward(self, agent: MySCML2020Agent, world: TrainWorld, seller=True):
         # sub-goal, best deal which is defined as being nearest to the agent needs with lowest price
         # main-goal, maximum profitability at the end of episode.
-        factory = world.a2f[agent.id]
+        # factory = world.a2f[agent.id]
         #print(f"{agent} balnce change is {factory.balance_change}")
+
+        # delay reward
         rew = world.scores()[agent.id]
+
+        # Timely reward
+        _rew = np.mean(agent.reward)
+        # if agent in world.policy_agents:
+        #     print(f"{agent}\'s rewards are {agent.reward}")
+        agent.reward = [0.0]
+
         if RANDOM_REWARD:
             return random.random()
         else:
-            return rew
+            return rew + _rew
 
     def done(self, agent: MySCML2020Agent, world: TrainWorld, seller=True):
         return False
