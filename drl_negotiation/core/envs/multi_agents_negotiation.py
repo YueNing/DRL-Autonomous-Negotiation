@@ -1,6 +1,8 @@
 import logging
 import random
 import numpy as np
+import operator
+from functools import reduce
 from gym.spaces import Discrete, MultiDiscrete
 from drl_negotiation.core.envs.multi_agent_env import MultiAgentEnv
 # from drl_negotiation.core.config.envs.scml_oneshot import BATCH
@@ -131,7 +133,7 @@ class MultiNegotiationSCM(MultiAgentEnv):
         # arguments
         self.world = world
         self.agents = self.world.policy_agents
-        self.n_agents = len(self.agents)
+        self.n_agents = len(self.agents) * 2
         
         # callback
         self.reset_world_callback = scenario.reset_world
@@ -197,15 +199,45 @@ class MultiNegotiationSCM(MultiAgentEnv):
         # self.world.step()
         # print(f"Reset World Successfully, Catalog Price of new World is {self.world.world.info['catalog_prices']}, "
         #       f"Production Costs are {self.world.world.profiles[0].cost}")
-        obs_dict = {i: self.reset_agent_callback(a) for i, a in self.agents.items()}
-        return obs_dict
+        # obs_dict = {i: self.reset_agent_callback(a) for i, a in self.agents.items()}
+        from scml import is_system_agent
+        self.trainable_agents = []
+        num_non_system_suppliers = 0
+        num_non_sysatem_consumers = 0
+        for agent in self.agents:
+            for supplier in self.agents[agent].awi.my_suppliers:
+                if is_system_agent(supplier):
+                    pass
+                else:
+                    num_non_system_suppliers += 1
+                    self.trainable_agents.append(f"{agent}_{self.agents[agent].awi.my_suppliers.index(supplier)}")
 
-    def get_obs(self):
+            for consumer in self.agents[agent].awi.my_consumers:
+                if is_system_agent(consumer):
+                    pass
+                else:
+                    num_non_sysatem_consumers += 1
+                    self.trainable_agents.append(f"{agent}_{num_non_system_suppliers + self.agents[agent].awi.my_consumers.index(consumer)}")
+        return self.trainable_agents
+
+    def get_obs(self, type=list):
         """ Returns all agent observations in a list.
         Note: Agents should have access only to their local
         observations during decentralised execution"""
-        agents_obs = [self.get_obs_agent(_) for _ in self.agents]
-        return agents_obs
+        if type == list:
+            agents_obs = [self.get_obs_agent(_) for _ in self.agents]
+            num = len(agents_obs[0])
+            agents_obs = reduce(operator.add, agents_obs)
+            agents_obs = [agents_obs[i::num] for i in range(num)]
+            agents_obs = reduce(operator.add, agents_obs)
+            return agents_obs
+        elif type == dict:
+            obs = {}
+            for agent in self.agents:
+                for i, _ in enumerate(self.get_obs_agent(agent)):
+                    obs[f"{agent}_{i}"] = _
+            return obs
+
 
     def get_obs_agent(self, agent_id):
         """Returns observation for agent_id"""
@@ -215,14 +247,17 @@ class MultiNegotiationSCM(MultiAgentEnv):
 
     def get_reward(self):
         """Return sum reward of all learnable agents, after every negotiation step."""
-        reward_n = [self.get_rew_agent(agent) for agent in self.agents]
+        reward_n = [self.get_rew_agent(agent) for agent in self.trainable_agents]
         return np.sum(reward_n)
 
     def get_rew_agent(self, agent_id: "AgentID"):
         """Return reward one single agent"""
         if self.reward_callback is None:
             return 0
-        return self.reward_callback(self.agents[agent_id])
+        if agent_id not in self.agents:
+            return self.reward_callback(self.agents[agent_id.split("_")[0]], index=agent_id.split("_")[1])
+        else:
+            return self.reward_callback(self.agents[agent_id])
 
     def get_done_agent(self, agent_id: "AgentID"):
         """Return done information of one single agent"""
