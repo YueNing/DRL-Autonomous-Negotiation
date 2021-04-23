@@ -33,7 +33,7 @@ Detailed explanation can be found in [single agent(negotiator) autonomous negoti
 
 ### Examples
 See the _examples_ directory.
-
+- Negotiator learns acceptance strategy with single issue setting
 - run , result(mean reward of acceptacen strategy) of single agent(negotiator) autonomous neogtiation 
 ![single.PNG](https://i.loli.net/2021/04/23/ytPOCNMxLlSaTDh.png)
 
