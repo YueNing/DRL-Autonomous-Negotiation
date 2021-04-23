@@ -3,6 +3,7 @@ from abc import ABC
 from drl_negotiation.core.games._game import TrainableAgent
 from scml.oneshot.agent import OneShotAgent
 from scml import QUANTITY, UNIT_PRICE
+from scml.oneshot.awi import OneShotAWI
 
 class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
     """Running in the SCML OneShot"""
@@ -12,16 +13,17 @@ class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
     def info(self):
         pass
 
-    def reward(self):
+    def reward(self, index):
         current_offer = []
+        agent_id = f"{self.awi.agent.id}_{index}"
         reward = []
         # for negotiator_id, negotiator in self.negotiators.items():
         #     current_offer.append(negotiator[0].ami.state.current_offer)
         #     reward.append(-1 if negotiator[0].ami.state.agreement is None else 1)
-        if self.awi._world.train_world.broken:
+        if self.awi._world.train_world.broken[agent_id]:
             reward.append(-1)
-        elif self.awi._world.train_world.success:
-            contract = self.awi._world.train_world.contract
+        elif self.awi._world.train_world.success[agent_id]:
+            contract = self.awi._world.train_world.contract[agent_id]
             if contract is None:
                 reward.append(0)
             else:
@@ -30,7 +32,7 @@ class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
                 else:
                     reward.append(1)
                     # reward.append(contract.agreement["quantity"]*0.6+contract.agreement["unit_price"]*1)
-        elif self.awi._world.train_world.running:
+        elif self.awi._world.train_world.running[agent_id]:
             reward.append(0)
         else:
             reward.append(-1)
@@ -41,32 +43,38 @@ class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
         return reward[0]
 
     def observation(self):
-        """Returns observation for agent, the observation is composed of:
+        """TODO: Returns observation for agent, the observation is composed of:
              - negotiation issues ranges,
              - my last proposed offer
              - current offer in the negotiation
          """
         my_last_proposal = []
         issues = []
-        current_offer = []
+        current_offers = []
         catalog_prices = []
         for negotiator_id, negotiator in self.negotiators.items():
             my_last_proposal.append(negotiator[0].my_last_proposal)
             issues.append(negotiator[0].ami.issues)
-            current_offer.append(negotiator[0].ami.state.current_offer)
+            current_offers.append(negotiator[0].ami.state.current_offer)
 
         # convert offer to onehot encoding
         try:
-            if not current_offer or self.awi.current_step == self.awi.n_steps:
-                current_offer = np.zeros(11 * 101)
-            elif current_offer[self.awi.current_step] is None:
-                current_offer = np.zeros(11 * 101)
-            else:
-                current_offer = np.eye(11 * 101)[int(current_offer[self.awi.current_step][QUANTITY]*101 +
-                                                     current_offer[self.awi.current_step][UNIT_PRICE])]
+            # control_offer = current_offers[self.awi.current_step*2:(self.awi.current_step+1)*2]
+            current_offer = []
+            control_offers = [current_offers[i::len(self.awi.my_consumers)] for i in range(len(self.awi.my_consumers))]
+            for control_offer in control_offers:
+                if not control_offer or self.awi.current_step == self.awi.n_steps:
+                    current_offer.append(np.zeros(11 * 101))
+                elif control_offer[self.awi.current_step] is None:
+                    current_offer.append(np.zeros(11 * 101))
+                else:
+                    current_offer.append(np.eye(11 * 101)[int(control_offer[self.awi.current_step][QUANTITY]*101 +
+                                                              control_offer[self.awi.current_step][UNIT_PRICE])])
         except Exception as e:
             print(f"Error when observing {e}!")
 
+        if not current_offer:
+            print("Helll")
         # catalog price 20 * 40,
         catalog_prices = self.awi.catalog_prices
         if catalog_prices[1] > 30:
@@ -76,9 +84,9 @@ class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
             raise NotImplementedError
 
         # catalog_prices = np.eye(20*40)[int((catalog_prices[1] - 10 + 1) * (catalog_prices[2] - 10 + 1))]
-        catalog_prices = np.eye(21*41)[int((catalog_prices[1] - 10) * 41 + (catalog_prices[2] - 10))]
-        production_cost = np.eye(10)[int(self.awi.profile.cost) - 1]
-        step = np.eye(11)[int(self.awi.current_step)]
+        # catalog_prices = np.eye(21*41)[int((catalog_prices[1] - 10) * 41 + (catalog_prices[2] - 10))]
+        # production_cost = np.eye(10)[int(self.awi.profile.cost) - 1]
+        # step = np.eye(11)[int(self.awi.current_step)]
 
         # return np.concatenate(
         #     (
@@ -104,21 +112,31 @@ class MyOneShotAgent(OneShotAgent, TrainableAgent, ABC):
 
     def policy(self, negotiator_id, state):
         """return the action, get policy_callback from the trainer"""
-        agent_num = int(self.awi.agent.name[-1])
+        # agent_num = int(self.awi.agent.name[-1])
+        if self.negotiators[negotiator_id][0].ami.annotation["seller"] == self.awi.agent.id:
+            # agent_num = list(self.awi._world.train_world.policy_agents.keys()).index(self.awi.agent.id) * \
+            #             len(self.awi.my_consumers) + self.awi.my_consumers.index(self.negotiators[negotiator_id][0].ami.annotation["buyer"])
+            # agent_num = list(self.awi._world.train_world.policy_agents.keys()).index(self.awi.agent.id) + \
+            #             self.awi.my_consumers.index(self.negotiators[negotiator_id][0].ami.annotation["buyer"]) * 2
+            agent_id = f"{self.awi.agent.id}_{self.awi.my_consumers.index(self.negotiators[negotiator_id][0].ami.annotation['buyer'])}"
+            agent_num = 0
+        else:
+            raise NotImplementedError
         epsilon = self.awi._world.train_world.rollout_worker.tmp_epsilon
-        obs = self.awi._world.train_world.tmp_obs[agent_num]
+        obs = self.awi._world.train_world.tmp_obs_dict[agent_id]
         issues = self.negotiators[negotiator_id][0].ami.issues
-        last_action = self.awi._world.train_world.rollout_worker.tmp_last_action[agent_num]
-        avail_action = self.awi._world.train_world.env.get_avail_agent_actions(agent_num, issues)
-        action = self.awi._world.train_world.rl_runner.agents.choose_action(obs, last_action, agent_num, avail_action, epsilon)
+        last_action = self.awi._world.train_world.rollout_worker.tmp_last_action_dict[agent_id]
+        avail_action = self.awi._world.train_world.env.get_avail_agent_actions(agent_id, issues)
+        action = self.awi._world.train_world.rl_runner.agents.choose_action(obs, last_action, self.awi._world.train_world.env.trainable_agents.index(agent_id), avail_action, epsilon)
 
         action_onehot = np.zeros(self.awi._world.train_world.rl_runner.args.n_actions)
         action_onehot[action] = 1
-        self.awi._world.train_world.tmp_actions.append(int(action))
-        self.awi._world.train_world.tmp_actions_onehot.append(action_onehot)
-        self.awi._world.train_world.tmp_avail_actions.append(avail_action)
-        self.awi._world.train_world.rollout_worker.tmp_last_action[agent_num] = action_onehot
-        self.awi._world.train_world.set_agent.append(agent_num)
+        # self.awi._world.train_world.tmp_actions.append(int(action))
+        self.awi._world.train_world.tmp_actions_dict[agent_id] = int(action)
+        self.awi._world.train_world.tmp_actions_onehot_dict[agent_id] = action_onehot
+        self.awi._world.train_world.tmp_avail_actions_dict[agent_id] = avail_action
+        self.awi._world.train_world.rollout_worker.tmp_last_action_dict[agent_id] = action_onehot
+        self.awi._world.train_world.set_agent.append(agent_id)
         return int(action)
 
 import torch

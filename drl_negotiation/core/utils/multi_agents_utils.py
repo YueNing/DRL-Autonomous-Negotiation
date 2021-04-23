@@ -144,7 +144,7 @@ def generate_one_shot_world(
             n_steps=n_steps,
             n_lines=n_lines,
             n_agents_per_process=n_agents_per_process,
-            production_costs=[5, 8],
+            production_costs=5,
             profit_means=0.1,
             exogenous_supply_predictability=0.8,
             exogenous_sales_predictability=0.8,

@@ -87,12 +87,12 @@ def get_mixer_args(args):
     args.two_hyper_layers = False
     args.hyper_hidden_dim = 64
     args.qtran_hidden_dim = 64
-    args.lr = 5e-4
+    args.lr = 5e-2
 
     # epsilon greedy
     args.epsilon = 1
     args.min_epsilon = 0.005
-    anneal_steps = 500
+    anneal_steps = 5000
     args.anneal_epsilon = (args.epsilon - args.min_epsilon) / anneal_steps
     args.epsilon_anneal_scale = 'step'
 
@@ -100,8 +100,8 @@ def get_mixer_args(args):
     args.train_steps = 1
 
     # experience replay
-    args.batch_size = 64
-    args.buffer_size = int(2e3)
+    args.batch_size = 32
+    args.buffer_size = int(1e3)
 
     # how often to save the model
     args.save_cycle = 5000

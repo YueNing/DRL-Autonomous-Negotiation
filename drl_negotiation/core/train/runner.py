@@ -33,13 +33,22 @@ class RolloutWorker:
         print("Init RolloutWorker")
 
     def generate_episode(self, episode_idx, evaluate=False):
-        self.env.reset()
+        trainable_agents = self.env.reset()
         self.tmp_step = 0
         self.tmp_epsilon = 0 if evaluate else self.epsilon
         self.tmp_episode_reward = 0
         self.tmp_last_action = np.zeros((self.args.n_agents, self.args.n_actions))
+        self.tmp_last_action_dict = {agent: np.zeros(self.args.n_actions) for agent in trainable_agents}
         self.tmp_o, self.tmp_u, self.tmp_r, self.tmp_s, \
         self.tmp_avail_u, self.tmp_u_onehot, self.tmp_terminate, self.tmp_padded = [], [], [], [], [], [], [], []
+        # for agent_id in trainable_agents:
+        #     self.tmp_o_dict[agent_id] = None
+        #     self.tmp_u_dict[agent_id] = None
+        #     self.tmp_r_dict[agent_id] = None
+        #     self.tmp_avail_u_dict[agent_id] = None
+        #     self.tmp_u_onehot_dict[agent_id] = None
+        #     self.tmp_terminate_dict[agent_id] = None
+        #     self.tmp_padded_dict[agent_id] = None
 
         self.agents.policy.init_hidden(1)
         episode_result: EpisodeResult = self.env.run()
@@ -58,6 +67,7 @@ class RolloutWorker:
             avail_action = self.env.get_avail_agent_actions(agent_id, issues=None)
             avail_actions.append(avail_action)
         self.tmp_avail_u.append(avail_actions)
+
         self.tmp_avail_u_next = self.tmp_avail_u[1:]
         self.tmp_avail_u = self.tmp_avail_u[:-1]
 

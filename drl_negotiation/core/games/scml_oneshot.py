@@ -4,6 +4,7 @@ import sys
 import random
 import numpy as np
 import traceback
+from pprint import pprint
 from typing import Optional, List, Tuple
 from collections import defaultdict
 from negmas.situated import Operations, Entity, Agent, Contract
@@ -510,6 +511,11 @@ class TrainWorld(TrainingWorld):
         while any(running):
             # random.shuffle(indices)
             self.pre_rollout()
+            self.broken = {agent_id: False for agent_id in self.env.trainable_agents}
+            self.success = {agent_id: False for agent_id in self.env.trainable_agents}
+            self.running = {agent_id: False for agent_id in self.env.trainable_agents}
+            self.contract = {agent_id: None for agent_id in self.env.trainable_agents}
+
             for i in indices:
                 if not running[i]:
                     continue
@@ -517,23 +523,31 @@ class TrainWorld(TrainingWorld):
                     self.tmp_terminated = True
                     break
                 mechanism = mechanisms[i]
+                agent_id = []
+                if mechanism.negotiators[0].ami.annotation['seller'] in self.policy_agents:
+                    _agent = mechanism.negotiators[0].ami.annotation['seller']
+                    _index = self.policy_agents[_agent].awi.my_consumers.index(mechanism.negotiators[0].ami.annotation['buyer'])
+                    agent_id.append(f"{_agent}_{_index}")
+
+                if mechanism.negotiators[0].ami.annotation['buyer'] in self.policy_agents:
+                    _agent = mechanism.negotiators[0].ami.annotation['buyer']
+                    _index = self.policy_agents[_agent].awi.my_suppliers.index(mechanism.negotiators[0].ami.annotation['seller'])
+                    agent_id = f"{_agent}_{_index}"
+
                 contract, r = self.world._step_a_mechanism(mechanism, force_immediate_signing)
                 contracts[i] = contract
                 running[i] = r
 
-                self.broken = False
-                self.success = False
-                self.running = False
-                self.contract = None
-
                 if not running[i]:
                     if contract is None:
-                        self.broken = True
+                        for _ in agent_id:
+                            self.broken[_] = True
                         n_broken_ += 1
                         n_steps_broken_ += mechanism.state.step + 1
                     else:
-                        self.success = True
-                        self.contract = contract
+                        for _ in agent_id:
+                            self.success[_] = True
+                            self.contract[_] = contract
                         n_success_ += 1
                         n_steps_success_ += mechanism.state.step + 1
                     for _p in partners:
@@ -547,7 +561,8 @@ class TrainWorld(TrainingWorld):
                             bi=True,
                         )
                 else:
-                    self.running = True
+                    for _ in agent_id:
+                        self.running[_] = True
             current_step += 1
             if current_step >= n_steps:
                 self.tmp_terminated = True
@@ -606,10 +621,15 @@ class TrainWorld(TrainingWorld):
 
     def pre_rollout(self):
         # A real training step
-        self.tmp_obs = self.env.get_obs()
+        # self.tmp_obs = self.env.get_obs()
+        self.tmp_obs_dict = self.env.get_obs(type=dict)
         self.tmp_state = self.env.get_state()
+        self.agent_idx = self.tmp_obs_dict.keys()
         # before execute action, need to reset these parameters
         self.tmp_actions, self.tmp_avail_actions, self.tmp_actions_onehot = [], [], []
+        self.tmp_actions_dict = {agent: None for agent in self.env.trainable_agents}
+        self.tmp_avail_actions_dict = {agent: None for agent in self.env.trainable_agents}
+        self.tmp_actions_onehot_dict = {agent: None for agent in self.env.trainable_agents}
         self.set_agent = []
         self.tmp_terminated = False
 
@@ -618,7 +638,7 @@ class TrainWorld(TrainingWorld):
         # TOOD: set up the episode runner batch information after step mechianism
         # set the parameters in rl runner
 
-        if not self.tmp_actions:
+        if None in list(self.tmp_actions_dict.values()):
             # raise ValueError("Actions are None, agents do not execute actions "
             #                  "No negotiations exist between agents!")
             # means this mechanism is finished
@@ -626,23 +646,35 @@ class TrainWorld(TrainingWorld):
             # tmp_reward = self.rl_runner.env.get_reward()
             # self.rollout_worker.tmp_r[-1][-1] += tmp_reward
             # self.rollout_worker.tmp_episode_reward += tmp_reward
-            for _ in range(len(self.policy_agents)):
-                action = 0
-                action_onehot = np.zeros(self.rl_runner.args.n_actions)
-                avail_action = [0] * self.rl_runner.args.n_actions
-                self.tmp_actions.append(int(action))
-                self.tmp_actions_onehot.append(action_onehot)
-                self.tmp_avail_actions.append(avail_action)
-                self.rollout_worker.tmp_last_action[_] = action_onehot
+            # for _ in range(len(self.policy_agents)):
+            #     action = 0
+            #     action_onehot = np.zeros(self.rl_runner.args.n_actions)
+            #     avail_action = [0] * self.rl_runner.args.n_actions
+            #     self.tmp_actions.append(int(action))
+            #     self.tmp_actions_onehot.append(action_onehot)
+            #     self.tmp_avail_actions.append(avail_action)
+            #     self.rollout_worker.tmp_last_action[_] = action_onehot
 
-        self.debug_actions.append(self.tmp_actions)
+            for agent_id in self.env.trainable_agents:
+                if self.tmp_actions_dict[agent_id] is None:
+                    action = 0
+                    action_onehot = np.zeros(self.rl_runner.args.n_actions)
+                    avail_action = [0] * self.rl_runner.args.n_actions
+                    self.tmp_actions_dict[agent_id] = int(action)
+                    self.tmp_actions_onehot_dict[agent_id] = action_onehot
+                    self.tmp_avail_actions_dict[agent_id] = avail_action
+                    self.rollout_worker.tmp_last_action_dict[agent_id] = action_onehot
+
+        self.debug_actions.append(list(self.tmp_actions_dict.values()))
         tmp_reward = self.rl_runner.env.get_reward()
-        self.rollout_worker.tmp_o.append(self.tmp_obs)
+        self.rollout_worker.tmp_o.append(list(self.tmp_obs_dict.values()))
         self.rollout_worker.tmp_s.append(self.tmp_state)
         try:
-            self.rollout_worker.tmp_u.append(np.reshape(self.tmp_actions, [self.rollout_worker.n_agents, 1]))
-            if self.contract is not None:
-                print(f"Same propose: world_step:{self.world.current_step}, contract signed {self.contract}, "
+            self.rollout_worker.tmp_u.append(np.reshape(list(self.tmp_actions_dict.values()), [self.rollout_worker.n_agents, 1]))
+            if any(list(self.contract.values())):
+                partners = [c.partners for agent_id, c in self.contract.items() if c is not None]
+                agreements = [c.agreement for agent_id, c in self.contract.items() if c is not None]
+                print(f"Same propose: world_step:{self.world.current_step}, contract signed {partners}, agreements are {agreements}"
                       f"action is {self.debug_actions},"
                       f"world catalog price {self.world.info['catalog_prices']}")
         except Exception as e:
@@ -653,8 +685,8 @@ class TrainWorld(TrainingWorld):
             self.tmp_avail_actions = self.tmp_avail_actions * 2
             self.rollout_worker.tmp_last_action[1 - self.set_agent[0]] = self.rollout_worker.tmp_last_action[self.set_agent[0]]
             self.rollout_worker.tmp_u.append(np.reshape(self.tmp_actions, [self.rollout_worker.n_agents, 1]))
-        self.rollout_worker.tmp_u_onehot.append(self.tmp_actions_onehot)
-        self.rollout_worker.tmp_avail_u.append(self.tmp_avail_actions)
+        self.rollout_worker.tmp_u_onehot.append(list(self.tmp_actions_onehot_dict.values()))
+        self.rollout_worker.tmp_avail_u.append(list(self.tmp_avail_actions_dict.values()))
         self.rollout_worker.tmp_r.append([tmp_reward])
         self.rollout_worker.tmp_terminate.append([self.tmp_terminated])
         self.rollout_worker.tmp_padded.append([0.])

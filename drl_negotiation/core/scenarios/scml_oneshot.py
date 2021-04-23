@@ -13,10 +13,10 @@ class Scenario(BaseScenario):
     def done(self, agent: "Agent"):
         return agent.done()
 
-    def reward(self, agent: "Agent"):
+    def reward(self, agent: "Agent", index=None):
         if scml.__version__ == "0.3.1":
             agent = agent.controller
-        return agent.reward()
+        return agent.reward(index)
 
     def observation(self, agent: "Agent"):
         # the real MyOneShotAgent is the controller of agent running in the SCMLOneShot
@@ -34,6 +34,7 @@ class Scenario(BaseScenario):
         world = generate_one_shot_world(
             ONESHOT_SCENARIO_02,
             n_processes=N_PROCESSES,
+            n_agents_per_process=N_AGENTS_PER_PROCESS,
             name=unique_name(
                 f"scml2020tests/single/{AGENT_TYPE[0].__name__}" f"Fine{N_PROCESSES}",
                 add_time=True,
