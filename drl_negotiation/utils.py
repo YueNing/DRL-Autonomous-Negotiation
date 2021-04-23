@@ -612,7 +612,10 @@ def parse_args():
 #####################################################################################
 def init_setup():
     if TRAIN and not RESTORE:
-        os.makedirs(SAVE_DIR)
+        try:
+            os.makedirs(SAVE_DIR)
+        except Exception as e:
+            print(e)
 
 def logging_setup():
         logging.basicConfig(level=LOGGING_LEVEL,
@@ -623,7 +626,10 @@ def logging_setup():
 #######################################################################################
 # Visualize
 #######################################################################################
-import plotly.express as px
+try:
+    import plotly.express as px
+except Exception as e:
+    print(e)
 
 def show(filename, labels=None):
     with open(filename, 'rb') as fb:

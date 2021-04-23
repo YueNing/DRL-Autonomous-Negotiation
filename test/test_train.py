@@ -1,3 +1,9 @@
+import os
+import sys
+
+path = os.path.abspath(os.path.join(os.path.dirname(__file__),".."))
+sys.path.append(path)
+
 from drl_negotiation.train import train_negotiation
 from drl_negotiation.env import NegotiationEnv
 from drl_negotiation.utils import generate_config, genearate_observation_space, generate_action_space
@@ -6,17 +12,10 @@ from drl_negotiation.negotiator import MyDRLNegotiator, MyOpponentNegotiator
 from drl_negotiation.utility_functions import MyUtilityFunction
 
 
-
 def test_train_negotiation():
-    #  train based on NegotiationEnv 
-    
-    # env = DRLNegotiationEnv(
-    #     name="my_negotiation_env"
-    # )
     n_issues = 1
     config = generate_config(n_issues=n_issues)
 
-    # game
     game = NegotiationGame(
         name="negotiation_game",
         game_type="DRLNegotiation",
@@ -60,24 +59,64 @@ def test_train_negotiation():
     }
 
     plot = True
-    # assert isinstance(env, NEnv)
-
+    train_steps = 100000
+    log_dir = "acceptance_strategy"
+    # acceptance strategy
     game.set_env(env["ac_s"])
     model = "DQN"
-    done, _ = train_negotiation(plot=plot, model=model, env=env["ac_s"], monitor=False)
-
+    done, _ = train_negotiation(plot=plot, model=model, env=env["ac_s"], monitor=False, num_timesteps=train_steps,
+                                LOGDIR=log_dir)
     assert done,  f'train false by the model {model}'
 
-    # model = "PPO1"
+    game.set_env(env["ac_s"])
+    model = "ACER"
+    done, _ = train_negotiation(plot=plot, model=model, env=env["ac_s"], monitor=False, num_timesteps=train_steps,
+                                LOGDIR=log_dir)
+    assert done,  f'train false by the model {model}'
+
+    game.set_env(env["ac_s"])
+    model = "PPO1"
+    done, _ = train_negotiation(plot=plot, model=model, env=env["ac_s"], monitor=False, num_timesteps=train_steps,
+                                LOGDIR=log_dir)
+    assert done,  f'train false by the model {model}'
+
+    game.set_env(env["ac_s"])
+    model = "PPO2"
+    done, _ = train_negotiation(plot=plot, model=model, env=env["ac_s"], monitor=False, num_timesteps=train_steps,
+                                LOGDIR=log_dir)
+    assert done, f'train false by the model {model}'
+
+    game.set_env(env["ac_s"])
+    model = "A2C"
+    done, _ = train_negotiation(plot=plot, model=model, env=env["ac_s"], monitor=False, num_timesteps=train_steps,
+                                LOGDIR=log_dir)
+    assert done, f'train false by the model {model}'
+
+    log_dir = "offer_strategy"
+    # offer strategy
+    game.set_env(env["of_s"])
+    model = "DDPG"
+    done, _ = train_negotiation(plot=plot, model=model, env=env["of_s"], monitor=False, num_timesteps=train_steps,
+                                LOGDIR=log_dir)
+    assert done, f'train false by the model {model}'
+
     game.set_env(env["of_s"])
     model = "PPO1"
-    done, _ = train_negotiation(plot=plot, model=model, env=env["of_s"], monitor=False)
+    done, _ = train_negotiation(plot=plot, model=model, env=env["of_s"], monitor=False, num_timesteps=train_steps,
+                                LOGDIR=log_dir)
     assert done,  f'train false by the model {model}'
 
-    #
-    # model = "Test"
-    # done, _ = train_negotiation(plot=plot, model=model, env=env)
-    # assert done,  f'train false by the model {model}'
+    game.set_env(env["of_s"])
+    model = "PPO2"
+    done, _ = train_negotiation(plot=plot, model=model, env=env["of_s"], monitor=False, num_timesteps=train_steps,
+                                LOGDIR=log_dir)
+    assert done, f'train false by the model {model}'
+
+    game.set_env(env["of_s"])
+    model = "A2C"
+    done, _ = train_negotiation(plot=plot, model=model, env=env["of_s"], monitor=False, num_timesteps=train_steps,
+                                LOGDIR=log_dir)
+    assert done, f'train false by the model {model}'
 
 
 if __name__ == '__main__':
