@@ -7,7 +7,12 @@ from stable_baselines.common.distributions import make_proba_dist_type, Categori
 from stable_baselines.common.tf_layers import conv, linear, conv_to_fc, lstm
 from gym.spaces import Discrete
 import numpy as np
-from pyglet.window import key
+import os 
+try:
+    display = os.environ['DISPLAY']
+    from pyglet.window import key
+except:
+    pass
 
 ########################################################################
 # Interactive policy for scml's agent
