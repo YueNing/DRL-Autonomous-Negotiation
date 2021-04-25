@@ -1,4 +1,4 @@
-# Concurrent Negotiation Control with mulit-agent deep reinforcement learning
+### Concurrent Negotiation Control with mulit-agent deep reinforcement learning
 > ***Note:*** The final source code repository for thesis
 
 **Question 1: Dynamical Range Of Negotiation Issues**
