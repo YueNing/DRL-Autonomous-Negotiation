@@ -1,5 +1,5 @@
 '''
-    Logic of training the maddpg
+    Logic of training the maddpg, dynamical range negotiation issues, initial version
     For SCML: train a maddpg agent for supply chain management
     Author: naodongbanana
     E-Mail: n1085633848@outlook.com
@@ -9,10 +9,7 @@ import sys
 sys.path.append("/home/nauen/PycharmProjects/tn_source_code")
 
 import time
-import drl_negotiation.core.utils.tf_utils as U
-
-from drl_negotiation.core.utils.multi_agents_utils import make_env, get_trainers
-from drl_negotiation.core.utils.common import parse_args
+import drl_negotiation.utils as U
 import tensorflow as tf
 import pickle
 
@@ -20,12 +17,13 @@ def train(arglist):
 
     with U.single_threaded_session():
         # create environment
-        env = make_env(arglist.scenario, arglist)
+        env = U.make_env(arglist.scenario, arglist)
         
-        # create agent train
+        # create agent trainers
         obs_shape_n = [env.observation_space[i].shape for i in range(env.n)]
+        import ipdb
         num_adversaries = min(env.n, arglist.num_adversaries)
-        trainers = get_trainers(env, num_adversaries, obs_shape_n, arglist)
+        trainers = U.get_trainers(env, num_adversaries, obs_shape_n, arglist)
         print(f"Using good policy {arglist.good_policy} and adv policy {arglist.adv_policy}")
 
         U.initialize()
@@ -130,5 +128,5 @@ def train(arglist):
                 break
 
 if __name__ == '__main__':
-    arglist = parse_args()
+    arglist = U.parse_args()
     train(arglist)

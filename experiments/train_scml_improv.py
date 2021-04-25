@@ -1,6 +1,9 @@
-from drl_negotiation.core.train.maddpg import MADDPGModel
-from drl_negotiation.core.utils.multi_agents_utils import make_env
-from drl_negotiation.core.config.hyperparameters import *
+"""
+Experiment for dynamical range negotiation issues, with algorithm MADDPG
+"""
+from drl_negotiation.a2c.a2c import MADDPGModel
+from drl_negotiation.utils import make_env
+from drl_negotiation.hyperparameters import *
 import logging
 
 # make environment
