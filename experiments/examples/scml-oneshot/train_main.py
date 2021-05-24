@@ -1,3 +1,7 @@
+"""
+Example for concurrent negotiation control, with algorithm QMIX, single thread
+"""
+
 from drl_negotiation.core.train.runner import Runner
 from drl_negotiation.core.envs.multi_agents_negotiation import MultiNegotiationSCM
 from drl_negotiation.core.utils.common import get_common_args, get_mixer_args

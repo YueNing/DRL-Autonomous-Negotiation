@@ -13,10 +13,10 @@
 # Multi-Agent Actor-Critic for MixedCooperative-Competitive Environments link: https://arxiv.org/pdf/1706.02275.pdf
 # Extension of MADDPG, link: https://github.com/openai/maddpg/
 
-name = "drl_negotiation"
-author = "naodongbanana"
-email = "n1085633848@outlook.com"
-license = "MIT License"
+__name__ = "drl_negotiation"
+__author__ = "naodongbanana"
+__email__ = "n1085633848@outlook.com"
+__license__ = "MIT License"
 
 import time
 #from drl_negotiation.utils.utils import logging_setup
@@ -30,3 +30,5 @@ print("#################################### \n"
 current_time = time.strftime('%a %d %b %Y %H:%M:%S +0000', time.localtime())
 print(f"Initial drl negotiation!")
 #logging_setup()
+
+__all__ = ["agents", "core", "scenarios", "third_party"]
